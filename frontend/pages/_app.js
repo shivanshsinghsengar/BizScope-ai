@@ -7,9 +7,13 @@ export default function App({ Component, pageProps }) {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Head><meta name="viewport" content="width=device-width, initial-scale=1" /></Head>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </Head>
         <Component {...pageProps} />
       </AuthProvider>
     </ThemeProvider>
   );
 }
+
+export const getInitialProps = undefined;

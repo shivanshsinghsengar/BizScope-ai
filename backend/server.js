@@ -175,42 +175,83 @@ const geocodeLocation = async (location) => {
   return result;
 };
 
-// OSM category mapping
+// OSM category mapping — comprehensive
 const osmToCategory = {
-  restaurant: 'Restaurant', cafe: 'Cafe', fast_food: 'Restaurant', bar: 'Restaurant', pub: 'Restaurant',
-  food_court: 'Restaurant', ice_cream: 'Cafe', juice_bar: 'Cafe', sweet_shop: 'Restaurant',
-  supermarket: 'Grocery', convenience: 'Grocery', grocery: 'Grocery', butcher: 'Grocery', florist: 'Grocery',
-  gym: 'Gym', fitness_centre: 'Gym', fitness: 'Gym', sports: 'Gym',
+  // Food & Drink
+  restaurant: 'Restaurant', fast_food: 'Restaurant', food_court: 'Restaurant',
+  bar: 'Restaurant', pub: 'Restaurant', biergarten: 'Restaurant',
+  sweet_shop: 'Restaurant', ice_cream: 'Cafe', juice_bar: 'Cafe',
+  cafe: 'Cafe', coffee_shop: 'Cafe', tea: 'Cafe',
+  bakery: 'Bakery', pastry: 'Bakery', confectionery: 'Bakery',
+  // Grocery & Food Retail
+  supermarket: 'Grocery', convenience: 'Grocery', grocery: 'Grocery',
+  butcher: 'Grocery', greengrocer: 'Grocery', deli: 'Grocery',
+  dairy: 'Grocery', farm: 'Grocery', spices: 'Grocery', nuts: 'Grocery',
+  // Health & Medical
+  pharmacy: 'Pharmacy', chemist: 'Pharmacy', medical_supply: 'Pharmacy',
+  hospital: 'Hospital', clinic: 'Hospital', doctors: 'Hospital',
+  dentist: 'Hospital', veterinary: 'Hospital', optician: 'Hospital',
+  physiotherapist: 'Hospital', nursing_home: 'Hospital',
+  // Fitness & Wellness
+  gym: 'Gym', fitness_centre: 'Gym', sports_centre: 'Gym',
+  yoga: 'Gym', pilates: 'Gym', martial_arts: 'Gym', swimming_pool: 'Gym',
+  // Beauty & Personal Care
   hairdresser: 'Salon', beauty: 'Salon', tailor: 'Salon',
-  pharmacy: 'Pharmacy', chemist: 'Pharmacy', hospital: 'Pharmacy', clinic: 'Pharmacy', medical_supply: 'Pharmacy',
-  bakery: 'Bakery',
-  laundry: 'Laundry', dry_cleaning: 'Laundry',
-  clothes: 'Retail', shoes: 'Retail', electronics: 'Retail', mobile: 'Retail',
-  jewellery: 'Retail', hardware: 'Retail', stationery: 'Retail', toys: 'Retail',
-  books: 'Retail', furniture: 'Retail', optician: 'Retail',
-  bank: 'Finance', atm: 'Finance',
-  hotel: 'Hospitality', school: 'Education',
+  massage: 'Salon', nail_salon: 'Salon', tattoo: 'Salon', spa: 'Salon',
+  // Clothing & Fashion
+  clothes: 'Clothing', shoes: 'Clothing', boutique: 'Clothing',
+  fashion: 'Clothing', sports: 'Clothing', outdoor: 'Clothing',
+  // Electronics & Mobile
+  electronics: 'Electronics', mobile_phone: 'Electronics', computer: 'Electronics',
+  hifi: 'Electronics', camera: 'Electronics', video_games: 'Electronics',
+  // Hardware & Home
+  hardware: 'Hardware', doityourself: 'Hardware', paint: 'Hardware',
+  glaziery: 'Hardware', plumber: 'Hardware', electrical: 'Hardware',
+  furniture: 'Furniture', interior_decoration: 'Furniture', carpet: 'Furniture',
+  // Education
+  school: 'Education', college: 'Education', university: 'Education',
+  tutoring: 'Education', language_school: 'Education', driving_school: 'Education',
+  music_school: 'Education', dance: 'Education', library: 'Education',
+  // Finance & Banking
+  bank: 'Finance', atm: 'Finance', money_transfer: 'Finance',
+  bureau_de_change: 'Finance', insurance: 'Finance', financial_advisor: 'Finance',
+  // Hospitality & Travel
+  hotel: 'Hospitality', hostel: 'Hospitality', guest_house: 'Hospitality',
+  motel: 'Hospitality', travel_agency: 'Hospitality', car_rental: 'Hospitality',
+  // Laundry & Cleaning
+  laundry: 'Laundry', dry_cleaning: 'Laundry', laundromat: 'Laundry',
+  // Retail & General
+  jewellery: 'Jewellery', gold: 'Jewellery', watches: 'Jewellery',
+  stationery: 'Retail', books: 'Retail', toys: 'Retail',
+  gift: 'Retail', florist: 'Retail', art: 'Retail', photo: 'Retail',
+  // Automotive
+  car: 'Automotive', car_repair: 'Automotive', car_parts: 'Automotive',
+  tyres: 'Automotive', fuel: 'Automotive', motorcycle: 'Automotive',
+  bicycle: 'Automotive', car_wash: 'Automotive',
+  // Food Processing & Wholesale
+  wholesale: 'Wholesale', warehouse: 'Wholesale',
 };
 
-// Fetch real businesses from Overpass API (free, no key needed)
+// Fetch real businesses from Overpass API — expanded query
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
   try {
-    // Only nodes (faster than ways), focused tag list
     const query = `
-      [out:json][timeout:20];
+      [out:json][timeout:30];
       (
-        node["amenity"~"restaurant|cafe|fast_food|pharmacy|gym|bakery|laundry|bar|pub|hotel|hospital|clinic|school|bank|atm"](around:${radiusMeters},${lat},${lng});
-        node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile|jewellery|hardware|bakery|optician|books|sports|furniture"](around:${radiusMeters},${lat},${lng});
+        node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
+        node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
+        node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|insurance|financial|consulting|government|ngo"](around:${radiusMeters},${lat},${lng});
+        node["leisure"~"fitness_centre|sports_centre|swimming_pool|yoga|martial_arts"](around:${radiusMeters},${lat},${lng});
       );
       out body;
     `;
     const res = await axios.post('https://overpass-api.de/api/interpreter',
       `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 25000 }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 35000 }
     );
     return res.data.elements.map((el) => {
       const tags = el.tags || {};
-      const rawCat = tags.amenity || tags.shop || 'Other';
+      const rawCat = tags.amenity || tags.shop || tags.office || tags.leisure || 'Other';
       const elLat = el.lat;
       const elLon = el.lon;
 
@@ -223,9 +264,14 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
       ].filter(Boolean);
       const address = tags['addr:full'] || (addrParts.length > 0 ? addrParts.join(', ') : null) || null;
 
+      // Map office types to Office category
+      let category = osmToCategory[rawCat];
+      if (!category && tags.office) category = 'Office';
+      if (!category) category = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).replace(/_/g, ' ');
+
       return {
-        name: tags.name || `Unnamed ${rawCat}`,
-        category: osmToCategory[rawCat] || rawCat.charAt(0).toUpperCase() + rawCat.slice(1),
+        name: tags.name || `${category} (unnamed)`,
+        category,
         rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
         reviewCount: Math.floor(Math.random() * 300 + 10),
         address: address || `Near ${elLat?.toFixed(3)}, ${elLon?.toFixed(3)}`,
@@ -234,7 +280,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
         latitude: elLat,
         longitude: elLon,
       };
-    }).filter(b => b.latitude && b.longitude);
+    }).filter(b => b.latitude && b.longitude && b.name);
   } catch (e) {
     console.log('Overpass API failed:', e.message);
     return [];
@@ -243,7 +289,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
 
 // In-memory cache (location -> result, TTL 30 mins)
 const cache = new Map();
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+const CACHE_TTL = 1 * 60 * 60 * 1000; // 1 hour (reduced so new data shows faster)
 
 const getCached = (key) => {
   const entry = cache.get(key);

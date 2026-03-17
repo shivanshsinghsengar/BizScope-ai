@@ -10,8 +10,24 @@ import { useAuth } from '../context/AuthContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
-const categoryColors = { Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#10b981', Gym: '#3b82f6', Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1', Other: '#64748b' };
-const categoryIcons = { Restaurant: '🍽️', Cafe: '☕', Grocery: '🛒', Gym: '💪', Salon: '✂️', Pharmacy: '💊', Bakery: '🥐', Laundry: '👕', Other: '🏪' };
+const categoryColors = {
+  Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#10b981', Gym: '#3b82f6',
+  Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1',
+  Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
+  Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
+  Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
+  Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
+  Office: '#6366f1', Other: '#64748b',
+};
+const categoryIcons = {
+  Restaurant: '🍽️', Cafe: '☕', Grocery: '🛒', Gym: '💪',
+  Salon: '✂️', Pharmacy: '💊', Bakery: '🥐', Laundry: '👕',
+  Hospital: '🏥', Clothing: '👗', Electronics: '📱',
+  Hardware: '🔧', Furniture: '🛋️', Education: '🎓',
+  Jewellery: '💍', Automotive: '🚗', Finance: '🏦',
+  Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
+  Office: '🏢', Other: '🏪',
+};
 
 export default function Dashboard() {
   const data = useAnalysis();

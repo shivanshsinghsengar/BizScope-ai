@@ -84,6 +84,19 @@ export default function HowItWorks() {
             ['pharmacy, chemist, drugstore', 'Pharmacy'],
             ['bakery, pastry', 'Bakery'],
             ['laundry, dry_cleaning', 'Laundry'],
+            ['hospital, clinic, doctors, dentist', 'Hospital'],
+            ['clothes, shoes, boutique, fashion', 'Clothing'],
+            ['electronics, mobile_phone, computer', 'Electronics'],
+            ['hardware, doityourself, paint', 'Hardware'],
+            ['furniture, interior_decoration', 'Furniture'],
+            ['school, college, university, tutoring', 'Education'],
+            ['jewellery, gold, watches', 'Jewellery'],
+            ['car, car_repair, fuel, motorcycle', 'Automotive'],
+            ['bank, atm, money_transfer', 'Finance'],
+            ['hotel, hostel, guest_house', 'Hospitality'],
+            ['stationery, books, toys, florist', 'Retail'],
+            ['wholesale, warehouse', 'Wholesale'],
+            ['office=company/it/lawyer/accountant', 'Office'],
           ].map(([tags, cat]) => (
             <div key={cat} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 14px', fontSize: '12px' }}>
               <span style={{ color: 'var(--muted)', fontFamily: 'monospace' }}>{tags}</span>
