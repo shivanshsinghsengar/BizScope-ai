@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const OpenAI = require('openai');
 const { Sequelize, DataTypes } = require('sequelize');
 const axios = require('axios');
-const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
@@ -26,24 +25,13 @@ app.use('/api/', generalLimiter);
 app.use('/api/analyze-location', analysisLimiter);
 app.use('/api/auth/', authLimiter);
 
-// Auto-create database
-const ensureDatabase = async () => {
-  const client = new Client({
-    host: 'localhost', user: 'postgres',
-    password: process.env.DB_PASSWORD, database: 'postgres',
-  });
-  await client.connect();
-  const res = await client.query("SELECT 1 FROM pg_database WHERE datname='bizscope'");
-  if (res.rowCount === 0) {
-    await client.query('CREATE DATABASE bizscope');
-    console.log('Database bizscope created');
-  }
-  await client.end();
-};
-
 // Database
-const sequelize = new Sequelize('bizscope', 'postgres', process.env.DB_PASSWORD, {
-  host: 'localhost', dialect: 'postgres', logging: false,
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: { require: true, rejectUnauthorized: false }
+  }
 });
 
 // Models
@@ -642,10 +630,8 @@ app.get('/api/businesses/:lat/:lng', async (req, res) => {
 });
 
 // Initialize DB and start
-ensureDatabase().then(() => {
-  sequelize.sync({ force: false }).then(async () => {
-    console.log('Database synced');
-  });
+sequelize.sync({ force: false }).then(async () => {
+  console.log('Database synced');
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
