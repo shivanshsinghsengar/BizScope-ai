@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -25,7 +26,7 @@ export default function ListBusiness() {
   }, [user]);
 
   const fetchMyBusinesses = async () => {
-    const res = await fetch('http://localhost:5000/api/businesses/my', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API_URL}/api/businesses/my`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     setMyBusinesses(Array.isArray(data) ? data : []);
   };
@@ -35,8 +36,8 @@ export default function ListBusiness() {
     setLoading(true); setError(''); setSuccess('');
     try {
       const url = editingId
-        ? `http://localhost:5000/api/businesses/manual/${editingId}`
-        : 'http://localhost:5000/api/businesses/manual';
+        ? `${API_URL}/api/businesses/manual/${editingId}`
+        : `${API_URL}/api/businesses/manual`;
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -61,7 +62,7 @@ export default function ListBusiness() {
 
   const handleDelete = async (id) => {
     if (!confirm('Remove this listing?')) return;
-    await fetch(`http://localhost:5000/api/businesses/manual/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await fetch(`${API_URL}/api/businesses/manual/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     fetchMyBusinesses();
   };
 

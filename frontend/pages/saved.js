@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -12,13 +13,13 @@ export default function SavedSearches() {
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
-    fetch('http://localhost:5000/api/searches', { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/api/searches`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setSearches(Array.isArray(d) ? d : []); setLoading(false); });
   }, [user]);
 
   const load = async (id) => {
-    const res = await fetch(`http://localhost:5000/api/searches/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API_URL}/api/searches/${id}`, { headers: { Authorization: `Bearer ${token}` } });
     const s = await res.json();
     if (s.data) {
       sessionStorage.setItem('analysisData', JSON.stringify(s.data));
@@ -27,7 +28,7 @@ export default function SavedSearches() {
   };
 
   const remove = async (id) => {
-    await fetch(`http://localhost:5000/api/searches/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await fetch(`${API_URL}/api/searches/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setSearches(s => s.filter(x => x.id !== id));
   };
 

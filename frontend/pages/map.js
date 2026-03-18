@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
@@ -21,8 +22,8 @@ export default function MapPage() {
 
   const loadMapData = async (lat, lng) => {
     const [bizRes, propRes] = await Promise.all([
-      fetch(`http://localhost:5000/api/businesses/${lat}/${lng}`),
-      fetch(`http://localhost:5000/api/properties/${lat}/${lng}`),
+      fetch(`${API_URL}/api/businesses/${lat}/${lng}`),
+      fetch(`${API_URL}/api/properties/${lat}/${lng}`),
     ]);
     setBusinesses(await bizRes.json());
     setProperties(await propRes.json());

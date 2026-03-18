@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import { useState } from 'react';
 
 const categories = ['Restaurant','Cafe','Grocery','Gym','Salon','Pharmacy','Bakery','Laundry','Retail','Electronics','Clothing','Hardware','Medical','Education','Finance','Hospitality','Other'];
@@ -15,7 +16,7 @@ export default function SuggestBusiness() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/suggestions', {
+      const res = await fetch(`${API_URL}/api/suggestions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

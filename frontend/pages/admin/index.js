@@ -1,3 +1,4 @@
+import API_URL from '../../utils/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -22,8 +23,8 @@ export default function AdminPanel() {
     if (!token) return;
     setLoading(true);
     Promise.all([
-      fetch('http://localhost:5000/api/admin/suggestions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('http://localhost:5000/api/admin/users', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/suggestions`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_URL}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([s, u]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
@@ -32,7 +33,7 @@ export default function AdminPanel() {
   }, [token]);
 
   const updateStatus = async (id, status) => {
-    await fetch(`http://localhost:5000/api/admin/suggestions/${id}`, {
+    await fetch(`${API_URL}/api/admin/suggestions/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
     });
@@ -41,7 +42,7 @@ export default function AdminPanel() {
 
   const deleteSuggestion = async (id) => {
     if (!confirm('Delete this suggestion?')) return;
-    await fetch(`http://localhost:5000/api/admin/suggestions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await fetch(`${API_URL}/api/admin/suggestions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setSuggestions(s => s.filter(x => x.id !== id));
   };
 

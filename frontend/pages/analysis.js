@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import Head from 'next/head';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { useState } from 'react';
@@ -38,7 +39,7 @@ export default function Dashboard() {
   const saveSearch = async () => {
     if (!user) return;
     try {
-      await fetch('http://localhost:5000/api/searches/save', {
+      await fetch(`${API_URL}/api/searches/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ location: data.location?.displayName, displayName: data.location?.displayName?.split(',').slice(0, 2).join(','), data }),

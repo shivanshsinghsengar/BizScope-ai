@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -18,7 +19,7 @@ export default function Home() {
     setLoading(true); setError('');
     try {
       const location = `${form.address}, ${form.city}, ${form.pincode}`;
-      const res = await fetch('http://localhost:5000/api/analyze-location', {
+      const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ location }),
       });

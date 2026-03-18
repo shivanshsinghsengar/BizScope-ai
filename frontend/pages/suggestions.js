@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
@@ -13,7 +14,7 @@ export default function Suggestions() {
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
-    fetch('http://localhost:5000/api/suggestions', {
+    fetch(`${API_URL}/api/suggestions`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())

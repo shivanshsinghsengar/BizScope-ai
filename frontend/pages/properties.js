@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
@@ -19,7 +20,7 @@ export default function Properties() {
   useEffect(() => {
     if (data?.userLat && data?.userLng) {
       setLoading(true);
-      fetch(`http://localhost:5000/api/properties/${data.userLat}/${data.userLng}`)
+      fetch(`${API_URL}/api/properties/${data.userLat}/${data.userLng}`)
         .then(r => r.json())
         .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false); })
         .catch(() => setLoading(false));

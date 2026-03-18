@@ -1,3 +1,4 @@
+import API_URL from '../utils/api';
 import Head from 'next/head';
 import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
@@ -41,7 +42,7 @@ export default function Insights() {
       const interval = setInterval(async () => {
         attempts++;
         try {
-          const res = await fetch('http://localhost:5000/api/analyze-location', {
+          const res = await fetch(`${API_URL}/api/analyze-location`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ location }),
