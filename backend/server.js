@@ -204,7 +204,7 @@ const osmToCategory = {
   bank: 'Finance', atm: 'Finance', money_transfer: 'Finance',
   bureau_de_change: 'Finance', insurance: 'Finance', financial_advisor: 'Finance',
   // Hotel (dedicated category)
-  hotel: 'Hotel', hostel: 'Hotel', guest_house: 'Hotel', motel: 'Hotel',
+  hotel: 'Hotel', hostel: 'Hotel', guest_house: 'Hotel', motel: 'Hotel', resort: 'Hotel',
   // Hospitality & Travel
   travel_agency: 'Hospitality', car_rental: 'Hospitality',
   // Laundry & Cleaning
@@ -228,6 +228,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
       [out:json][timeout:30];
       (
         node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
+        node["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
         node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
         node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|insurance|financial|consulting|government|ngo"](around:${radiusMeters},${lat},${lng});
         node["leisure"~"fitness_centre|sports_centre|swimming_pool|yoga|martial_arts"](around:${radiusMeters},${lat},${lng});
@@ -240,7 +241,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
     );
     return res.data.elements.map((el) => {
       const tags = el.tags || {};
-      const rawCat = tags.amenity || tags.shop || tags.office || tags.leisure || 'Other';
+      const rawCat = tags.amenity || tags.shop || tags.office || tags.leisure || tags.tourism || 'Other';
       const elLat = el.lat;
       const elLon = el.lon;
 
