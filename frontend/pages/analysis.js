@@ -2,6 +2,7 @@ import API_URL from '../utils/api';
 import Head from 'next/head';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
@@ -17,7 +18,7 @@ const categoryColors = {
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
   Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
-  Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
+  Hotel: '#0ea5e9', Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
   Office: '#6366f1', Other: '#64748b',
 };
 const categoryIcons = {
@@ -26,13 +27,14 @@ const categoryIcons = {
   Hospital: '🏥', Clothing: '👗', Electronics: '📱',
   Hardware: '🔧', Furniture: '🛋️', Education: '🎓',
   Jewellery: '💍', Automotive: '🚗', Finance: '🏦',
-  Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
+  Hotel: '🏩', Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
   Office: '🏢', Other: '🏪',
 };
 
 export default function Dashboard() {
   const data = useAnalysis();
   const { user, token } = useAuth();
+  const router = useRouter();
   const [saved, setSaved] = useState(false);
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
@@ -127,15 +129,20 @@ export default function Dashboard() {
         {/* Category cards */}
         <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
           {data.categoryStats?.map((s, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#6366f1')}25`, borderRadius: '16px', padding: '20px', transition: 'transform 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div key={i}
+              onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
+              style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#6366f1')}25`, borderRadius: '16px', padding: '20px', transition: 'transform 0.2s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${(categoryColors[s.category] || '#6366f1')}20`; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '60'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '25'; }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '22px' }}>{categoryIcons[s.category] || '🏪'}</span>
                   <span style={{ fontWeight: '600', color: 'var(--text)', fontSize: '14px' }}>{s.category}</span>
                 </div>
-                <span style={{ fontSize: '22px', fontWeight: '800', color: categoryColors[s.category] || '#6366f1' }}>{s.count}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '22px', fontWeight: '800', color: categoryColors[s.category] || '#6366f1' }}>{s.count}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>→</span>
+                </div>
               </div>
               <div style={{ height: '4px', background: 'var(--surface2)', borderRadius: '2px', marginBottom: '12px' }}>
                 <div style={{ height: '100%', borderRadius: '2px', background: categoryColors[s.category] || '#6366f1', width: `${Math.min((s.count / (data.businesses?.length || 1)) * 300, 100)}%` }} />
@@ -144,6 +151,7 @@ export default function Dashboard() {
                 <span>⭐ {s.avgRating} avg rating</span>
                 <span>Score: <span style={{ color: categoryColors[s.category] || '#6366f1', fontWeight: '600' }}>{s.competitorScore?.toFixed(1)}</span></span>
               </div>
+              <div style={{ marginTop: '10px', fontSize: '11px', color: categoryColors[s.category] || '#6366f1', fontWeight: '600' }}>View competitors →</div>
             </div>
           ))}
         </div>

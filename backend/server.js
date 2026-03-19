@@ -203,9 +203,10 @@ const osmToCategory = {
   // Finance & Banking
   bank: 'Finance', atm: 'Finance', money_transfer: 'Finance',
   bureau_de_change: 'Finance', insurance: 'Finance', financial_advisor: 'Finance',
+  // Hotel (dedicated category)
+  hotel: 'Hotel', hostel: 'Hotel', guest_house: 'Hotel', motel: 'Hotel',
   // Hospitality & Travel
-  hotel: 'Hospitality', hostel: 'Hospitality', guest_house: 'Hospitality',
-  motel: 'Hospitality', travel_agency: 'Hospitality', car_rental: 'Hospitality',
+  travel_agency: 'Hospitality', car_rental: 'Hospitality',
   // Laundry & Cleaning
   laundry: 'Laundry', dry_cleaning: 'Laundry', laundromat: 'Laundry',
   // Retail & General

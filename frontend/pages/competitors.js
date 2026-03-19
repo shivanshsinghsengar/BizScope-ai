@@ -1,5 +1,6 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
@@ -10,7 +11,7 @@ const categoryColors = {
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
   Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
-  Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
+  Hotel: '#0ea5e9', Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
   Office: '#6366f1', Other: '#64748b',
 };
 const categoryIcons = {
@@ -19,15 +20,23 @@ const categoryIcons = {
   Hospital: '🏥', Clothing: '👗', Electronics: '📱',
   Hardware: '🔧', Furniture: '🛋️', Education: '🎓',
   Jewellery: '💍', Automotive: '🚗', Finance: '🏦',
-  Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
+  Hotel: '🏩', Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
   Office: '🏢', Other: '🏪',
 };
 
 export default function Competitors() {
   const data = useAnalysis();
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('rating');
+
+  // Sync filter with URL query param ?category=
+  useEffect(() => {
+    if (router.query.category) {
+      setFilter(router.query.category);
+    }
+  }, [router.query.category]);
 
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
@@ -58,7 +67,10 @@ export default function Competitors() {
         {/* Category pills */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
           {categories.map(cat => (
-            <button key={cat} onClick={() => setFilter(cat)}
+            <button key={cat} onClick={() => {
+              setFilter(cat);
+              router.replace({ pathname: '/competitors', query: cat === 'All' ? {} : { category: cat } }, undefined, { shallow: true });
+            }}
               style={{ padding: '8px 18px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: filter === cat ? (categoryColors[cat] || '#6366f1') : 'var(--surface2)', color: filter === cat ? 'white' : 'var(--muted)', boxShadow: filter === cat ? `0 4px 15px ${(categoryColors[cat] || '#6366f1')}40` : 'none' }}>
               {cat === 'All' ? '🌐 All' : `${categoryIcons[cat] || '🏪'} ${cat}`}
             </button>
