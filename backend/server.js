@@ -278,7 +278,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
 
 // In-memory cache (location -> result, TTL 30 mins)
 const cache = new Map();
-const CACHE_TTL = 1 * 60 * 60 * 1000; // 1 hour (reduced so new data shows faster)
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 const getCached = (key) => {
   const entry = cache.get(key);
@@ -456,14 +456,18 @@ app.get('/api/suggestions', authMiddleware, async (req, res) => {
 // 1. Location Analysis
 app.post('/api/analyze-location', async (req, res) => {
   try {
-    const { location } = req.body;
+    const { location, nocache } = req.body;
     const cacheKey = location.toLowerCase().trim();
 
-    // Return cached result instantly
-    const cached = getCached(cacheKey);
-    if (cached) {
-      console.log('Cache hit:', cacheKey);
-      return res.json(cached);
+    // Return cached result instantly (skip if nocache requested)
+    if (!nocache) {
+      const cached = getCached(cacheKey);
+      if (cached) {
+        console.log('Cache hit:', cacheKey);
+        return res.json(cached);
+      }
+    } else {
+      cache.delete(cacheKey);
     }
 
     // Geocode first
@@ -628,6 +632,13 @@ app.get('/api/businesses/:lat/:lng', async (req, res) => {
     longitude: parseFloat(lng) + (Math.random() - 0.5) * 0.01,
   }));
   res.json(mock);
+});
+
+// Cache bust endpoint (admin only)
+app.post('/api/admin/clear-cache', adminAuth, (req, res) => {
+  cache.clear();
+  geocodeCache.clear();
+  res.json({ success: true, message: 'Cache cleared' });
 });
 
 // Initialize DB and start
