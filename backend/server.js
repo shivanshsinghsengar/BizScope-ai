@@ -123,14 +123,16 @@ Based on this real data, suggest the 5 best businesses to start in ${cityName}. 
 Keep it practical and specific to ${cityName}.`;
 
   // Try Gemini first (free)
-  if (genAI && process.env.GEMINI_API_KEY !== 'your_gemini_key_here') {
+  if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (e) {
-      console.log('Gemini failed, trying OpenAI:', e.message);
+      console.log('Gemini failed:', e.message);
     }
+  } else {
+    console.log('Gemini not configured, GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'set' : 'missing');
   }
 
   // Fallback to OpenAI
