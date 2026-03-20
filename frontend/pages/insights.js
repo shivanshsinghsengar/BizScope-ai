@@ -24,7 +24,44 @@ const categoryIcons = {
   Office: '🏢', Other: '🏪',
 };
 
-export default function Insights() {
+// Smart area suggestions per category type
+const categoryAreaHints = {
+  Restaurant: { zone: 'busy market or food street', why: 'High foot traffic from shoppers and office workers' },
+  Cafe: { zone: 'college area or IT hub', why: 'Students and young professionals are regular customers' },
+  Grocery: { zone: 'residential colony or housing society', why: 'Daily need — residents prefer nearby stores' },
+  Gym: { zone: 'residential or office area', why: 'Working professionals need fitness centers close to home/work' },
+  Salon: { zone: 'main market or shopping street', why: 'Walk-in customers from nearby shops and offices' },
+  Pharmacy: { zone: 'near hospital or clinic cluster', why: 'Patients need medicines immediately after consultation' },
+  Bakery: { zone: 'school zone or residential area', why: 'Morning rush from school kids and families' },
+  Laundry: { zone: 'PG/hostel area or working professional zone', why: 'Bachelors and working people outsource laundry' },
+  Hospital: { zone: 'central or well-connected area', why: 'Accessibility is critical for medical emergencies' },
+  Clothing: { zone: 'main bazaar or shopping complex', why: 'Shoppers compare options — clusters attract more buyers' },
+  Electronics: { zone: 'electronics market or commercial hub', why: 'Buyers prefer areas with multiple options to compare' },
+  Hardware: { zone: 'industrial area or construction zone', why: 'Contractors and builders need nearby supply' },
+  Furniture: { zone: 'furniture market lane or new residential area', why: 'New homeowners buy furniture in bulk' },
+  Education: { zone: 'school/college zone or residential area', why: 'Parents prefer coaching centers close to schools' },
+  Jewellery: { zone: 'main market or wedding shopping area', why: 'Trust and visibility matter — busy markets build both' },
+  Automotive: { zone: 'highway or transport nagar', why: 'Vehicle owners prefer service centers on main roads' },
+  Finance: { zone: 'commercial or business district', why: 'Businesses and professionals need financial services nearby' },
+  Hotel: { zone: 'tourist area, railway station, or bus stand', why: 'Travelers need accommodation near transit points' },
+  Hospitality: { zone: 'tourist spot or city center', why: 'Visitors and travelers are the primary customers' },
+  Retail: { zone: 'high street or shopping mall area', why: 'Impulse buying happens in high-footfall zones' },
+  Wholesale: { zone: 'mandi or wholesale market area', why: 'Buyers come specifically to wholesale zones for bulk deals' },
+  Office: { zone: 'business park or commercial complex', why: 'Clients and employees prefer professional environments' },
+};
+
+const getAreaSuggestion = (category, cityName, index) => {
+  const hint = categoryAreaHints[category] || { zone: 'main market area', why: 'High visibility and foot traffic' };
+  // Vary the phrasing so each card looks different
+  const phrases = [
+    `Look for space in the ${hint.zone} of ${cityName}`,
+    `Target the ${hint.zone} near ${cityName} city center`,
+    `Best spot: ${hint.zone} in ${cityName}`,
+    `Open near the ${hint.zone} in ${cityName}`,
+    `Scout the ${hint.zone} around ${cityName}`,
+  ];
+  return { area: phrases[index % phrases.length], why: hint.why };
+};
   const data = useAnalysis();
   const [aiText, setAiText] = useState(null);
   const [polling, setPolling] = useState(false);
@@ -110,7 +147,9 @@ export default function Insights() {
               <div style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '14px 18px', marginBottom: '12px', fontSize: '13px', color: 'var(--muted)' }}>
                 ℹ️ AI key not configured — showing data-driven recommendations instead.
               </div>
-              {[...data.categoryStats].reverse().slice(0, 5).map((s, i) => (
+              {[...data.categoryStats].reverse().slice(0, 5).map((s, i) => {
+                const areaSug = getAreaSuggestion(s.category, cityName, i);
+                return (
                 <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px 20px', marginBottom: '10px', borderLeft: `3px solid ${categoryColors[s.category] || '#6366f1'}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>{categoryIcons[s.category] || '🏪'} {s.category}</span>
@@ -123,14 +162,18 @@ export default function Insights() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '10px' }}>
                     {s.count} competitor{s.count !== 1 ? 's' : ''} nearby · avg rating {s.avgRating} · {s.riskLevel === 'Low' ? 'Great entry opportunity with low competition.' : s.riskLevel === 'Medium' ? 'Moderate competition — differentiation needed.' : 'Highly saturated — strong USP required.'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    📍 Suggested area: <span style={{ fontWeight: '600' }}>Main market or high foot-traffic zone in {cityName}</span>
+                  <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#a78bfa', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      📍 {areaSug.area}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>💡 {areaSug.why}</div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div style={{ color: 'var(--text2)', lineHeight: '1.9', fontSize: '15px', whiteSpace: 'pre-line' }}>{aiText}</div>
