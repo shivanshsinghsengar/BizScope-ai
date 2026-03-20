@@ -142,6 +142,7 @@ const getSuppliers = (category) =>
   ];
 
 export default function Insights() {
+  const data = useAnalysis();
   const [aiText, setAiText] = useState(null);
   const [polling, setPolling] = useState(false);
   const [selectedCat, setSelectedCat] = useState(null);
