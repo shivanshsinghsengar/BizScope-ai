@@ -343,10 +343,10 @@ export default function Insights() {
         <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
           {data.categoryStats?.map((s, i) => (
             <div key={i}
-              onClick={() => setSelectedCat(selectedCat === s.category ? null : s.category)}
-              style={{ background: 'var(--surface)', border: `2px solid ${selectedCat === s.category ? (categoryColors[s.category] || '#6366f1') : (categoryColors[s.category] || '#6366f1') + '20'}`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+              onClick={() => setSelectedCat(s.category)}
+              style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#6366f1')}20`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '60'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '20'; }}>
               <div style={{ fontSize: '28px', marginBottom: '10px' }}>{categoryIcons[s.category] || '🏪'}</div>
               <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '6px' }}>{s.category}</div>
               <div style={{ fontSize: '28px', fontWeight: '800', color: categoryColors[s.category] || '#6366f1', marginBottom: '4px' }}>{s.count}</div>
@@ -354,52 +354,70 @@ export default function Insights() {
               <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#10b98115' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
                 {s.riskLevel === 'Low' ? '🟢 Low Risk' : s.riskLevel === 'Medium' ? '🟡 Medium Risk' : '🔴 High Risk'}
               </div>
-              <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '6px', fontWeight: '600' }}>
-                {selectedCat === s.category ? '▲ Hide suppliers' : '📦 View suppliers'}
-              </div>
+              <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '6px', fontWeight: '600' }}>📦 View suppliers</div>
             </div>
           ))}
         </div>
 
-        {/* Suppliers Panel */}
+        {/* Suppliers Modal */}
         {selectedCat && (() => {
           const suppliers = getSuppliers(selectedCat);
           const color = categoryColors[selectedCat] || '#6366f1';
           return (
-            <div style={{ background: 'var(--surface)', border: `1px solid ${color}30`, borderRadius: '24px', padding: '28px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${color}, transparent)` }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `${color}20`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                  📦
-                </div>
-                <div>
-                  <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text)' }}>Material Suppliers — {selectedCat}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Where to source materials to start your {selectedCat.toLowerCase()} business</div>
-                </div>
-                <button onClick={() => setSelectedCat(null)} style={{ marginLeft: 'auto', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', color: 'var(--muted)', fontSize: '13px' }}>✕ Close</button>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-                {suppliers.map((s, i) => (
-                  <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px', border: `1px solid ${color}15`, transition: 'all 0.2s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = color + '50'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = color + '15'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{s.name}</div>
-                      <span style={{ padding: '2px 8px', borderRadius: '100px', background: `${color}20`, color, fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>{s.tag}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '12px', lineHeight: '1.5' }}>{s.type}</div>
-                    {s.url ? (
-                      <a href={s.url} target="_blank" rel="noopener noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color, fontWeight: '600', textDecoration: 'none' }}>
-                        Visit website →
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>Search locally in {cityName}</span>
-                    )}
+            <>
+              {/* Backdrop */}
+              <div onClick={() => setSelectedCat(null)}
+                style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} />
+              {/* Dialog */}
+              <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 600, width: '90%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto', background: 'var(--surface)', border: `1px solid ${color}40`, borderRadius: '24px', padding: '32px', boxShadow: `0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px ${color}20` }}>
+                {/* Top accent */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '24px 24px 0 0', background: `linear-gradient(90deg, ${color}, transparent)` }} />
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: `${color}20`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', flexShrink: 0 }}>
+                    {categoryIcons[selectedCat] || '🏪'}
                   </div>
-                ))}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)' }}>📦 {selectedCat} Suppliers</div>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px' }}>Where to source materials to start your {selectedCat.toLowerCase()} business</div>
+                  </div>
+                  <button onClick={() => setSelectedCat(null)}
+                    style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--muted)', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    ✕
+                  </button>
+                </div>
+                {/* Supplier cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {suppliers.map((sup, i) => (
+                    <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px 20px', border: `1px solid ${color}15`, display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = color + '50'; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = color + '15'; e.currentTarget.style.transform = 'translateX(0)'; }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                        {sup.tag === 'Online B2B' ? '🌐' : sup.tag === 'Wholesale' || sup.tag === 'Wholesale Market' ? '🏭' : sup.tag === 'Local Market' || sup.tag === 'Local Supplier' ? '📍' : sup.tag === 'Online' ? '🛒' : '🏪'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{sup.name}</span>
+                          <span style={{ padding: '2px 8px', borderRadius: '100px', background: `${color}20`, color, fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap' }}>{sup.tag}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: '1.5' }}>{sup.type}</div>
+                      </div>
+                      {sup.url ? (
+                        <a href={sup.url} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color, fontWeight: '700', textDecoration: 'none', whiteSpace: 'nowrap', padding: '8px 14px', borderRadius: '10px', background: `${color}15`, border: `1px solid ${color}30`, flexShrink: 0 }}>
+                          Visit →
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic', whiteSpace: 'nowrap', flexShrink: 0 }}>Local in {cityName}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: '20px', padding: '14px 16px', background: `${color}10`, borderRadius: '12px', fontSize: '12px', color: 'var(--muted)', textAlign: 'center' }}>
+                  💡 Tip: Compare prices from at least 3 suppliers before finalizing your vendor
+                </div>
               </div>
-            </div>
+            </>
           );
         })()}
       </div>
