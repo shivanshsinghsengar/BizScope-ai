@@ -11,7 +11,7 @@ const categoryColors = {
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
   Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
-  Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
+  Hotel: '#0ea5e9', Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
   Office: '#6366f1', Other: '#64748b',
 };
 const categoryIcons = {
@@ -20,7 +20,7 @@ const categoryIcons = {
   Hospital: '🏥', Clothing: '👗', Electronics: '📱',
   Hardware: '🔧', Furniture: '🛋️', Education: '🎓',
   Jewellery: '💍', Automotive: '🚗', Finance: '🏦',
-  Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
+  Hotel: '🏩', Hospitality: '🏨', Retail: '🛍️', Wholesale: '📦',
   Office: '🏢', Other: '🏪',
 };
 
@@ -77,7 +77,9 @@ export default function Insights() {
 
         <div style={{ marginBottom: '28px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>🤖 AI Insights</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>Market intelligence and business recommendations</p>
+          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
+            Market intelligence for <span style={{ color: '#a78bfa', fontWeight: '600' }}>{data.location?.displayName?.split(',').slice(0, 2).join(', ')}</span>
+          </p>
         </div>
 
         {/* AI Suggestions */}

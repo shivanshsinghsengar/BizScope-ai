@@ -106,15 +106,21 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
 const getAISuggestions = async (location, categoryStats) => {
-  const prompt = `You are a business consultant. Analyze this market data for ${location}:
+  const cityName = location.split(',')[0].trim();
+  const prompt = `You are a business consultant specializing in Indian markets. A user wants to start a business in ${cityName}.
+
+Here is the current market data for ${cityName} (businesses found within 5km):
 ${JSON.stringify(categoryStats, null, 2)}
-Suggest the 5 best businesses to start here. For each, provide:
+
+Based on this real data, suggest the 5 best businesses to start in ${cityName}. For each business:
 - Business type
+- Why it suits ${cityName} specifically (mention local context if relevant — e.g. tourism in Agra, IT in Bangalore, etc.)
 - Demand score (1-10)
-- Saturation level (Low/Medium/High) — means how crowded the market is
+- Saturation level (Low/Medium/High)
 - Estimated monthly profit in INR
-- One key reason why it's a good opportunity
-Keep it concise and practical.`;
+- One key action to stand out from competitors
+
+Keep it practical and specific to ${cityName}.`;
 
   // Try Gemini first (free)
   if (genAI && process.env.GEMINI_API_KEY !== 'your_gemini_key_here') {
