@@ -62,9 +62,89 @@ const getAreaSuggestion = (category, cityName, index) => {
   ];
   return { area: phrases[index % phrases.length], why: hint.why };
 };
-  const data = useAnalysis();
+
+// Suppliers per category
+const categorySuppliers = {
+  Restaurant: [
+    { name: 'Metro Cash & Carry', type: 'Wholesale food & kitchen supplies', url: 'https://www.metro.co.in', tag: 'Wholesale' },
+    { name: 'IndiaMART', type: 'Raw ingredients, utensils, equipment', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Local Mandi / APMC', type: 'Fresh vegetables, grains, spices', url: null, tag: 'Local Market' },
+    { name: 'Pepperfry Business', type: 'Restaurant furniture & interiors', url: 'https://www.pepperfry.com', tag: 'Furniture' },
+  ],
+  Cafe: [
+    { name: 'Blue Tokai Coffee', type: 'Premium coffee beans & equipment', url: 'https://bluetokaicoffee.com', tag: 'Coffee' },
+    { name: 'IndiaMART', type: 'Espresso machines, grinders, cups', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Nescafé / HUL Distributors', type: 'Instant coffee, tea, beverages', url: null, tag: 'FMCG Distributor' },
+    { name: 'Amazon Business', type: 'Cafe furniture, decor, packaging', url: 'https://business.amazon.in', tag: 'Online' },
+  ],
+  Grocery: [
+    { name: 'Metro Cash & Carry', type: 'Bulk FMCG, packaged goods', url: 'https://www.metro.co.in', tag: 'Wholesale' },
+    { name: 'Local APMC Mandi', type: 'Fresh produce, grains, pulses', url: null, tag: 'Local Market' },
+    { name: 'HUL / ITC Distributors', type: 'Branded FMCG products', url: null, tag: 'FMCG Distributor' },
+    { name: 'Udaan', type: 'B2B grocery wholesale platform', url: 'https://udaan.com', tag: 'Online B2B' },
+  ],
+  Pharmacy: [
+    { name: 'Medline / Stockist', type: 'Medicines from local pharma stockist', url: null, tag: 'Local Stockist' },
+    { name: 'PharmEasy B2B', type: 'Bulk medicine procurement', url: 'https://pharmeasy.in', tag: 'Online B2B' },
+    { name: 'IndiaMART', type: 'Medical equipment, shelving, billing software', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Sun Pharma / Cipla Distributors', type: 'Branded medicines wholesale', url: null, tag: 'Pharma Distributor' },
+  ],
+  Gym: [
+    { name: 'Kore Fitness', type: 'Gym equipment — treadmills, weights', url: 'https://www.korefitness.in', tag: 'Equipment' },
+    { name: 'IndiaMART', type: 'Bulk gym equipment at wholesale price', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Amazon Business', type: 'Accessories, mats, supplements display', url: 'https://business.amazon.in', tag: 'Online' },
+    { name: 'Local Steel Fabricator', type: 'Custom racks, benches, frames', url: null, tag: 'Local Supplier' },
+  ],
+  Salon: [
+    { name: 'Wella / L\'Oréal Distributors', type: 'Hair color, shampoo, styling products', url: null, tag: 'Brand Distributor' },
+    { name: 'IndiaMART', type: 'Salon chairs, mirrors, equipment', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Nykaa B2B', type: 'Beauty & skincare products wholesale', url: 'https://www.nykaa.com', tag: 'Beauty Wholesale' },
+    { name: 'Amazon Business', type: 'Towels, tools, disposables', url: 'https://business.amazon.in', tag: 'Online' },
+  ],
+  Bakery: [
+    { name: 'Local Flour Mill / Atta Chakki', type: 'Wheat flour, maida, suji in bulk', url: null, tag: 'Local Supplier' },
+    { name: 'IndiaMART', type: 'Baking ovens, mixers, molds', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Metro Cash & Carry', type: 'Butter, sugar, dairy, packaging', url: 'https://www.metro.co.in', tag: 'Wholesale' },
+    { name: 'Amazon Business', type: 'Baking tools, display cases', url: 'https://business.amazon.in', tag: 'Online' },
+  ],
+  Hotel: [
+    { name: 'IndiaMART', type: 'Beds, mattresses, linen, furniture', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Pepperfry Business', type: 'Hotel furniture & room decor', url: 'https://www.pepperfry.com', tag: 'Furniture' },
+    { name: 'Amazon Business', type: 'Toiletries, towels, housekeeping supplies', url: 'https://business.amazon.in', tag: 'Online' },
+    { name: 'Local Textile Market', type: 'Bed sheets, pillow covers, curtains bulk', url: null, tag: 'Local Market' },
+  ],
+  Clothing: [
+    { name: 'Surat Textile Market', type: 'Fabric wholesale — largest in India', url: null, tag: 'Wholesale Market' },
+    { name: 'IndiaMART', type: 'Readymade garments, fabric, accessories', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Udaan', type: 'Fashion wholesale B2B platform', url: 'https://udaan.com', tag: 'Online B2B' },
+    { name: 'Local Kapda Mandi', type: 'Regional fabric and garment wholesale', url: null, tag: 'Local Market' },
+  ],
+  Electronics: [
+    { name: 'Nehru Place / Lamington Road', type: 'Electronics wholesale market', url: null, tag: 'Wholesale Market' },
+    { name: 'IndiaMART', type: 'Electronics components, accessories', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Ingram Micro India', type: 'IT products distributor', url: 'https://www.ingrammicro.com', tag: 'Distributor' },
+    { name: 'Amazon Business', type: 'Accessories, display items', url: 'https://business.amazon.in', tag: 'Online' },
+  ],
+  Education: [
+    { name: 'Amazon Business', type: 'Books, stationery, whiteboards, furniture', url: 'https://business.amazon.in', tag: 'Online' },
+    { name: 'IndiaMART', type: 'Classroom furniture, projectors, AV equipment', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Local Book Distributor', type: 'NCERT, reference books wholesale', url: null, tag: 'Local Supplier' },
+    { name: 'Flipkart Wholesale', type: 'Stationery and supplies bulk', url: 'https://wholesale.flipkart.com', tag: 'Online B2B' },
+  ],
+};
+
+const getSuppliers = (category) =>
+  categorySuppliers[category] || [
+    { name: 'IndiaMART', type: 'Find verified suppliers for any business', url: 'https://www.indiamart.com', tag: 'Online B2B' },
+    { name: 'Amazon Business', type: 'Business supplies and equipment', url: 'https://business.amazon.in', tag: 'Online' },
+    { name: 'Udaan', type: 'B2B wholesale platform', url: 'https://udaan.com', tag: 'Online B2B' },
+    { name: 'Local Wholesale Market', type: 'Visit your city\'s main wholesale market', url: null, tag: 'Local Market' },
+  ];
+
+export default function Insights() {
   const [aiText, setAiText] = useState(null);
   const [polling, setPolling] = useState(false);
+  const [selectedCat, setSelectedCat] = useState(null);
 
   // Poll backend until AI text is ready
   useEffect(() => {
@@ -259,9 +339,11 @@ const getAreaSuggestion = (category, cityName, index) => {
         </div>
 
         {/* Market summary cards */}
-        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
           {data.categoryStats?.map((s, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#6366f1')}20`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'transform 0.2s' }}
+            <div key={i}
+              onClick={() => setSelectedCat(selectedCat === s.category ? null : s.category)}
+              style={{ background: 'var(--surface)', border: `2px solid ${selectedCat === s.category ? (categoryColors[s.category] || '#6366f1') : (categoryColors[s.category] || '#6366f1') + '20'}`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               <div style={{ fontSize: '28px', marginBottom: '10px' }}>{categoryIcons[s.category] || '🏪'}</div>
@@ -271,10 +353,54 @@ const getAreaSuggestion = (category, cityName, index) => {
               <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#10b98115' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
                 {s.riskLevel === 'Low' ? '🟢 Low Risk' : s.riskLevel === 'Medium' ? '🟡 Medium Risk' : '🔴 High Risk'}
               </div>
-              <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px' }}>Risk Score: {s.riskScore ?? '—'}/100</div>
+              <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '6px', fontWeight: '600' }}>
+                {selectedCat === s.category ? '▲ Hide suppliers' : '📦 View suppliers'}
+              </div>
             </div>
           ))}
         </div>
+
+        {/* Suppliers Panel */}
+        {selectedCat && (() => {
+          const suppliers = getSuppliers(selectedCat);
+          const color = categoryColors[selectedCat] || '#6366f1';
+          return (
+            <div style={{ background: 'var(--surface)', border: `1px solid ${color}30`, borderRadius: '24px', padding: '28px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${color}, transparent)` }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `${color}20`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+                  📦
+                </div>
+                <div>
+                  <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text)' }}>Material Suppliers — {selectedCat}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Where to source materials to start your {selectedCat.toLowerCase()} business</div>
+                </div>
+                <button onClick={() => setSelectedCat(null)} style={{ marginLeft: 'auto', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', color: 'var(--muted)', fontSize: '13px' }}>✕ Close</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                {suppliers.map((s, i) => (
+                  <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px', border: `1px solid ${color}15`, transition: 'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = color + '50'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = color + '15'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{s.name}</div>
+                      <span style={{ padding: '2px 8px', borderRadius: '100px', background: `${color}20`, color, fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>{s.tag}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '12px', lineHeight: '1.5' }}>{s.type}</div>
+                    {s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color, fontWeight: '600', textDecoration: 'none' }}>
+                        Visit website →
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>Search locally in {cityName}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </Layout>
   );
