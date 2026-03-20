@@ -69,6 +69,7 @@ export default function Insights() {
   const best = data.categoryStats ? [...data.categoryStats].reverse().slice(0, 4) : [];
   const worst = data.categoryStats?.slice(0, 4) || [];
   const noAI = !aiText || aiText === 'AI suggestions unavailable (no OpenAI key set).' || aiText === 'Generating AI recommendations...';
+  const cityName = data.location?.displayName?.split(',')[0]?.trim() || 'this area';
 
   return (
     <Layout>
@@ -122,8 +123,11 @@ export default function Insights() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '6px' }}>
                     {s.count} competitor{s.count !== 1 ? 's' : ''} nearby · avg rating {s.avgRating} · {s.riskLevel === 'Low' ? 'Great entry opportunity with low competition.' : s.riskLevel === 'Medium' ? 'Moderate competition — differentiation needed.' : 'Highly saturated — strong USP required.'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    📍 Suggested area: <span style={{ fontWeight: '600' }}>Main market or high foot-traffic zone in {cityName}</span>
                   </div>
                 </div>
               ))}

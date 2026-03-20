@@ -112,15 +112,16 @@ const getAISuggestions = async (location, categoryStats) => {
 Here is the current market data for ${cityName} (businesses found within 5km):
 ${JSON.stringify(categoryStats, null, 2)}
 
-Based on this real data, suggest the 5 best businesses to start in ${cityName}. For each business:
-- Business type
-- Why it suits ${cityName} specifically (mention local context if relevant — e.g. tourism in Agra, IT in Bangalore, etc.)
-- Demand score (1-10)
-- Saturation level (Low/Medium/High)
-- Estimated monthly profit in INR
-- One key action to stand out from competitors
+Based on this real data, suggest the 5 best businesses to start in ${cityName}. For each business provide:
+1. Business type
+2. Best area/locality in ${cityName} to open it (be specific — name a real neighbourhood, market, or street in ${cityName})
+3. Why that area is ideal
+4. Demand score (1-10)
+5. Saturation level (Low/Medium/High)
+6. Estimated monthly profit in INR
+7. One key action to stand out
 
-Keep it practical and specific to ${cityName}.`;
+Be specific to ${cityName} — mention real areas, markets, and local context (e.g. for Agra mention areas near Taj Mahal, Sadar Bazaar, Fatehabad Road etc.).`;
 
   // Try Gemini first (free)
   if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
