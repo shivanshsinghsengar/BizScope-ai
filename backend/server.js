@@ -146,21 +146,48 @@ Keep it concise and practical.`;
 // Geocode cache (in-memory, no expiry — city coords don't change)
 const geocodeCache = new Map();
 
-// Free geocoding via OpenStreetMap Nominatim
+// Free geocoding via OpenStreetMap Nominatim — with typo fallback
 const geocodeLocation = async (location) => {
   const key = location.toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(key)) return geocodeCache.get(key);
 
-  const url = `https://nominatim.openstreetmap.org/search`;
-  const res = await axios.get(url, {
-    params: { q: location, format: 'json', limit: 1 },
-    headers: { 'User-Agent': 'BizScopeAI/1.0' },
-    timeout: 6000,
-  });
-  if (!res.data || res.data.length === 0) return null;
-  const result = { latitude: parseFloat(res.data[0].lat), longitude: parseFloat(res.data[0].lon), displayName: res.data[0].display_name };
-  geocodeCache.set(key, result);
-  return result;
+  const tryGeocode = async (query) => {
+    const url = `https://nominatim.openstreetmap.org/search`;
+    const res = await axios.get(url, {
+      params: { q: query, format: 'json', limit: 1, countrycodes: 'in', addressdetails: 1 },
+      headers: { 'User-Agent': 'BizScopeAI/1.0' },
+      timeout: 6000,
+    });
+    return res.data && res.data.length > 0 ? res.data[0] : null;
+  };
+
+  // Try full query first
+  let result = await tryGeocode(location);
+
+  // If not found, try progressively simpler queries (strip parts from left)
+  if (!result) {
+    const parts = location.split(',').map(p => p.trim()).filter(Boolean);
+    for (let i = 1; i < parts.length; i++) {
+      result = await tryGeocode(parts.slice(i).join(', '));
+      if (result) break;
+    }
+  }
+
+  // Last resort: try just the first word (handles single typo'd city names)
+  if (!result) {
+    const firstWord = location.split(',')[0].trim();
+    result = await tryGeocode(firstWord);
+  }
+
+  if (!result) return null;
+
+  const geo = {
+    latitude: parseFloat(result.lat),
+    longitude: parseFloat(result.lon),
+    displayName: result.display_name,
+  };
+  geocodeCache.set(key, geo);
+  return geo;
 };
 
 // OSM category mapping — comprehensive
@@ -473,7 +500,7 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Geocode first
     const geo = await geocodeLocation(location);
-    if (!geo) return res.status(400).json({ error: 'Location not found' });
+    if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
     const { latitude, longitude, displayName } = geo;
 
     // Fetch OSM businesses + manual businesses in parallel
@@ -491,15 +518,9 @@ app.post('/api/analyze-location', async (req, res) => {
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ];
 
-    // Fallback mock if nothing found
+    // If nothing found from OSM, return empty result (no fake mock data)
     if (businesses.length === 0) {
-      const cats = ['Restaurant', 'Cafe', 'Grocery', 'Gym', 'Salon', 'Pharmacy', 'Bakery', 'Laundry'];
-      businesses = Array.from({ length: 30 }, (_, i) => ({
-        name: `Business ${i + 1}`, category: cats[Math.floor(Math.random() * cats.length)],
-        rating: parseFloat((Math.random() * 2 + 3).toFixed(1)), reviewCount: Math.floor(Math.random() * 500),
-        address: `Mock Address ${i + 1}`, phone: '', website: '',
-        latitude: latitude + (Math.random() - 0.5) * 0.01, longitude: longitude + (Math.random() - 0.5) * 0.01,
-      }));
+      return res.status(404).json({ error: 'No businesses found in this area. Try a more specific location or a nearby city center.' });
     }
 
     // Category stats

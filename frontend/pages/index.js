@@ -18,7 +18,9 @@ export default function Home() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const location = `${form.address}, ${form.city}, ${form.pincode}`;
+      // Build location string — skip empty fields
+      const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
+      const location = parts.join(', ');
       const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ location, nocache: true }),
@@ -28,7 +30,7 @@ export default function Home() {
       sessionStorage.setItem('analysisData', JSON.stringify(data));
       router.push('/analysis');
     } catch (err) {
-      setError(err.message || 'Analysis failed. Make sure backend is running.');
+      setError(err.message || 'Location not found. Try a different city or area name.');
       setLoading(false);
     }
   };
@@ -118,9 +120,9 @@ export default function Home() {
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                   {[
-                    { name: 'city', label: 'City *', placeholder: 'e.g. Mumbai, Delhi, Bangalore' },
-                    { name: 'address', label: 'Street Address', placeholder: 'e.g. MG Road, Connaught Place' },
-                    { name: 'pincode', label: 'Pincode', placeholder: 'e.g. 400001' },
+                    { name: 'city', label: 'City / Area *', placeholder: 'e.g. Mumbai, Connaught Place, Lajpat Nagar' },
+                    { name: 'address', label: 'Street Address (optional)', placeholder: 'e.g. MG Road, Sector 18' },
+                    { name: 'pincode', label: 'Pincode (optional)', placeholder: 'e.g. 400001' },
                   ].map(f => (
                     <div key={f.name}>
                       <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{f.label}</label>
