@@ -92,18 +92,20 @@ export default function Dashboard() {
         {/* Stat cards */}
         <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
           {[
-            { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#6366f1' },
-            { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6' },
-            { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444' },
-            { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#10b981' },
+            { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#6366f1', href: '/competitors' },
+            { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
+            { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
+            { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#10b981', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
           ].map((s, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: `1px solid ${s.color}25`, borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div key={i} onClick={() => router.push(s.href)}
+              style={{ background: 'var(--surface)', border: `1px solid ${s.color}25`, borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${s.color}20`; e.currentTarget.style.borderColor = s.color + '60'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = s.color + '25'; }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
               <div style={{ fontSize: '26px', marginBottom: '10px' }}>{s.icon}</div>
               <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
               <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px' }}>{s.label}</div>
+              <div style={{ fontSize: '11px', color: s.color, fontWeight: '600', marginTop: '8px' }}>View details →</div>
             </div>
           ))}
         </div>
