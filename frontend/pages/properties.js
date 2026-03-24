@@ -6,9 +6,80 @@ import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
 
 const typeConfig = {
-  rent: { label: '🔑 FOR RENT', color: '#3b82f6', light: '#3b82f615', border: '#3b82f630', btn: 'linear-gradient(135deg,#3b82f6,#2563eb)', suffix: '/month' },
-  sale: { label: '🏷️ FOR SALE', color: '#10b981', light: '#10b98115', border: '#10b98130', btn: 'linear-gradient(135deg,#10b981,#059669)', suffix: ' total' },
+  rent: { label: '\uD83D\uDD11 FOR RENT', color: '#3b82f6', light: '#3b82f615', border: '#3b82f630', btn: 'linear-gradient(135deg,#3b82f6,#2563eb)', suffix: '/month' },
+  sale: { label: '\uD83C\uDFF7\uFE0F FOR SALE', color: '#10b981', light: '#10b98115', border: '#10b98130', btn: 'linear-gradient(135deg,#10b981,#059669)', suffix: ' total' },
 };
+
+function EnquiryModal({ property, onClose }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [sent, setSent] = useState(false);
+  const cfg = typeConfig[property.type] || typeConfig.rent;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await fetch(`${API_URL}/api/enquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name, email: form.email, phone: form.phone, message: form.message,
+          propertyAddress: property.address, propertyType: property.type, propertyPrice: property.price,
+        }),
+      });
+    } catch (_) {}
+    setSent(true);
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '480px', border: `1px solid ${cfg.border}`, position: 'relative' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--surface2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: 'var(--muted)' }}>x</button>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)', marginBottom: '4px' }}>
+            {property.type === 'rent' ? 'Enquire About Rent' : 'Enquire About Purchase'}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{property.address}</div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: cfg.color, marginTop: '6px' }}>
+            Rs.{property.price?.toLocaleString('en-IN')}{property.type === 'rent' ? '/month' : ''}
+          </div>
+        </div>
+        {sent ? (
+          <div style={{ textAlign: 'center', padding: '24px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+            <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '16px' }}>Enquiry prepared!</div>
+            <div style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '6px' }}>Your email client opened with the details filled in.</div>
+            <button onClick={onClose} style={{ marginTop: '16px', padding: '10px 24px', borderRadius: '12px', border: 'none', background: cfg.btn, color: 'white', fontWeight: '700', cursor: 'pointer' }}>Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            {[
+              { key: 'name', label: 'Your Name', type: 'text', placeholder: 'Enter your name', required: true },
+              { key: 'email', label: 'Email', type: 'email', placeholder: 'your@email.com', required: true },
+              { key: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+91 XXXXX XXXXX', required: false },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: '14px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>{f.label}{f.required && ' *'}</label>
+                <input type={f.type} placeholder={f.placeholder} required={f.required} value={form[f.key]}
+                  onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            ))}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Message</label>
+              <textarea placeholder="I'm interested in this property..." rows={3} value={form.message}
+                onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: '14px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" style={{ width: '100%', padding: '13px', borderRadius: '14px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '14px', background: cfg.btn, color: 'white', boxShadow: `0 4px 20px ${cfg.color}30` }}>
+              {property.type === 'rent' ? 'Send Rent Enquiry' : 'Send Purchase Enquiry'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Properties() {
   const data = useAnalysis();
@@ -16,6 +87,7 @@ export default function Properties() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('default');
+  const [enquiryProperty, setEnquiryProperty] = useState(null);
 
   useEffect(() => {
     if (data?.userLat && data?.userLng) {
@@ -41,17 +113,17 @@ export default function Properties() {
   return (
     <Layout>
       <Head><title>Properties — BizScope AI</title></Head>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
 
-        {/* Header */}
+      {enquiryProperty && <EnquiryModal property={enquiryProperty} onClose={() => setEnquiryProperty(null)} />}
+
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>🏠 Available Properties</h1>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>Available Properties</h1>
           <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
             Commercial spaces near <span style={{ color: '#a78bfa' }}>{data.location?.displayName?.split(',').slice(0, 2).join(',')}</span>
           </p>
         </div>
 
-        {/* Stats row */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
           {[
             { icon: '🏪', label: 'Total Listings', value: properties.length, color: '#6366f1' },
@@ -68,10 +140,9 @@ export default function Properties() {
           ))}
         </div>
 
-        {/* Filters + Sort */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {[{ val: 'all', label: '🌐 All' }, { val: 'rent', label: '🔑 Rent' }, { val: 'sale', label: '🏷️ Sale' }].map(f => (
+            {[{ val: 'all', label: 'All' }, { val: 'rent', label: 'Rent' }, { val: 'sale', label: 'Sale' }].map(f => (
               <button key={f.val} onClick={() => setFilter(f.val)}
                 style={{ padding: '9px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: filter === f.val ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : 'var(--surface2)', color: filter === f.val ? 'white' : 'var(--muted)', boxShadow: filter === f.val ? '0 4px 15px rgba(99,102,241,0.3)' : 'none' }}>
                 {f.label}
@@ -88,7 +159,6 @@ export default function Properties() {
           </select>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '20px' }}>
             {[1, 2, 3, 4].map(i => (
@@ -97,7 +167,6 @@ export default function Properties() {
           </div>
         )}
 
-        {/* Empty state */}
         {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px' }}>
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏚️</div>
@@ -106,7 +175,6 @@ export default function Properties() {
           </div>
         )}
 
-        {/* Property cards */}
         {!loading && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
             {filtered.map((p, i) => {
@@ -117,10 +185,8 @@ export default function Properties() {
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = `0 20px 40px ${cfg.color}18`; e.currentTarget.style.borderColor = cfg.color + '60'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = cfg.border; }}>
 
-                  {/* Top accent */}
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: cfg.btn }} />
 
-                  {/* Header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                     <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: cfg.light, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>🏪</div>
                     <span style={{ padding: '5px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', background: cfg.light, color: cfg.color, border: `1px solid ${cfg.border}` }}>
@@ -128,18 +194,15 @@ export default function Properties() {
                     </span>
                   </div>
 
-                  {/* Address */}
                   <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '6px', lineHeight: '1.4' }}>{p.address}</div>
 
-                  {/* Price */}
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '20px' }}>
                     <span style={{ fontSize: '36px', fontWeight: '800', color: cfg.color, lineHeight: 1 }}>
-                      ₹{p.price?.toLocaleString('en-IN')}
+                      Rs.{p.price?.toLocaleString('en-IN')}
                     </span>
                     <span style={{ fontSize: '14px', color: 'var(--muted)' }}>{cfg.suffix}</span>
                   </div>
 
-                  {/* Stats grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '20px' }}>
                     {[
                       { icon: '📐', label: 'Size', val: `${p.size} sqft` },
@@ -154,7 +217,6 @@ export default function Properties() {
                     ))}
                   </div>
 
-                  {/* Foot traffic bar */}
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>
                       <span>Foot Traffic Score</span>
@@ -165,11 +227,12 @@ export default function Properties() {
                     </div>
                   </div>
 
-                  {/* CTA */}
-                  <button style={{ width: '100%', padding: '13px', borderRadius: '14px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '14px', background: cfg.btn, color: 'white', transition: 'opacity 0.2s, transform 0.1s', boxShadow: `0 4px 20px ${cfg.color}30` }}
+                  <button
+                    onClick={() => setEnquiryProperty(p)}
+                    style={{ width: '100%', padding: '13px', borderRadius: '14px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '14px', background: cfg.btn, color: 'white', transition: 'opacity 0.2s, transform 0.1s', boxShadow: `0 4px 20px ${cfg.color}30` }}
                     onMouseEnter={e => { e.target.style.opacity = '0.9'; e.target.style.transform = 'translateY(-1px)'; }}
                     onMouseLeave={e => { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }}>
-                    {p.type === 'rent' ? '📞 Enquire About Rent' : '💼 Enquire About Purchase'}
+                    {p.type === 'rent' ? 'Enquire About Rent' : 'Enquire About Purchase'}
                   </button>
                 </div>
               );

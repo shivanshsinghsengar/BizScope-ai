@@ -3,10 +3,14 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
-// Lazy load Google Maps — only loads when this page is visited
-const GoogleMap = dynamic(() => import('@react-google-maps/api').then(m => m.GoogleMap), { ssr: false });
-const LoadScript = dynamic(() => import('@react-google-maps/api').then(m => m.LoadScript), { ssr: false });
-const Marker = dynamic(() => import('@react-google-maps/api').then(m => m.Marker), { ssr: false });
+// Leaflet must be loaded client-side only
+const MapView = dynamic(() => import('../components/MapView'), { ssr: false });
+
+const CATEGORY_COLORS = {
+  restaurant: '#ef4444', cafe: '#f97316', retail: '#8b5cf6',
+  grocery: '#10b981', pharmacy: '#3b82f6', gym: '#ec4899',
+  salon: '#f59e0b', hotel: '#06b6d4', default: '#64748b',
+};
 
 export default function MapPage() {
   const [center, setCenter] = useState({ lat: 28.6139, lng: 77.2090 });
@@ -41,20 +45,12 @@ export default function MapPage() {
           <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--muted)' }}>
             {businesses.length} businesses · {properties.length} properties · 5km radius
           </div>
-          <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
-            <GoogleMap mapContainerStyle={{ height: '80vh', width: '100%', borderRadius: '16px' }} center={center} zoom={14}>
-              <Marker position={center} icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' }} />
-              {businesses.map((b, i) => (
-                <Marker key={i} position={{ lat: b.latitude, lng: b.longitude }} title={b.name}
-                  icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }} />
-              ))}
-              {properties.map((p, i) => (
-                <Marker key={`p${i}`} position={{ lat: p.latitude, lng: p.longitude }}
-                  title={`${p.type}: ₹${p.price?.toLocaleString()}`}
-                  icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png' }} />
-              ))}
-            </GoogleMap>
-          </LoadScript>
+          <MapView
+            center={center}
+            businesses={businesses}
+            properties={properties}
+            categoryColors={CATEGORY_COLORS}
+          />
         </div>
       </div>
     </>

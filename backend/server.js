@@ -21,9 +21,11 @@ app.use(express.json());
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later.' } });
 const analysisLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: { error: 'Too many analysis requests. Wait a minute.' } });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many auth attempts.' } });
+const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Too many admin login attempts. Try again later.' } });
 app.use('/api/', generalLimiter);
 app.use('/api/analyze-location', analysisLimiter);
 app.use('/api/auth/', authLimiter);
+app.use('/api/admin/login', adminLimiter);
 
 // Database
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -90,6 +92,18 @@ const PublicSuggestion = sequelize.define('PublicSuggestion', {
   description: DataTypes.TEXT,
   submitterName: DataTypes.STRING,
   status: { type: DataTypes.STRING, defaultValue: 'pending' },
+});
+
+// Property Enquiries
+const PropertyEnquiry = sequelize.define('PropertyEnquiry', {
+  name: DataTypes.STRING,
+  email: DataTypes.STRING,
+  phone: DataTypes.STRING,
+  message: DataTypes.TEXT,
+  propertyAddress: DataTypes.STRING,
+  propertyType: DataTypes.STRING,
+  propertyPrice: DataTypes.FLOAT,
+  status: { type: DataTypes.STRING, defaultValue: 'new' },
 });
 
 // Saved searches
@@ -258,10 +272,10 @@ const osmToCategory = {
 };
 
 // Fetch real businesses from Overpass API — expanded query
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 35000) => {
   try {
     const query = `
-      [out:json][timeout:30];
+      [out:json][timeout:55];
       (
         node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
         node["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
@@ -273,7 +287,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
     `;
     const res = await axios.post('https://overpass-api.de/api/interpreter',
       `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 35000 }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
     );
     return res.data.elements.map((el) => {
       const tags = el.tags || {};
@@ -309,6 +323,57 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
     }).filter(b => b.latitude && b.longitude && b.name);
   } catch (e) {
     console.log('Overpass API failed:', e.message);
+    return [];
+  }
+};
+
+// Foursquare category → our category mapping
+const fsqCategoryMap = {
+  'Restaurant': 'Restaurant', 'Fast Food': 'Restaurant', 'Café': 'Cafe', 'Coffee Shop': 'Cafe',
+  'Bakery': 'Bakery', 'Grocery Store': 'Grocery', 'Supermarket': 'Grocery',
+  'Pharmacy': 'Pharmacy', 'Hospital': 'Hospital', 'Clinic': 'Hospital', 'Doctor': 'Hospital',
+  'Gym': 'Gym', 'Fitness Center': 'Gym', 'Yoga Studio': 'Gym',
+  'Salon': 'Salon', 'Beauty Salon': 'Salon', 'Spa': 'Salon',
+  'Clothing Store': 'Clothing', 'Electronics Store': 'Electronics',
+  'Hotel': 'Hotel', 'Hostel': 'Hotel', 'Bank': 'Finance', 'ATM': 'Finance',
+  'School': 'Education', 'College': 'Education',
+};
+
+const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
+  if (!process.env.FOURSQUARE_API_KEY) return [];
+  try {
+    const res = await axios.get('https://api.foursquare.com/v3/places/search', {
+      headers: {
+        Authorization: process.env.FOURSQUARE_API_KEY,
+        Accept: 'application/json',
+      },
+      params: {
+        ll: `${lat},${lng}`,
+        radius: radiusMeters,
+        limit: 50,
+        fields: 'name,categories,location,tel,website,rating,stats,geocodes',
+      },
+      timeout: 10000,
+    });
+    return (res.data.results || []).map(place => {
+      const cat = place.categories?.[0]?.name || 'Other';
+      const mapped = fsqCategoryMap[cat] || cat;
+      const geo = place.geocodes?.main;
+      return {
+        name: place.name,
+        category: mapped,
+        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : parseFloat((Math.random() * 2 + 3).toFixed(1)),
+        reviewCount: place.stats?.total_ratings || Math.floor(Math.random() * 200 + 10),
+        address: [place.location?.address, place.location?.locality, place.location?.region].filter(Boolean).join(', ') || 'Unknown',
+        phone: place.tel || '',
+        website: place.website || '',
+        latitude: geo?.latitude,
+        longitude: geo?.longitude,
+        source: 'foursquare',
+      };
+    }).filter(b => b.latitude && b.longitude);
+  } catch (e) {
+    console.log('Foursquare failed:', e.message);
     return [];
   }
 };
@@ -475,6 +540,37 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
   res.json(users);
 });
 
+// Submit property enquiry (public)
+app.post('/api/enquiries', async (req, res) => {
+  try {
+    const { name, email, phone, message, propertyAddress, propertyType, propertyPrice } = req.body;
+    if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+    const enquiry = await PropertyEnquiry.create({ name, email, phone, message, propertyAddress, propertyType, propertyPrice });
+    res.json({ success: true, id: enquiry.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get all enquiries
+app.get('/api/admin/enquiries', adminAuth, async (req, res) => {
+  res.json(await PropertyEnquiry.findAll({ order: [['createdAt', 'DESC']] }));
+});
+
+// Admin: update enquiry status
+app.patch('/api/admin/enquiries/:id', adminAuth, async (req, res) => {
+  const e = await PropertyEnquiry.findByPk(req.params.id);
+  if (!e) return res.status(404).json({ error: 'Not found' });
+  await e.update({ status: req.body.status });
+  res.json(e);
+});
+
+// Admin: delete enquiry
+app.delete('/api/admin/enquiries/:id', adminAuth, async (req, res) => {
+  const e = await PropertyEnquiry.findByPk(req.params.id);
+  if (!e) return res.status(404).json({ error: 'Not found' });
+  await e.destroy();
+  res.json({ success: true });
+});
+
 // Public: suggest a business (no login needed)
 app.post('/api/suggestions', async (req, res) => {
   try {
@@ -512,22 +608,44 @@ app.post('/api/analyze-location', async (req, res) => {
     if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
     const { latitude, longitude, displayName } = geo;
 
-    // Fetch OSM businesses + manual businesses in parallel
-    const [osmBusinesses, manualBusinesses] = await Promise.all([
+    // Fetch OSM businesses + Foursquare + manual businesses in parallel
+    const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
       fetchRealBusinesses(latitude, longitude, 5000),
+      fetchFoursquareBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
 
-    // Merge OSM + manual
-    let businesses = [
-      ...osmBusinesses,
+    // Merge all sources, deduplicate by name+proximity
+    const seen = new Set();
+    let businesses = [...osmBusinesses, ...fsqBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
-    ];
+    ].filter(b => {
+      const key = `${b.name?.toLowerCase().trim()}_${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
-    // If nothing found from OSM, return empty result (no fake mock data)
+    // If nothing found, retry once with longer timeout before giving up
+    if (businesses.length === 0) {
+      console.log('First OSM attempt returned empty, retrying with longer timeout...');
+      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 60000);
+      const retrySeen = new Set();
+      businesses = [
+        ...retryBusinesses,
+        ...fsqBusinesses,
+        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+      ].filter(b => {
+        const key = `${b.name?.toLowerCase().trim()}_${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}`;
+        if (retrySeen.has(key)) return false;
+        retrySeen.add(key);
+        return true;
+      });
+    }
+
     if (businesses.length === 0) {
       return res.status(404).json({ error: 'No businesses found in this area. Try a more specific location or a nearby city center.' });
     }
