@@ -141,14 +141,12 @@ function RouteProgressBar() {
 function PageTransition({ children }) {
   const router = useRouter();
   const [visible, setVisible] = useState(true);
-  const [key, setKey] = useState(router.pathname);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
     const handleStart = () => setVisible(false);
     const handleDone = () => {
-      setKey(router.pathname);
-      timeoutRef.current = setTimeout(() => setVisible(true), 30);
+      timeoutRef.current = setTimeout(() => setVisible(true), 50);
     };
     router.events.on('routeChangeStart', handleStart);
     router.events.on('routeChangeComplete', handleDone);
@@ -162,11 +160,10 @@ function PageTransition({ children }) {
   }, [router]);
 
   return (
-    <div key={key} style={{
-      position: 'relative', zIndex: 1,
+    <div style={{
       opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(10px)',
-      transition: 'opacity 0.32s ease, transform 0.32s ease',
+      transform: visible ? 'translateY(0)' : 'translateY(8px)',
+      transition: 'opacity 0.28s ease, transform 0.28s ease',
       minHeight: '100vh',
     }}>
       {children}

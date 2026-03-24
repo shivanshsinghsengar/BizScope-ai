@@ -23,7 +23,7 @@ export default function Home() {
       const location = parts.join(', ');
       const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location, nocache: true }),
+        body: JSON.stringify({ location }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);

@@ -272,7 +272,7 @@ const osmToCategory = {
 };
 
 // Fetch real businesses from Overpass API — expanded query
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 35000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 35000) => {
   try {
     const query = `
       [out:json][timeout:55];
@@ -693,9 +693,9 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Fetch OSM businesses + Foursquare + Wikidata + manual businesses in parallel
     const [osmBusinesses, fsqBusinesses, wikiBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 5000),
-      fetchFoursquareBusinesses(latitude, longitude, 5000),
-      fetchWikidataPlaces(latitude, longitude, 5000),
+      fetchRealBusinesses(latitude, longitude, 8000),
+      fetchFoursquareBusinesses(latitude, longitude, 8000),
+      fetchWikidataPlaces(latitude, longitude, 8000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -716,7 +716,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // If nothing found, retry once with longer timeout before giving up
     if (businesses.length === 0) {
       console.log('First OSM attempt returned empty, retrying with longer timeout...');
-      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 60000);
+      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 8000, 60000);
       const retrySeen = new Set();
       businesses = [
         ...retryBusinesses,
