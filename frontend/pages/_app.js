@@ -4,8 +4,102 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
-// Top loading bar shown during route transitions
+// ── Animated particle canvas background ──
+function ParticleBackground() {
+  const canvasRef = useRef(null);
+  const { dark } = useTheme();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animId;
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    const COUNT = Math.min(60, Math.floor((W * H) / 18000));
+    const CONNECT_DIST = 140;
+
+    // particle color based on theme
+    const pc = dark ? 'rgba(99,102,241,' : 'rgba(79,70,229,';
+
+    const particles = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2 + 1,
+      o: Math.random() * 0.5 + 0.2,
+    }));
+
+    const resize = () => {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    };
+    window.addEventListener('resize', resize);
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      // update + draw particles
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `${pc}${p.o})`;
+        ctx.fill();
+      }
+
+      // draw connecting lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            const alpha = (1 - dist / CONNECT_DIST) * (dark ? 0.18 : 0.1);
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `${pc}${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, [dark]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 0,
+        pointerEvents: 'none', width: '100%', height: '100%',
+      }}
+    />
+  );
+}
+
+// ── Route progress bar ──
 function RouteProgressBar() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -49,6 +143,7 @@ function RouteProgressBar() {
   );
 }
 
+// ── Page transition wrapper ──
 function PageTransition({ children }) {
   const router = useRouter();
   const [visible, setVisible] = useState(true);
@@ -73,17 +168,28 @@ function PageTransition({ children }) {
   }, [router]);
 
   return (
-    <div
-      key={key}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(10px)',
-        transition: 'opacity 0.32s ease, transform 0.32s ease',
-        minHeight: '100vh',
-      }}
-    >
+    <div key={key} style={{
+      position: 'relative', zIndex: 1,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(10px)',
+      transition: 'opacity 0.32s ease, transform 0.32s ease',
+      minHeight: '100vh',
+    }}>
       {children}
     </div>
+  );
+}
+
+// ── Root app ──
+function AppInner({ Component, pageProps }) {
+  return (
+    <>
+      <RouteProgressBar />
+      <ParticleBackground />
+      <PageTransition>
+        <Component {...pageProps} />
+      </PageTransition>
+    </>
   );
 }
 
@@ -94,10 +200,7 @@ export default function App({ Component, pageProps }) {
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </Head>
-        <RouteProgressBar />
-        <PageTransition>
-          <Component {...pageProps} />
-        </PageTransition>
+        <AppInner Component={Component} pageProps={pageProps} />
       </AuthProvider>
     </ThemeProvider>
   );
