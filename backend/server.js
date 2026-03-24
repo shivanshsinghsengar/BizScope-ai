@@ -278,10 +278,12 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 35
       [out:json][timeout:55];
       (
         node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
+        way["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|school|college|university|bank|fuel|swimming_pool|sports_centre|food_court"](around:${radiusMeters},${lat},${lng});
         node["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
         way["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
         relation["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
         node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
+        way["shop"~"supermarket|convenience|grocery|clothes|electronics|mobile_phone|hardware|furniture|jewellery"](around:${radiusMeters},${lat},${lng});
         node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|insurance|financial|consulting|government|ngo"](around:${radiusMeters},${lat},${lng});
         node["leisure"~"fitness_centre|sports_centre|swimming_pool|yoga|martial_arts"](around:${radiusMeters},${lat},${lng});
       );
@@ -383,7 +385,8 @@ const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
 // Wikidata SPARQL — fetch notable places near location
 const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
   try {
-    // Query for hotels, restaurants, landmarks, businesses near coordinates
+    // Query specifically for business/commercial entities — NOT generic geographic locations
+    // Q4830453=business, Q11707=restaurant, Q27686=hotel, Q3918=university, Q16917=hospital
     const query = `
       SELECT ?place ?placeLabel ?typeLabel ?lat ?lng ?website ?phone WHERE {
         SERVICE wikibase:around {
@@ -393,13 +396,18 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
           bd:serviceParam wikibase:distance ?dist .
         }
         ?place wdt:P31 ?type .
-        ?type wdt:P279* wd:Q2221906 .
+        VALUES ?type {
+          wd:Q11707 wd:Q27686 wd:Q2360219 wd:Q1357567 wd:Q16917 wd:Q3918
+          wd:Q3914 wd:Q4830453 wd:Q1616075 wd:Q2078277 wd:Q1093829
+          wd:Q131734 wd:Q1301371 wd:Q1059438 wd:Q1137809 wd:Q2977
+          wd:Q1254933 wd:Q1664720 wd:Q1194970 wd:Q1060829 wd:Q1785071
+        }
         OPTIONAL { ?place wdt:P856 ?website }
         OPTIONAL { ?place wdt:P1329 ?phone }
         BIND(geof:latitude(?location) AS ?lat)
         BIND(geof:longitude(?location) AS ?lng)
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en,hi" }
-      } LIMIT 80
+      } LIMIT 60
     `;
 
     const res = await axios.get('https://query.wikidata.org/sparql', {
@@ -410,8 +418,9 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
 
     const bindings = res.data?.results?.bindings || [];
     return bindings.map(b => {
-      const type = b.typeLabel?.value || 'Landmark';
-      const mapped = wikidataCategoryMap[type] || 'Landmark';
+      const type = b.typeLabel?.value?.toLowerCase() || '';
+      const mapped = wikidataCategoryMap[type] || null;
+      if (!mapped) return null; // skip unmapped types
       return {
         name: b.placeLabel?.value || 'Unknown Place',
         category: mapped,
@@ -424,7 +433,7 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
         longitude: parseFloat(b.lng?.value),
         source: 'wikidata',
       };
-    }).filter(b => b.latitude && b.longitude && !isNaN(b.latitude));
+    }).filter(b => b && b.latitude && b.longitude && !isNaN(b.latitude));
   } catch (e) {
     console.log('Wikidata failed:', e.message);
     return [];
@@ -432,13 +441,24 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
 };
 
 const wikidataCategoryMap = {
-  'hotel': 'Hotel', 'motel': 'Hotel', 'hostel': 'Hotel', 'resort': 'Hotel', 'guest house': 'Hotel',
-  'restaurant': 'Restaurant', 'fast food restaurant': 'Restaurant', 'cafe': 'Cafe', 'coffee shop': 'Cafe',
+  // Hotels & Accommodation
+  'hotel': 'Hotel', 'motel': 'Hotel', 'hostel': 'Hotel', 'resort': 'Hotel',
+  'guest house': 'Hotel', 'inn': 'Hotel', 'lodge': 'Hotel',
+  // Food & Drink
+  'restaurant': 'Restaurant', 'fast food restaurant': 'Restaurant',
+  'cafe': 'Cafe', 'coffee shop': 'Cafe', 'tea house': 'Cafe',
+  'bar': 'Restaurant', 'pub': 'Restaurant',
+  // Health
   'hospital': 'Hospital', 'clinic': 'Hospital', 'pharmacy': 'Pharmacy',
+  'medical clinic': 'Hospital', 'nursing home': 'Hospital',
+  // Education
   'school': 'Education', 'college': 'Education', 'university': 'Education',
+  'secondary school': 'Education', 'primary school': 'Education',
+  // Finance & Retail
   'bank': 'Finance', 'shopping mall': 'Retail', 'supermarket': 'Grocery',
-  'temple': 'Landmark', 'mosque': 'Landmark', 'church': 'Landmark', 'monument': 'Landmark',
-  'museum': 'Landmark', 'park': 'Landmark', 'tourist attraction': 'Landmark',
+  'convenience store': 'Grocery', 'department store': 'Retail',
+  // Fitness
+  'gym': 'Gym', 'sports club': 'Gym', 'fitness centre': 'Gym',
 };
 
 // In-memory cache (location -> result, TTL 30 mins)
