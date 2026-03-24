@@ -278,12 +278,9 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 35
       [out:json][timeout:55];
       (
         node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
-        way["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|school|college|university|bank|fuel|swimming_pool|sports_centre|food_court"](around:${radiusMeters},${lat},${lng});
+        node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
         node["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
         way["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
-        relation["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
-        node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
-        way["shop"~"supermarket|convenience|grocery|clothes|electronics|mobile_phone|hardware|furniture|jewellery"](around:${radiusMeters},${lat},${lng});
         node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|insurance|financial|consulting|government|ngo"](around:${radiusMeters},${lat},${lng});
         node["leisure"~"fitness_centre|sports_centre|swimming_pool|yoga|martial_arts"](around:${radiusMeters},${lat},${lng});
       );
@@ -702,12 +699,13 @@ app.post('/api/analyze-location', async (req, res) => {
       )),
     ]);
 
-    // Merge all sources, deduplicate by name+proximity
+    // Merge all sources, deduplicate by coordinates (not name — unnamed businesses share names)
     const seen = new Set();
     let businesses = [...osmBusinesses, ...fsqBusinesses, ...wikiBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
-      const key = `${b.name?.toLowerCase().trim()}_${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}`;
+      // Deduplicate by rounded coordinates (within ~100m) + category
+      const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -724,7 +722,7 @@ app.post('/api/analyze-location', async (req, res) => {
         ...wikiBusinesses,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
       ].filter(b => {
-        const key = `${b.name?.toLowerCase().trim()}_${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}`;
+        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
         if (retrySeen.has(key)) return false;
         retrySeen.add(key);
         return true;
