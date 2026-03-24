@@ -4,94 +4,6 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import { useTheme } from '../context/ThemeContext';
-
-// ── Animated particle canvas background ──
-function ParticleBackground() {
-  const canvasRef = useRef(null);
-  const { dark } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animId;
-
-    const setSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setSize();
-    window.addEventListener('resize', setSize);
-
-    const W = () => canvas.width;
-    const H = () => canvas.height;
-    const COUNT = 55;
-    const CONNECT_DIST = 130;
-    const pc = dark ? '99,102,241' : '79,70,229';
-
-    const particles = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W(),
-      y: Math.random() * H(),
-      vx: (Math.random() - 0.5) * 2.5,
-      vy: (Math.random() - 0.5) * 2.5,
-      r: Math.random() * 2.5 + 1,
-      o: Math.random() * 0.4 + 0.5,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, W(), H());
-      for (const p of particles) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > W()) p.vx *= -1;
-        if (p.y < 0 || p.y > H()) p.vy *= -1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${pc},${p.o})`;
-        ctx.fill();
-      }
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < CONNECT_DIST) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${pc},${(1 - d / CONNECT_DIST) * 0.4})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
-        }
-      }
-      animId = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', setSize);
-    };
-  }, [mounted, dark]);
-
-  if (!mounted) return null;
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'fixed', top: 0, left: 0,
-        width: '100vw', height: '100vh',
-        zIndex: -1, pointerEvents: 'none',
-      }}
-    />
-  );
-}
 
 // ── Route progress bar ──
 function RouteProgressBar() {
@@ -137,53 +49,6 @@ function RouteProgressBar() {
   );
 }
 
-// ── Page transition wrapper ──
-function PageTransition({ children }) {
-  const router = useRouter();
-  const [visible, setVisible] = useState(true);
-  const timeoutRef = useRef(null);
-
-  useEffect(() => {
-    const handleStart = () => setVisible(false);
-    const handleDone = () => {
-      timeoutRef.current = setTimeout(() => setVisible(true), 50);
-    };
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleDone);
-    router.events.on('routeChangeError', handleDone);
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleDone);
-      router.events.off('routeChangeError', handleDone);
-      clearTimeout(timeoutRef.current);
-    };
-  }, [router]);
-
-  return (
-    <div style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(8px)',
-      transition: 'opacity 0.28s ease, transform 0.28s ease',
-      minHeight: '100vh',
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ── Root app ──
-function AppInner({ Component, pageProps }) {
-  return (
-    <>
-      <RouteProgressBar />
-      <ParticleBackground />
-      <PageTransition>
-        <Component {...pageProps} />
-      </PageTransition>
-    </>
-  );
-}
-
 export default function App({ Component, pageProps }) {
   return (
     <ThemeProvider>
@@ -191,7 +56,8 @@ export default function App({ Component, pageProps }) {
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </Head>
-        <AppInner Component={Component} pageProps={pageProps} />
+        <RouteProgressBar />
+        <Component {...pageProps} />
       </AuthProvider>
     </ThemeProvider>
   );
