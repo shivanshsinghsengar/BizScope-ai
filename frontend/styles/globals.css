@@ -58,21 +58,6 @@ body {
   background-attachment: fixed;
 }
 
-/* Make top-level page wrappers transparent so canvas shows through */
-#__next {
-  position: relative;
-  z-index: 1;
-  background: transparent !important;
-}
-#__next > div {
-  background: transparent !important;
-}
-
-/* All direct page root divs — strip solid background so canvas shows */
-#__next > div > div[style*="background"] {
-  background: transparent !important;
-}
-
 /* ── CSS-only floating orb animations (fallback + supplement to canvas) ── */
 .particle-orb {
   position: fixed;

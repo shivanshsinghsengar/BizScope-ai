@@ -27,9 +27,8 @@ export default function Layout({ children }) {
 
       {/* Ambient blobs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', animation: 'blobFloat 14s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%)', animation: 'blobFloat2 17s ease-in-out infinite' }} />
-        {dark && <div className="bg-dots" style={{ position: 'absolute', inset: 0, opacity: 0.35 }} />}
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%)', animation: 'blobFloat 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%)', animation: 'blobFloat2 17s ease-in-out infinite' }} />
       </div>
 
       {/* Topbar */}

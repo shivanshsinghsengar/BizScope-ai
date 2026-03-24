@@ -37,10 +37,10 @@ function ParticleBackground() {
     const particles = Array.from({ length: COUNT }, () => ({
       x: Math.random() * W(),
       y: Math.random() * H(),
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      r: Math.random() * 2.5 + 0.5,
-      o: Math.random() * 0.6 + 0.3,
+      vx: (Math.random() - 0.5) * 2.5,
+      vy: (Math.random() - 0.5) * 2.5,
+      r: Math.random() * 2.5 + 1,
+      o: Math.random() * 0.4 + 0.5,
     }));
 
     const draw = () => {
@@ -63,7 +63,7 @@ function ParticleBackground() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${pc},${(1 - d / CONNECT_DIST) * 0.25})`;
+            ctx.strokeStyle = `rgba(${pc},${(1 - d / CONNECT_DIST) * 0.4})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -87,9 +87,7 @@ function ParticleBackground() {
       style={{
         position: 'fixed', top: 0, left: 0,
         width: '100vw', height: '100vh',
-        zIndex: 2, pointerEvents: 'none',
-        mixBlendMode: dark ? 'screen' : 'multiply',
-        opacity: dark ? 1 : 0.6,
+        zIndex: -1, pointerEvents: 'none',
       }}
     />
   );

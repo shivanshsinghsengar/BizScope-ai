@@ -48,15 +48,7 @@ export default function Home() {
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)' }}>
 
-        {/* Animated background */}
-        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-          {/* Dot grid */}
-          <div className="bg-dots" style={{ position: 'absolute', inset: 0, opacity: dark ? 0.5 : 0.3 }} />
-          {/* Animated blobs */}
-          <div style={{ position: 'absolute', top: '-15%', left: '-8%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%)', animation: 'blobFloat 12s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', bottom: '-15%', right: '-8%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', animation: 'blobFloat2 15s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', top: '40%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.07) 0%, transparent 70%)', animation: 'blobFloat 18s ease-in-out infinite reverse' }} />
-        </div>
+        {/* Background handled by global canvas */}
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
