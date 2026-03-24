@@ -58,6 +58,44 @@ body {
   background-attachment: fixed;
 }
 
+/* Make top-level page wrappers transparent so canvas shows through */
+#__next {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+#__next > div {
+  background: transparent !important;
+}
+
+/* All direct page root divs — strip solid background so canvas shows */
+#__next > div > div[style*="background"] {
+  background: transparent !important;
+}
+
+/* ── CSS-only floating orb animations (fallback + supplement to canvas) ── */
+.particle-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+  z-index: 0;
+}
+@keyframes orbFloat1 {
+  0%,100% { transform: translate(0,0) scale(1); opacity: 0.6; }
+  33%      { transform: translate(60px,-40px) scale(1.1); opacity: 0.8; }
+  66%      { transform: translate(-40px,30px) scale(0.95); opacity: 0.5; }
+}
+@keyframes orbFloat2 {
+  0%,100% { transform: translate(0,0) scale(1); opacity: 0.5; }
+  33%      { transform: translate(-50px,35px) scale(1.08); opacity: 0.7; }
+  66%      { transform: translate(40px,-25px) scale(0.92); opacity: 0.6; }
+}
+@keyframes orbFloat3 {
+  0%,100% { transform: translate(0,0) scale(1); opacity: 0.4; }
+  50%      { transform: translate(30px,50px) scale(1.12); opacity: 0.65; }
+}
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }

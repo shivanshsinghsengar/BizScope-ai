@@ -10,90 +10,86 @@ import { useTheme } from '../context/ThemeContext';
 function ParticleBackground() {
   const canvasRef = useRef(null);
   const { dark } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animId;
-    let W = window.innerWidth;
-    let H = window.innerHeight;
-    canvas.width = W;
-    canvas.height = H;
 
-    const COUNT = Math.min(60, Math.floor((W * H) / 18000));
-    const CONNECT_DIST = 140;
+    const setSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    setSize();
+    window.addEventListener('resize', setSize);
 
-    // particle color based on theme
-    const pc = dark ? 'rgba(99,102,241,' : 'rgba(79,70,229,';
+    const W = () => canvas.width;
+    const H = () => canvas.height;
+    const COUNT = 55;
+    const CONNECT_DIST = 130;
+    const pc = dark ? '99,102,241' : '79,70,229';
 
     const particles = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      r: Math.random() * 2 + 1,
-      o: Math.random() * 0.5 + 0.2,
+      x: Math.random() * W(),
+      y: Math.random() * H(),
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      r: Math.random() * 2.5 + 0.5,
+      o: Math.random() * 0.6 + 0.3,
     }));
 
-    const resize = () => {
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = W;
-      canvas.height = H;
-    };
-    window.addEventListener('resize', resize);
-
     const draw = () => {
-      ctx.clearRect(0, 0, W, H);
-
-      // update + draw particles
+      ctx.clearRect(0, 0, W(), H());
       for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > W) p.vx *= -1;
-        if (p.y < 0 || p.y > H) p.vy *= -1;
-
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W()) p.vx *= -1;
+        if (p.y < 0 || p.y > H()) p.vy *= -1;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `${pc}${p.o})`;
+        ctx.fillStyle = `rgba(${pc},${p.o})`;
         ctx.fill();
       }
-
-      // draw connecting lines
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < CONNECT_DIST) {
-            const alpha = (1 - dist / CONNECT_DIST) * (dark ? 0.18 : 0.1);
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < CONNECT_DIST) {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `${pc}${alpha})`;
+            ctx.strokeStyle = `rgba(${pc},${(1 - d / CONNECT_DIST) * 0.25})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
         }
       }
-
       animId = requestAnimationFrame(draw);
     };
-
     draw();
+
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', setSize);
     };
-  }, [dark]);
+  }, [mounted, dark]);
+
+  if (!mounted) return null;
 
   return (
     <canvas
       ref={canvasRef}
       style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        pointerEvents: 'none', width: '100%', height: '100%',
+        position: 'fixed', top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        zIndex: 2, pointerEvents: 'none',
+        mixBlendMode: dark ? 'screen' : 'multiply',
+        opacity: dark ? 1 : 0.6,
       }}
     />
   );
