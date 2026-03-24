@@ -114,10 +114,16 @@ function BusinessDialog({ b, onClose }) {
               style={{ flex: 1, padding: '11px', borderRadius: '12px', background: `linear-gradient(135deg, ${color}, ${color}cc)`, color: 'white', fontWeight: '700', fontSize: '13px', textAlign: 'center', textDecoration: 'none' }}>
               📍 View on Maps
             </a>
-            {b.phone && (
+            {b.phone ? (
               <a href={`tel:${b.phone}`}
                 style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--surface2)', border: `1px solid ${color}40`, color, fontWeight: '700', fontSize: '13px', textAlign: 'center', textDecoration: 'none' }}>
-                📞 Call
+                📞 {b.phone}
+              </a>
+            ) : (
+              <a href={`https://www.google.com/search?q=${encodeURIComponent(b.name + ' ' + (b.address || '') + ' contact number')}`}
+                target="_blank" rel="noreferrer"
+                style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--surface2)', border: `1px solid ${color}40`, color, fontWeight: '700', fontSize: '13px', textAlign: 'center', textDecoration: 'none' }}>
+                🔍 Find Contact
               </a>
             )}
           </div>

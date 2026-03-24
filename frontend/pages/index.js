@@ -48,13 +48,15 @@ export default function Home() {
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)' }}>
 
-        {/* Blobs — dark only */}
-        {dark && (
-          <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-            <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)' }} />
-            <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)' }} />
-          </div>
-        )}
+        {/* Animated background */}
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+          {/* Dot grid */}
+          <div className="bg-dots" style={{ position: 'absolute', inset: 0, opacity: dark ? 0.5 : 0.3 }} />
+          {/* Animated blobs */}
+          <div style={{ position: 'absolute', top: '-15%', left: '-8%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%)', animation: 'blobFloat 12s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', bottom: '-15%', right: '-8%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', animation: 'blobFloat2 15s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '40%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(236,72,153,0.07) 0%, transparent 70%)', animation: 'blobFloat 18s ease-in-out infinite reverse' }} />
+        </div>
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
@@ -93,7 +95,7 @@ export default function Home() {
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px 40px' }}>
 
             {/* Badge */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#a78bfa' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#6366f1', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                 Powered by OpenStreetMap + AI
@@ -101,18 +103,18 @@ export default function Home() {
             </div>
 
             {/* Headline */}
-            <h1 style={{ textAlign: 'center', fontSize: 'clamp(32px, 6vw, 64px)', fontWeight: '800', lineHeight: '1.1', marginBottom: '20px', color: 'var(--text)' }}>
+            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(32px, 6vw, 64px)', fontWeight: '800', lineHeight: '1.1', marginBottom: '20px', color: 'var(--text)' }}>
               Find Your Next<br />
-              <span style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span className="gradient-text-animated">
                 Business Opportunity
               </span>
             </h1>
-            <p style={{ textAlign: 'center', fontSize: 'clamp(14px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '560px', margin: '0 auto 40px', lineHeight: '1.7' }}>
+            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(14px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '560px', margin: '0 auto 40px', lineHeight: '1.7' }}>
               Analyze competitors, discover market gaps, and find the perfect location — all powered by real data and AI.
             </p>
 
             {/* Form Card */}
-            <div style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
+            <div className="anim-scale delay-3" style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1' }} />
                 <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text2)' }}>Analyze a Location</span>
@@ -138,7 +140,7 @@ export default function Home() {
             </div>
 
             {/* Stats bar */}
-            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '32px', marginBottom: '64px' }}>
+            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '32px', marginBottom: '64px' }}>
               {[
                 { value: '50M+', label: 'Businesses Indexed' },
                 { value: '195', label: 'Countries Covered' },
@@ -161,8 +163,8 @@ export default function Home() {
                 { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#f59e0b' },
                 { icon: '🗺️', title: 'Interactive Map', desc: 'Visualize competitors and properties on a live map.', color: '#10b981' },
                 { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#3b82f6' },
-              ].map(f => (
-                <div key={f.title} className="card" style={{ padding: '22px' }}>
+              ].map((f, i) => (
+                <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '22px' }}>
                   <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${f.color}20`, border: `1px solid ${f.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '14px' }}>{f.icon}</div>
                   <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>{f.title}</h3>
                   <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6' }}>{f.desc}</p>
