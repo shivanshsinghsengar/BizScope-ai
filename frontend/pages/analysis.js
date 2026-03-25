@@ -67,6 +67,17 @@ export default function Dashboard() {
       </Head>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
 
+        {/* Partial match warning */}
+        {data.partialMatch && (
+          <div style={{ background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '12px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>⚠️</span>
+            <div>
+              <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '13px' }}>{data.partialMatch}</span>
+              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>The street address or pincode may have a typo — results are based on the city/area found.</div>
+            </div>
+          </div>
+        )}
+
         {/* Location banner */}
         <div style={{ background: 'linear-gradient(135deg, #4f46e520, #7c3aed10)', border: '1px solid #4f46e530', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

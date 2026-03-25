@@ -202,22 +202,28 @@ const geocodeLocation = async (location) => {
     return res.data && res.data.length > 0 ? res.data[0] : null;
   };
 
+  let result = null;
+  let matchedQuery = location;
+  let partialMatch = false;
+
   // Try full query first
-  let result = await tryGeocode(location);
+  result = await tryGeocode(location);
 
   // If not found, try progressively simpler queries (strip parts from left)
   if (!result) {
     const parts = location.split(',').map(p => p.trim()).filter(Boolean);
     for (let i = 1; i < parts.length; i++) {
-      result = await tryGeocode(parts.slice(i).join(', '));
-      if (result) break;
+      const simpler = parts.slice(i).join(', ');
+      result = await tryGeocode(simpler);
+      if (result) { matchedQuery = simpler; partialMatch = true; break; }
     }
   }
 
-  // Last resort: try just the first word (handles single typo'd city names)
+  // Last resort: try just the first word
   if (!result) {
     const firstWord = location.split(',')[0].trim();
     result = await tryGeocode(firstWord);
+    if (result) { matchedQuery = firstWord; partialMatch = true; }
   }
 
   if (!result) return null;
@@ -226,6 +232,8 @@ const geocodeLocation = async (location) => {
     latitude: parseFloat(result.lat),
     longitude: parseFloat(result.lon),
     displayName: result.display_name,
+    partialMatch,
+    matchedQuery,
   };
   geocodeCache.set(key, geo);
   return geo;
@@ -718,7 +726,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // Geocode first
     const geo = await geocodeLocation(location);
     if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
-    const { latitude, longitude, displayName } = geo;
+    const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
 
     // Fetch OSM + Foursquare + manual in parallel (skip Wikidata — too slow, low value)
     const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
@@ -796,6 +804,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // AI runs async — don't block the response
     const result = {
       location: { displayName, latitude, longitude },
+      partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
       businesses,
       categoryStats: sortedStats,
       aiSuggestions: 'Generating AI recommendations...',
