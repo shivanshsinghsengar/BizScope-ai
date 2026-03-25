@@ -106,6 +106,24 @@ const PropertyEnquiry = sequelize.define('PropertyEnquiry', {
   status: { type: DataTypes.STRING, defaultValue: 'new' },
 });
 
+// Listed Properties (community-submitted)
+const ListedProperty = sequelize.define('ListedProperty', {
+  title: DataTypes.STRING,
+  type: DataTypes.STRING, // rent | sale
+  price: DataTypes.FLOAT,
+  size: DataTypes.FLOAT,
+  address: DataTypes.STRING,
+  city: DataTypes.STRING,
+  pincode: DataTypes.STRING,
+  phone: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  submitterName: DataTypes.STRING,
+  submitterEmail: DataTypes.STRING,
+  latitude: DataTypes.FLOAT,
+  longitude: DataTypes.FLOAT,
+  status: { type: DataTypes.STRING, defaultValue: 'pending' }, // pending | approved | rejected
+});
+
 // Saved searches
 const SavedSearch = sequelize.define('SavedSearch', {
   userId: DataTypes.INTEGER,
@@ -272,10 +290,10 @@ const osmToCategory = {
 };
 
 // Fetch real businesses from Overpass API — expanded query
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 35000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
   try {
     const query = `
-      [out:json][timeout:55];
+      [out:json][timeout:30];
       (
         node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
         node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
@@ -286,10 +304,24 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 35
       );
       out center body;
     `;
-    const res = await axios.post('https://overpass-api.de/api/interpreter',
-      `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-    );
+    // Try faster mirror first, fall back to main
+    const mirrors = [
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass-api.de/api/interpreter',
+    ];
+    let res = null;
+    for (const url of mirrors) {
+      try {
+        res = await axios.post(url,
+          `data=${encodeURIComponent(query)}`,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+        );
+        break;
+      } catch (e) {
+        console.log(`Mirror ${url} failed:`, e.message);
+      }
+    }
+    if (!res) return [];
     return res.data.elements.map((el) => {
       const tags = el.tags || {};
       const rawCat = tags.amenity || tags.shop || tags.office || tags.leisure || tags.tourism || 'Other';
@@ -460,7 +492,7 @@ const wikidataCategoryMap = {
 
 // In-memory cache (location -> result, TTL 30 mins)
 const cache = new Map();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
 const getCached = (key) => {
   const entry = cache.get(key);
@@ -688,38 +720,34 @@ app.post('/api/analyze-location', async (req, res) => {
     if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
     const { latitude, longitude, displayName } = geo;
 
-    // Fetch OSM businesses + Foursquare + Wikidata + manual businesses in parallel
-    const [osmBusinesses, fsqBusinesses, wikiBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 8000),
-      fetchFoursquareBusinesses(latitude, longitude, 8000),
-      fetchWikidataPlaces(latitude, longitude, 8000),
+    // Fetch OSM + Foursquare + manual in parallel (skip Wikidata — too slow, low value)
+    const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
+      fetchRealBusinesses(latitude, longitude, 5000),
+      fetchFoursquareBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
 
-    // Merge all sources, deduplicate by coordinates (not name — unnamed businesses share names)
+    // Merge all sources, deduplicate by coordinates
     const seen = new Set();
-    let businesses = [...osmBusinesses, ...fsqBusinesses, ...wikiBusinesses,
+    let businesses = [...osmBusinesses, ...fsqBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
-      // Deduplicate by rounded coordinates (within ~100m) + category
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
 
-    // If nothing found, retry once with longer timeout before giving up
+    // If nothing found, retry once with longer timeout
     if (businesses.length === 0) {
-      console.log('First OSM attempt returned empty, retrying with longer timeout...');
-      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 8000, 60000);
+      console.log('First OSM attempt returned empty, retrying...');
+      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 55000);
       const retrySeen = new Set();
       businesses = [
-        ...retryBusinesses,
-        ...fsqBusinesses,
-        ...wikiBusinesses,
+        ...retryBusinesses, ...fsqBusinesses,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
       ].filter(b => {
         const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -796,55 +824,83 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
   const lat = parseFloat(req.params.lat);
   const lng = parseFloat(req.params.lng);
   try {
+    // Query real commercial buildings, offices, shops from OSM
     const query = `
-      [out:json][timeout:15];
+      [out:json][timeout:20];
       (
-        node["shop"="vacant"](around:5000,${lat},${lng});
-        node["office"](around:5000,${lat},${lng});
-        node["amenity"="marketplace"](around:5000,${lat},${lng});
-        node["building"~"commercial|retail|office"](around:5000,${lat},${lng});
-        node["commercial"](around:5000,${lat},${lng});
+        way["building"~"commercial|retail|office|supermarket|warehouse|industrial"](around:4000,${lat},${lng});
+        way["shop"](around:4000,${lat},${lng});
+        way["office"](around:4000,${lat},${lng});
+        way["amenity"~"marketplace|bank|restaurant|cafe|fast_food"](around:3000,${lat},${lng});
+        node["shop"~"vacant|mall|department_store|supermarket"](around:4000,${lat},${lng});
       );
-      out body;
+      out center body;
     `;
     const osmRes = await axios.post('https://overpass-api.de/api/interpreter',
       `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 15000 }
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 20000 }
     );
-    const osmProps = osmRes.data.elements.slice(0, 20).map((el, i) => {
-      const tags = el.tags || {};
-      const addrParts = [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'] || tags['addr:city']].filter(Boolean);
-      const sizeSqft = Math.floor(Math.random() * 800 + 200);
-      const isRent = i % 3 !== 1;
-      const price = isRent ? Math.floor((sizeSqft * 40) / 1000) * 1000 : Math.floor((sizeSqft * 8000) / 100000) * 100000;
-      return {
-        id: el.id, type: isRent ? 'rent' : 'sale',
-        price, size: sizeSqft,
-        address: addrParts.length > 0 ? addrParts.join(', ') : (tags.name || `Near ${el.lat?.toFixed(3)}, ${el.lon?.toFixed(3)}`),
-        latitude: el.lat, longitude: el.lon,
-        footTraffic: Math.floor(Math.random() * 40 + 55),
-      };
-    }).filter(p => p.latitude && p.longitude);
 
-    if (osmProps.length > 0) return res.json(osmProps);
+    const elements = osmRes.data.elements.filter(el => {
+      const elLat = el.lat ?? el.center?.lat;
+      const elLon = el.lon ?? el.center?.lon;
+      return elLat && elLon;
+    });
+
+    if (elements.length > 0) {
+      const osmProps = elements.slice(0, 18).map((el, i) => {
+        const tags = el.tags || {};
+        const elLat = el.lat ?? el.center?.lat;
+        const elLon = el.lon ?? el.center?.lon;
+        const addrParts = [
+          tags['addr:housenumber'], tags['addr:street'],
+          tags['addr:suburb'] || tags['addr:neighbourhood'] || tags['addr:city']
+        ].filter(Boolean);
+        const name = tags.name || tags['addr:street'] || null;
+        const address = addrParts.length > 0
+          ? addrParts.join(', ')
+          : name || `Commercial Space near ${elLat?.toFixed(3)}, ${elLon?.toFixed(3)}`;
+        const sizeSqft = Math.floor(Math.random() * 1200 + 200);
+        const isRent = i % 3 !== 1;
+        const rentPerSqft = Math.floor(Math.random() * 60 + 30);
+        const salePerSqft = Math.floor(Math.random() * 8000 + 4000);
+        const price = isRent
+          ? Math.round((sizeSqft * rentPerSqft) / 1000) * 1000
+          : Math.round((sizeSqft * salePerSqft) / 100000) * 100000;
+        return { id: el.id, type: isRent ? 'rent' : 'sale', price, size: sizeSqft, address, latitude: elLat, longitude: elLon, footTraffic: Math.floor(Math.random() * 35 + 60) };
+      });
+
+      // Merge with approved community listings nearby
+      const communityProps = await ListedProperty.findAll({ where: { status: 'approved' } });
+      const nearby = communityProps.filter(p => p.latitude && p.longitude &&
+        Math.sqrt(Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2)) < 0.15
+      ).map(p => ({ id: `listed_${p.id}`, type: p.type, price: p.price, size: p.size, address: `${p.address}, ${p.city}`, latitude: p.latitude, longitude: p.longitude, footTraffic: 80, phone: p.phone, isListed: true }));
+
+      return res.json([...nearby, ...osmProps]);
+    }
   } catch (e) { console.log('OSM properties failed:', e.message); }
 
-  // Fallback: generate realistic properties around the location
-  const types = ['rent', 'sale', 'rent', 'rent', 'sale', 'rent'];
-  const areas = ['Main Market', 'Commercial Complex', 'High Street', 'Business Park', 'Shopping Lane', 'Trade Centre'];
-  const props = Array.from({ length: 6 }, (_, i) => {
+  // Fallback + community listings
+  const communityProps = await ListedProperty.findAll({ where: { status: 'approved' } }).catch(() => []);
+  const nearby = communityProps.filter(p => p.latitude && p.longitude &&
+    Math.sqrt(Math.pow(p.latitude - lat, 2) + Math.pow(p.longitude - lng, 2)) < 0.15
+  ).map(p => ({ id: `listed_${p.id}`, type: p.type, price: p.price, size: p.size, address: `${p.address}, ${p.city}`, latitude: p.latitude, longitude: p.longitude, footTraffic: 80, phone: p.phone, isListed: true }));
+
+  const types = ['rent', 'sale', 'rent', 'rent', 'sale', 'rent', 'rent', 'sale'];
+  const areas = ['Main Market', 'Commercial Complex', 'High Street', 'Business Park', 'Shopping Lane', 'Trade Centre', 'City Centre Mall', 'Industrial Area'];
+  const fallback = Array.from({ length: 8 }, (_, i) => {
     const isRent = types[i] === 'rent';
-    const size = [300, 450, 600, 250, 800, 500][i];
+    const size = [300, 450, 600, 250, 800, 500, 350, 1200][i];
     return {
       id: i + 1, type: types[i],
-      price: isRent ? [22000, 35000, 45000, 18000, 60000, 30000][i] : [3500000, 6000000, 4200000, 2800000, 9500000, 5000000][i],
-      size, address: `${areas[i]}, Near Analyzed Location`,
-      latitude: lat + (Math.random() - 0.5) * 0.02,
-      longitude: lng + (Math.random() - 0.5) * 0.02,
-      footTraffic: [85, 92, 78, 70, 95, 82][i],
+      price: isRent ? [22000, 35000, 45000, 18000, 60000, 30000, 25000, 80000][i] : [3500000, 6000000, 4200000, 2800000, 9500000, 5000000, 3800000, 15000000][i],
+      size, address: `${areas[i]}, Near ${lat.toFixed(2)}, ${lng.toFixed(2)}`,
+      latitude: lat + (Math.random() - 0.5) * 0.025,
+      longitude: lng + (Math.random() - 0.5) * 0.025,
+      footTraffic: [85, 92, 78, 70, 95, 82, 88, 75][i],
     };
   });
-  res.json(props);
+  res.json([...nearby, ...fallback]);
 });
 
 // 3. Get Businesses for Map
@@ -871,6 +927,37 @@ app.post('/api/admin/clear-cache', adminAuth, (req, res) => {
   cache.clear();
   geocodeCache.clear();
   res.json({ success: true, message: 'Cache cleared' });
+});
+
+// Submit a property listing (public)
+app.post('/api/properties/submit', async (req, res) => {
+  try {
+    const { title, type, price, size, address, city, pincode, phone, description, submitterName, submitterEmail, latitude, longitude } = req.body;
+    if (!address || !city || !type || !price) return res.status(400).json({ error: 'Address, city, type and price are required' });
+    const prop = await ListedProperty.create({ title, type, price: parseFloat(price), size: parseFloat(size) || 0, address, city, pincode, phone, description, submitterName, submitterEmail, latitude: parseFloat(latitude) || null, longitude: parseFloat(longitude) || null });
+    res.json({ success: true, id: prop.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get all listed properties
+app.get('/api/admin/properties', adminAuth, async (req, res) => {
+  res.json(await ListedProperty.findAll({ order: [['createdAt', 'DESC']] }));
+});
+
+// Admin: approve/reject listed property
+app.patch('/api/admin/properties/:id', adminAuth, async (req, res) => {
+  const p = await ListedProperty.findByPk(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Not found' });
+  await p.update({ status: req.body.status });
+  res.json(p);
+});
+
+// Admin: delete listed property
+app.delete('/api/admin/properties/:id', adminAuth, async (req, res) => {
+  const p = await ListedProperty.findByPk(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Not found' });
+  await p.destroy();
+  res.json({ success: true });
 });
 
 // Initialize DB and start

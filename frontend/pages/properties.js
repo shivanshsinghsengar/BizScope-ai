@@ -88,6 +88,9 @@ export default function Properties() {
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('default');
   const [enquiryProperty, setEnquiryProperty] = useState(null);
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [submitForm, setSubmitForm] = useState({ title: '', type: 'rent', price: '', size: '', address: '', city: '', pincode: '', phone: '', description: '', submitterName: '', submitterEmail: '', latitude: '', longitude: '' });
+  const [submitStatus, setSubmitStatus] = useState('');
 
   useEffect(() => {
     if (data?.userLat && data?.userLng) {
@@ -98,6 +101,26 @@ export default function Properties() {
         .catch(() => setLoading(false));
     }
   }, [data]);
+
+  const handleSubmitProperty = async (e) => {
+    e.preventDefault();
+    setSubmitStatus('sending');
+    try {
+      const res = await fetch(`${API_URL}/api/properties/submit`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitForm),
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error);
+      setSubmitStatus('done');
+    } catch (err) { setSubmitStatus('error:' + err.message); }
+  };
+
+  const useMyLocation = () => {
+    navigator.geolocation.getCurrentPosition(pos => {
+      setSubmitForm(f => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }));
+    });
+  };
 
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
@@ -118,11 +141,88 @@ export default function Properties() {
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>Available Properties</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
-            Commercial spaces near <span style={{ color: '#a78bfa' }}>{data.location?.displayName?.split(',').slice(0, 2).join(',')}</span>
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>Available Properties</h1>
+              <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
+                Commercial spaces near <span style={{ color: '#a78bfa' }}>{data.location?.displayName?.split(',').slice(0, 2).join(',')}</span>
+              </p>
+            </div>
+            <button onClick={() => setShowSubmit(s => !s)} className="btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>
+              {showSubmit ? '✕ Cancel' : '+ List a Property'}
+            </button>
+          </div>
         </div>
+
+        {/* Submit Property Form */}
+        {showSubmit && (
+          <div style={{ background: 'var(--surface)', border: '1px solid #4f46e530', borderRadius: '24px', padding: '28px', marginBottom: '28px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f1, #a78bfa)' }} />
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>📋 Submit a Property Listing</h2>
+            <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' }}>Your listing will appear after admin approval (usually within 24h)</p>
+            {submitStatus === 'done' ? (
+              <div style={{ textAlign: 'center', padding: '32px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+                <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '16px' }}>Submitted successfully!</div>
+                <div style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '6px' }}>We'll review and approve your listing shortly.</div>
+                <button onClick={() => { setShowSubmit(false); setSubmitStatus(''); }} className="btn-primary" style={{ marginTop: '16px', padding: '10px 24px' }}>Done</button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitProperty}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                  {[
+                    { key: 'address', label: 'Property Address *', placeholder: 'e.g. 12, MG Road', required: true },
+                    { key: 'city', label: 'City *', placeholder: 'e.g. Mumbai', required: true },
+                    { key: 'pincode', label: 'Pincode', placeholder: 'e.g. 400001' },
+                    { key: 'size', label: 'Size (sqft)', placeholder: 'e.g. 500' },
+                    { key: 'phone', label: 'Contact Phone', placeholder: '+91 XXXXX XXXXX' },
+                    { key: 'submitterName', label: 'Your Name *', placeholder: 'Your name', required: true },
+                    { key: 'submitterEmail', label: 'Your Email *', placeholder: 'your@email.com', required: true },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{f.label}</label>
+                      <input value={submitForm[f.key]} onChange={e => setSubmitForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} required={f.required} className="input-field" />
+                    </div>
+                  ))}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Type *</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['rent', 'sale'].map(t => (
+                        <button type="button" key={t} onClick={() => setSubmitForm(p => ({ ...p, type: t }))}
+                          style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px', background: submitForm.type === t ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : 'var(--surface2)', color: submitForm.type === t ? 'white' : 'var(--muted)' }}>
+                          {t === 'rent' ? '🔑 For Rent' : '🏷️ For Sale'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Price (₹) *</label>
+                    <input type="number" value={submitForm.price} onChange={e => setSubmitForm(p => ({ ...p, price: e.target.value }))} placeholder={submitForm.type === 'rent' ? 'e.g. 25000 /month' : 'e.g. 5000000 total'} required className="input-field" />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Description</label>
+                  <textarea value={submitForm.description} onChange={e => setSubmitForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the property — floor, amenities, nearby landmarks..." rows={2} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 14px', borderRadius: '10px', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', marginBottom: '20px', alignItems: 'end' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Latitude</label>
+                    <input value={submitForm.latitude} onChange={e => setSubmitForm(p => ({ ...p, latitude: e.target.value }))} placeholder="e.g. 19.0760" className="input-field" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Longitude</label>
+                    <input value={submitForm.longitude} onChange={e => setSubmitForm(p => ({ ...p, longitude: e.target.value }))} placeholder="e.g. 72.8777" className="input-field" />
+                  </div>
+                  <button type="button" onClick={useMyLocation} style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--muted)', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}>📍 My Location</button>
+                </div>
+                {submitStatus.startsWith('error') && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {submitStatus.replace('error:', '')}</p>}
+                <button type="submit" disabled={submitStatus === 'sending'} className="btn-primary" style={{ width: '100%' }}>
+                  {submitStatus === 'sending' ? '⏳ Submitting...' : '🚀 Submit for Review'}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
           {[
@@ -189,9 +289,12 @@ export default function Properties() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                     <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: cfg.light, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>🏪</div>
-                    <span style={{ padding: '5px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', background: cfg.light, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                      {cfg.label}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                      <span style={{ padding: '5px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', background: cfg.light, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                        {cfg.label}
+                      </span>
+                      {p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98120', color: '#34d399', border: '1px solid #10b98130' }}>✅ Community Listed</span>}
+                    </div>
                   </div>
 
                   <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '6px', lineHeight: '1.4' }}>{p.address}</div>

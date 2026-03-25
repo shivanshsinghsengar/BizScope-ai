@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Users'];
+const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users'];
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function AdminPanel() {
   const [suggestions, setSuggestions] = useState([]);
   const [users, setUsers] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
+  const [listedProps, setListedProps] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,10 +28,12 @@ export default function AdminPanel() {
       fetch(`${API_URL}/api/admin/suggestions`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/enquiries`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-    ]).then(([s, u, e]) => {
+      fetch(`${API_URL}/api/admin/properties`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([s, u, e, p]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
       setEnquiries(Array.isArray(e) ? e : []);
+      setListedProps(Array.isArray(p) ? p : []);
       setLoading(false);
     }).catch(() => router.push('/admin/login'));
   }, [token]);
@@ -47,6 +50,20 @@ export default function AdminPanel() {
     if (!confirm('Delete this suggestion?')) return;
     await fetch(`${API_URL}/api/admin/suggestions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setSuggestions(s => s.filter(x => x.id !== id));
+  };
+
+  const updatePropStatus = async (id, status) => {
+    await fetch(`${API_URL}/api/admin/properties/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status }),
+    });
+    setListedProps(p => p.map(x => x.id === id ? { ...x, status } : x));
+  };
+
+  const deleteProp = async (id) => {
+    if (!confirm('Delete this listing?')) return;
+    await fetch(`${API_URL}/api/admin/properties/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    setListedProps(p => p.filter(x => x.id !== id));
   };
 
   const updateEnquiryStatus = async (id, status) => {
@@ -71,12 +88,13 @@ export default function AdminPanel() {
 
   const pending = suggestions.filter(s => s.status === 'pending').length;
   const newEnquiries = enquiries.filter(e => e.status === 'new').length;
+  const pendingProps = listedProps.filter(p => p.status === 'pending').length;
 
   const stats = [
     { label: 'Suggestions', value: suggestions.length, sub: `${pending} pending`, color: '#6366f1', icon: '💡', tab: 'Suggestions' },
     { label: 'Enquiries', value: enquiries.length, sub: `${newEnquiries} new`, color: '#38bdf8', icon: '📬', tab: 'Enquiries' },
+    { label: 'Properties', value: listedProps.length, sub: `${pendingProps} pending`, color: '#f59e0b', icon: '🏪', tab: 'Properties' },
     { label: 'Users', value: users.length, sub: 'registered', color: '#a78bfa', icon: '👥', tab: 'Users' },
-    { label: 'Approved', value: suggestions.filter(s => s.status === 'approved').length, sub: 'suggestions', color: '#10b981', icon: '✅', tab: 'Suggestions' },
   ];
 
   return (
@@ -98,8 +116,8 @@ export default function AdminPanel() {
 
           <nav style={{ padding: '16px 12px', flex: 1 }}>
             {TABS.map(t => {
-              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Users: '👥' };
-              const badges = { Suggestions: pending, Enquiries: newEnquiries };
+              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥' };
+              const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps };
               const active = tab === t;
               return (
                 <button key={t} onClick={() => setTab(t)}
@@ -321,6 +339,60 @@ export default function AdminPanel() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Properties Tab */}
+          {!loading && tab === 'Properties' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {listedProps.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px', background: '#080d18', border: '1px solid #0f1f35', borderRadius: '16px' }}>
+                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏪</div>
+                  <div style={{ color: '#475569' }}>No property listings yet</div>
+                </div>
+              )}
+              {listedProps.map(p => {
+                const sc = { pending: '#f59e0b', approved: '#10b981', rejected: '#ef4444' };
+                return (
+                  <div key={p.id} style={{ background: '#080d18', border: '1px solid #0f1f35', borderRadius: '14px', padding: '18px 22px' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#1e3a5f'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#0f1f35'}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: '700', color: 'white', fontSize: '15px' }}>{p.address}, {p.city}</span>
+                        <span style={{ padding: '2px 9px', borderRadius: '100px', background: p.type === 'rent' ? '#3b82f620' : '#10b98120', color: p.type === 'rent' ? '#60a5fa' : '#34d399', fontSize: '11px', fontWeight: '700' }}>{p.type === 'rent' ? 'RENT' : 'SALE'}</span>
+                        <span style={{ padding: '2px 9px', borderRadius: '100px', background: sc[p.status] + '20', color: sc[p.status], fontSize: '11px', fontWeight: '700' }}>{p.status}</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#334155' }}>{new Date(p.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div style={{ marginTop: '8px', fontSize: '13px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: '700' }}>₹{parseFloat(p.price)?.toLocaleString('en-IN')}{p.type === 'rent' ? '/mo' : ''}</span>
+                      {p.size > 0 && <span>📐 {p.size} sqft</span>}
+                      {p.phone && <span>📞 {p.phone}</span>}
+                      {p.pincode && <span>📮 {p.pincode}</span>}
+                    </div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                      <span>👤 {p.submitterName}</span>
+                      {p.submitterEmail && <span>✉️ {p.submitterEmail}</span>}
+                    </div>
+                    {p.description && <div style={{ marginTop: '6px', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>"{p.description}"</div>}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                      <button onClick={() => updatePropStatus(p.id, 'approved')} disabled={p.status === 'approved'}
+                        style={{ padding: '6px 16px', borderRadius: '8px', border: 'none', background: p.status === 'approved' ? '#1e293b' : '#10b98125', color: p.status === 'approved' ? '#334155' : '#34d399', cursor: p.status === 'approved' ? 'default' : 'pointer', fontSize: '12px', fontWeight: '700' }}>
+                        ✅ Approve
+                      </button>
+                      <button onClick={() => updatePropStatus(p.id, 'rejected')} disabled={p.status === 'rejected'}
+                        style={{ padding: '6px 16px', borderRadius: '8px', border: 'none', background: p.status === 'rejected' ? '#1e293b' : '#ef444425', color: p.status === 'rejected' ? '#334155' : '#f87171', cursor: p.status === 'rejected' ? 'default' : 'pointer', fontSize: '12px', fontWeight: '700' }}>
+                        ✕ Reject
+                      </button>
+                      <button onClick={() => deleteProp(p.id)}
+                        style={{ padding: '6px 16px', borderRadius: '8px', border: '1px solid #1e293b', background: 'transparent', color: '#475569', cursor: 'pointer', fontSize: '12px' }}>
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
