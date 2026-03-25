@@ -1,9 +1,119 @@
 import API_URL from '../utils/api';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
+
+const LOADING_STEPS = [
+  { icon: '📍', text: 'Finding your location on the map...', sub: 'Geocoding your area' },
+  { icon: '🔍', text: 'Scanning businesses nearby...', sub: 'Fetching real data from OpenStreetMap' },
+  { icon: '🏪', text: 'Counting your competitors...', sub: 'Analyzing shops, restaurants & more' },
+  { icon: '📊', text: 'Calculating market scores...', sub: 'Running competition analysis' },
+  { icon: '🤖', text: 'Asking AI for recommendations...', sub: 'Generating personalized insights' },
+  { icon: '✨', text: 'Almost there! Polishing results...', sub: 'Preparing your market report' },
+];
+
+function AnalysisLoader({ city }) {
+  const [step, setStep] = useState(0);
+  const [dots, setDots] = useState('');
+  const intervalRef = useRef(null);
+  const dotsRef = useRef(null);
+
+  useEffect(() => {
+    // Cycle through steps every 3.5s
+    intervalRef.current = setInterval(() => {
+      setStep(s => (s + 1) % LOADING_STEPS.length);
+    }, 3500);
+    // Animate dots
+    dotsRef.current = setInterval(() => {
+      setDots(d => d.length >= 3 ? '' : d + '.');
+    }, 400);
+    return () => {
+      clearInterval(intervalRef.current);
+      clearInterval(dotsRef.current);
+    };
+  }, []);
+
+  const current = LOADING_STEPS[step];
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(8,12,20,0.97)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      backdropFilter: 'blur(12px)',
+    }}>
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
+
+        {/* Big animated icon */}
+        <div style={{
+          fontSize: '72px', marginBottom: '24px',
+          animation: 'fadeInUp 0.4s ease',
+          key: step,
+        }}>
+          {current.icon}
+        </div>
+
+        {/* City name */}
+        <div style={{ fontSize: '13px', color: '#6366f1', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+          Analyzing {city}
+        </div>
+
+        {/* Main message */}
+        <div style={{
+          fontSize: '22px', fontWeight: '800', color: '#f1f5f9',
+          marginBottom: '8px', lineHeight: '1.3',
+          minHeight: '60px',
+        }}>
+          {current.text}{dots}
+        </div>
+
+        {/* Sub message */}
+        <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>
+          {current.sub}
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ width: '100%', height: '4px', background: '#0f172a', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: '2px',
+            background: 'linear-gradient(90deg, #6366f1, #a78bfa, #ec4899)',
+            width: `${((step + 1) / LOADING_STEPS.length) * 100}%`,
+            transition: 'width 0.6s ease',
+            boxShadow: '0 0 12px rgba(99,102,241,0.6)',
+          }} />
+        </div>
+
+        {/* Step indicators */}
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
+          {LOADING_STEPS.map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? '24px' : '8px', height: '8px',
+              borderRadius: '4px',
+              background: i <= step ? '#6366f1' : '#1e293b',
+              transition: 'all 0.3s ease',
+            }} />
+          ))}
+        </div>
+
+        {/* Fun tip */}
+        <div style={{
+          background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+          borderRadius: '14px', padding: '14px 20px',
+          fontSize: '13px', color: '#64748b', lineHeight: '1.6',
+        }}>
+          💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope analyzes real businesses from OpenStreetMap — the same data used by Apple Maps and Wikipedia.
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [form, setForm] = useState({ city: '', address: '', pincode: '' });
@@ -18,7 +128,6 @@ export default function Home() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      // Build location string — skip empty fields
       const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
       const location = parts.join(', ');
       const res = await fetch(`${API_URL}/api/analyze-location`, {
@@ -49,6 +158,9 @@ export default function Home() {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)' }}>
 
         {/* Background handled by global canvas */}
+
+        {/* Analysis loader overlay */}
+        {loading && <AnalysisLoader city={form.city || form.address || 'your location'} />}
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
@@ -126,7 +238,7 @@ export default function Home() {
                 </div>
                 {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
                 <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px' }}>
-                  {loading ? '⏳ Analyzing Market...' : '🔍 Analyze Market'}
+                  {loading ? '⏳ Analyzing...' : '🔍 Analyze Market'}
                 </button>
               </form>
             </div>
