@@ -27,8 +27,8 @@ export default function Layout({ children }) {
 
       {/* Ambient blobs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%)', animation: 'blobFloat 14s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%)', animation: 'blobFloat2 17s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,240,58,0.07) 0%, transparent 70%)', animation: 'blobFloat 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)', animation: 'blobFloat2 17s ease-in-out infinite' }} />
       </div>
 
       {/* Topbar */}
@@ -36,15 +36,15 @@ export default function Layout({ children }) {
 
         {/* Logo */}
         <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
-          <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
+          <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #c8f03a, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
         </div>
 
         {/* Desktop nav links */}
         <div className="nav-links" style={{ display: 'flex', gap: '2px', overflowX: 'auto' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => router.push(n.href)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', transition: 'all 0.2s', background: router.pathname === n.href ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : 'transparent', color: router.pathname === n.href ? 'white' : 'var(--muted)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', transition: 'all 0.2s', background: router.pathname === n.href ? 'linear-gradient(135deg, #c8f03a, #a8d420)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--muted)' }}
               onMouseEnter={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; } }}
               onMouseLeave={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; } }}>
               <span>{n.icon}</span><span>{n.label}</span>
@@ -93,7 +93,7 @@ export default function Layout({ children }) {
         <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 99, background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => { router.push(n.href); setMenuOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : 'transparent', color: router.pathname === n.href ? 'white' : 'var(--text)' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'linear-gradient(135deg, #c8f03a, #a8d420)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--text)' }}>
               <span>{n.icon}</span><span>{n.label}</span>
             </button>
           ))}
@@ -129,7 +129,7 @@ export default function Layout({ children }) {
       <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', background: 'var(--bg2)', padding: '20px 24px' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
+            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
             <span style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

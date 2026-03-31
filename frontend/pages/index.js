@@ -40,14 +40,14 @@ function AnalysisLoader({ city }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(8,12,20,0.97)',
+      background: 'rgba(10,15,10,0.97)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(12px)',
     }}>
       {/* Glow orbs */}
-      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,240,58,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
 
@@ -61,7 +61,7 @@ function AnalysisLoader({ city }) {
         </div>
 
         {/* City name */}
-        <div style={{ fontSize: '13px', color: '#6366f1', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+        <div style={{ fontSize: '13px', color: '#c8f03a', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
           Analyzing {city}
         </div>
 
@@ -83,10 +83,10 @@ function AnalysisLoader({ city }) {
         <div style={{ width: '100%', height: '4px', background: '#0f172a', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: '2px',
-            background: 'linear-gradient(90deg, #6366f1, #a78bfa, #ec4899)',
+            background: 'linear-gradient(90deg, #c8f03a, #ffffff, #ef4444)',
             width: `${((step + 1) / LOADING_STEPS.length) * 100}%`,
             transition: 'width 0.6s ease',
-            boxShadow: '0 0 12px rgba(99,102,241,0.6)',
+            boxShadow: '0 0 12px rgba(200,240,58,0.6)',
           }} />
         </div>
 
@@ -96,7 +96,7 @@ function AnalysisLoader({ city }) {
             <div key={i} style={{
               width: i === step ? '24px' : '8px', height: '8px',
               borderRadius: '4px',
-              background: i <= step ? '#6366f1' : '#1e293b',
+              background: i <= step ? '#c8f03a' : '#1a2a1a',
               transition: 'all 0.3s ease',
             }} />
           ))}
@@ -104,7 +104,7 @@ function AnalysisLoader({ city }) {
 
         {/* Fun tip */}
         <div style={{
-          background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+          background: 'rgba(200,240,58,0.08)', border: '1px solid rgba(200,240,58,0.2)',
           borderRadius: '14px', padding: '14px 20px',
           fontSize: '13px', color: '#64748b', lineHeight: '1.6',
         }}>
@@ -166,8 +166,8 @@ export default function Home() {
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #c8f03a, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
             </div>
             <div className="nav-links" style={{ display: 'flex', gap: '24px', fontSize: '14px', color: 'var(--muted)' }}>
               {[
@@ -187,7 +187,7 @@ export default function Home() {
                 {dark ? '☀️' : '🌙'}
               </button>
               <button onClick={() => router.push('/analysis')}
-                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: 'white', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                style={{ background: 'linear-gradient(135deg, #c8f03a, #a8d420)', color: '#0a0f0a', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
                 Get Started →
               </button>
             </div>
@@ -200,8 +200,8 @@ export default function Home() {
 
             {/* Badge */}
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#a78bfa' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#6366f1', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(200,240,58,0.1)', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#c8f03a' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c8f03a', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                 Powered by OpenStreetMap + AI
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function Home() {
             {/* Form Card */}
             <div className="anim-scale delay-3" style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1' }} />
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c8f03a' }} />
                 <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text2)' }}>Analyze a Location</span>
               </div>
               <form onSubmit={handleAnalyze}>
@@ -261,12 +261,12 @@ export default function Home() {
             {/* Feature cards */}
             <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '64px' }}>
               {[
-                { icon: '🏪', title: 'Competitor Analysis', desc: 'Real businesses from OpenStreetMap within 3km radius.', color: '#4f46e5' },
-                { icon: '📊', title: 'Market Scoring', desc: 'See how crowded each business type is and find opportunities.', color: '#7c3aed' },
-                { icon: '🏠', title: 'Property Finder', desc: 'Available commercial spaces for rent or sale near your location.', color: '#ec4899' },
-                { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#f59e0b' },
-                { icon: '🗺️', title: 'Interactive Map', desc: 'Visualize competitors and properties on a live map.', color: '#10b981' },
-                { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#3b82f6' },
+                { icon: '🏪', title: 'Competitor Analysis', desc: 'Real businesses from OpenStreetMap within 3km radius.', color: '#c8f03a' },
+                { icon: '📊', title: 'Market Scoring', desc: 'See how crowded each business type is and find opportunities.', color: '#ef4444' },
+                { icon: '🏠', title: 'Property Finder', desc: 'Available commercial spaces for rent or sale near your location.', color: '#ffffff' },
+                { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#a8d420' },
+                { icon: '🗺️', title: 'Interactive Map', desc: 'Visualize competitors and properties on a live map.', color: '#dc2626' },
+                { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#c8f03a' },
               ].map((f, i) => (
                 <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '22px' }}>
                   <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${f.color}20`, border: `1px solid ${f.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '14px' }}>{f.icon}</div>
@@ -287,8 +287,8 @@ export default function Home() {
                   { step: '03', icon: '🎯', title: 'Get Insights', desc: 'View competitors, properties & AI tips' },
                 ].map((s) => (
                   <div key={s.step} style={{ flex: '1', minWidth: '200px', maxWidth: '260px', padding: '28px 20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 14px' }}>{s.icon}</div>
-                    <div style={{ fontSize: '11px', color: '#4f46e5', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '8px' }}>STEP {s.step}</div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 14px' }}>{s.icon}</div>
+                    <div style={{ fontSize: '11px', color: '#c8f03a', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '8px' }}>STEP {s.step}</div>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>{s.title}</h3>
                     <p style={{ fontSize: '13px', color: 'var(--muted)' }}>{s.desc}</p>
                   </div>
@@ -304,7 +304,7 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '32px', marginBottom: '32px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🚀</div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🚀</div>
                   <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
                 </div>
                 <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>AI-powered business intelligence for entrepreneurs.</p>
