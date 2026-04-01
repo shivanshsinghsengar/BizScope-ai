@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext({ dark: true, toggle: () => {} });
 
 export function ThemeProvider({ children }) {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

@@ -9,7 +9,6 @@ import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
 import ExportPDF from '../components/ExportPDF';
 import { useAuth } from '../context/AuthContext';
-
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const categoryColors = {
@@ -36,7 +35,24 @@ export default function Dashboard() {
   const { user, token } = useAuth();
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   if (!data) return <Layout><PageSkeleton /></Layout>;
+
+  // Business Viability Score: avg of (100 - riskScore) weighted by demand
+  const viabilityScore = data.categoryStats?.length
+    ? Math.round(
+        data.categoryStats.reduce((sum, s) => sum + (100 - s.riskScore) * (s.demandScore / 10), 0) /
+        data.categoryStats.reduce((sum, s) => sum + (s.demandScore / 10), 0)
+      )
+    : 0;
+  const viabilityLabel = viabilityScore >= 70 ? 'Excellent' : viabilityScore >= 50 ? 'Good' : viabilityScore >= 30 ? 'Fair' : 'Tough';
+  const viabilityColor = viabilityScore >= 70 ? '#c8f03a' : viabilityScore >= 50 ? '#a8d420' : viabilityScore >= 30 ? '#f59e0b' : '#ef4444';
+
+  const handleShare = () => {
+    const loc = data.location?.displayName?.split(',').slice(0, 2).join(',') || '';
+    const url = `${window.location.origin}/?location=${encodeURIComponent(loc)}`;
+    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
 
   const saveSearch = async () => {
     if (!user) return;
@@ -91,6 +107,10 @@ export default function Dashboard() {
             <span>🏪 {data.businesses?.length} businesses</span>
             <span>📂 {data.categoryStats?.length} categories</span>
             <ExportPDF data={data} />
+            <button onClick={handleShare}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #c8f03a40', background: copied ? '#c8f03a15' : 'transparent', color: copied ? '#c8f03a' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+              {copied ? '✅ Copied!' : '🔗 Share'}
+            </button>
             {user && (
               <button onClick={saveSearch} disabled={saved}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #10b98140', background: saved ? '#10b98115' : 'transparent', color: saved ? '#34d399' : '#64748b', cursor: saved ? 'default' : 'pointer', fontSize: '13px', fontWeight: '600' }}>
@@ -101,12 +121,13 @@ export default function Dashboard() {
         </div>
 
         {/* Stat cards */}
-        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
           {[
             { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#6366f1', href: '/competitors' },
             { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
             { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
             { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#10b981', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
+            { icon: '🎯', label: `Viability: ${viabilityLabel}`, value: `${viabilityScore}/100`, color: viabilityColor, href: '/insights' },
           ].map((s, i) => (
             <div key={i} onClick={() => router.push(s.href)}
               style={{ background: 'var(--surface)', border: `1px solid ${s.color}25`, borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }}

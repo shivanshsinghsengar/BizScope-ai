@@ -5,109 +5,60 @@ import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
 
-const LOADING_STEPS = [
-  { icon: '📍', text: 'Finding your location on the map...', sub: 'Geocoding your area' },
-  { icon: '🔍', text: 'Scanning businesses nearby...', sub: 'Fetching real data from OpenStreetMap' },
-  { icon: '🏪', text: 'Counting your competitors...', sub: 'Analyzing shops, restaurants & more' },
-  { icon: '📊', text: 'Calculating market scores...', sub: 'Running competition analysis' },
-  { icon: '🤖', text: 'Asking AI for recommendations...', sub: 'Generating personalized insights' },
-  { icon: '✨', text: 'Almost there! Polishing results...', sub: 'Preparing your market report' },
-];
+// Real-time steps driven by SSE events
+const STEP_META = {
+  geocode: { icon: '📍', label: 'Finding your location...' },
+  fetch:   { icon: '🔍', label: 'Scanning businesses nearby...' },
+  count:   { icon: '🏪', label: 'Counting competitors...' },
+  score:   { icon: '📊', label: 'Calculating market scores...' },
+  ai:      { icon: '🤖', label: 'Asking AI for recommendations...' },
+  done:    { icon: '✨', label: 'Polishing results...' },
+  cache:   { icon: '⚡', label: 'Loading from cache...' },
+};
 
-function AnalysisLoader({ city }) {
-  const [step, setStep] = useState(0);
+function AnalysisLoader({ city, step, message, sub, progress }) {
   const [dots, setDots] = useState('');
-  const intervalRef = useRef(null);
   const dotsRef = useRef(null);
-
   useEffect(() => {
-    // Cycle through steps every 3.5s
-    intervalRef.current = setInterval(() => {
-      setStep(s => (s + 1) % LOADING_STEPS.length);
-    }, 3500);
-    // Animate dots
-    dotsRef.current = setInterval(() => {
-      setDots(d => d.length >= 3 ? '' : d + '.');
-    }, 400);
-    return () => {
-      clearInterval(intervalRef.current);
-      clearInterval(dotsRef.current);
-    };
+    dotsRef.current = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 400);
+    return () => clearInterval(dotsRef.current);
   }, []);
 
-  const current = LOADING_STEPS[step];
+  const meta = STEP_META[step] || STEP_META.geocode;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(10,15,10,0.97)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      backdropFilter: 'blur(12px)',
-    }}>
-      {/* Glow orbs */}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,15,10,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
       <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,240,58,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: '72px', marginBottom: '24px', animation: 'fadeInUp 0.4s ease' }}>{meta.icon}</div>
 
-        {/* Big animated icon */}
-        <div style={{
-          fontSize: '72px', marginBottom: '24px',
-          animation: 'fadeInUp 0.4s ease',
-          key: step,
-        }}>
-          {current.icon}
-        </div>
-
-        {/* City name */}
         <div style={{ fontSize: '13px', color: '#c8f03a', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
           Analyzing {city}
         </div>
 
-        {/* Main message */}
-        <div style={{
-          fontSize: '22px', fontWeight: '800', color: '#f1f5f9',
-          marginBottom: '8px', lineHeight: '1.3',
-          minHeight: '60px',
-        }}>
-          {current.text}{dots}
+        <div style={{ fontSize: '22px', fontWeight: '800', color: '#f1f5f9', marginBottom: '8px', lineHeight: '1.3', minHeight: '60px' }}>
+          {message || meta.label}{dots}
         </div>
 
-        {/* Sub message */}
-        <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>
-          {current.sub}
+        <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>{sub || ''}</div>
+
+        {/* Real progress bar */}
+        <div style={{ width: '100%', height: '6px', background: '#1a2a1a', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #c8f03a, #ffffff, #ef4444)', width: `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: '0 0 12px rgba(200,240,58,0.6)' }} />
         </div>
 
-        {/* Progress bar */}
-        <div style={{ width: '100%', height: '4px', background: '#0f172a', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: '2px',
-            background: 'linear-gradient(90deg, #c8f03a, #ffffff, #ef4444)',
-            width: `${((step + 1) / LOADING_STEPS.length) * 100}%`,
-            transition: 'width 0.6s ease',
-            boxShadow: '0 0 12px rgba(200,240,58,0.6)',
-          }} />
-        </div>
+        <div style={{ fontSize: '13px', color: '#c8f03a', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
 
         {/* Step indicators */}
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
-          {LOADING_STEPS.map((_, i) => (
-            <div key={i} style={{
-              width: i === step ? '24px' : '8px', height: '8px',
-              borderRadius: '4px',
-              background: i <= step ? '#c8f03a' : '#1a2a1a',
-              transition: 'all 0.3s ease',
-            }} />
+          {Object.keys(STEP_META).filter(k => k !== 'cache').map((k, i) => (
+            <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#c8f03a' : '#1a2a1a', transition: 'all 0.3s ease' }} />
           ))}
         </div>
 
-        {/* Fun tip */}
-        <div style={{
-          background: 'rgba(200,240,58,0.08)', border: '1px solid rgba(200,240,58,0.2)',
-          borderRadius: '14px', padding: '14px 20px',
-          fontSize: '13px', color: '#64748b', lineHeight: '1.6',
-        }}>
+        <div style={{ background: 'rgba(200,240,58,0.08)', border: '1px solid rgba(200,240,58,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
           💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope analyzes real businesses from OpenStreetMap — the same data used by Apple Maps and Wikipedia.
         </div>
       </div>
@@ -118,28 +69,72 @@ function AnalysisLoader({ city }) {
 export default function Home() {
   const [form, setForm] = useState({ city: '', address: '', pincode: '' });
   const [loading, setLoading] = useState(false);
+  const [loadState, setLoadState] = useState({ step: 'geocode', message: '', sub: '', progress: 0 });
   const [error, setError] = useState('');
+  const [history, setHistory] = useState([]);
   const router = useRouter();
   const { dark, toggle } = useTheme();
+
+  // Load search history from localStorage
+  useEffect(() => {
+    try {
+      const h = JSON.parse(localStorage.getItem('bizscope_history') || '[]');
+      setHistory(h.slice(0, 5));
+    } catch (_) {}
+  }, []);
+
+  const saveToHistory = (location) => {
+    try {
+      const h = JSON.parse(localStorage.getItem('bizscope_history') || '[]');
+      const updated = [location, ...h.filter(x => x !== location)].slice(0, 5);
+      localStorage.setItem('bizscope_history', JSON.stringify(updated));
+      setHistory(updated);
+    } catch (_) {}
+  };
+
+  // Handle shared link — auto-fill location from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const loc = params.get('location');
+    if (loc) setForm(f => ({ ...f, city: loc }));
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');
+    const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
+    const location = parts.join(', ');
+
     try {
-      const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
-      const location = parts.join(', ');
-      const res = await fetch(`${API_URL}/api/analyze-location`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      sessionStorage.setItem('analysisData', JSON.stringify(data));
-      router.push('/analysis');
+      const evtSource = new EventSource(`${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`);
+
+      evtSource.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.step === 'error') {
+          evtSource.close();
+          setError(msg.message);
+          setLoading(false);
+          return;
+        }
+        if (msg.step === 'result') {
+          evtSource.close();
+          saveToHistory(form.city || form.address);
+          sessionStorage.setItem('analysisData', JSON.stringify(msg.data));
+          router.push('/analysis');
+          return;
+        }
+        setLoadState({ step: msg.step, message: msg.message, sub: msg.sub, progress: msg.progress });
+      };
+
+      evtSource.onerror = () => {
+        evtSource.close();
+        setError('Connection lost. Please try again.');
+        setLoading(false);
+      };
     } catch (err) {
-      setError(err.message || 'Location not found. Try a different city or area name.');
+      setError(err.message || 'Analysis failed.');
       setLoading(false);
     }
   };
@@ -152,6 +147,13 @@ export default function Home() {
         <meta name="keywords" content="business analysis, competitor analysis, market research, business opportunity, India, entrepreneur" />
         <meta property="og:title" content="BizScope AI — Business Intelligence Platform" />
         <meta property="og:description" content="AI-powered market analysis. Find the best business opportunity in your area." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://bizscope-ai.vercel.app" />
+        <meta property="og:image" content="https://bizscope-ai.vercel.app/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="BizScope AI — Business Intelligence Platform" />
+        <meta name="twitter:description" content="AI-powered market analysis. Find the best business opportunity in your area." />
+        <meta name="twitter:image" content="https://bizscope-ai.vercel.app/og-image.png" />
         <meta name="robots" content="index, follow" />
       </Head>
 
@@ -160,7 +162,7 @@ export default function Home() {
         {/* Background handled by global canvas */}
 
         {/* Analysis loader overlay */}
-        {loading && <AnalysisLoader city={form.city || form.address || 'your location'} />}
+        {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
@@ -237,6 +239,19 @@ export default function Home() {
                   ))}
                 </div>
                 {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
+                {history.length > 0 && !loading && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Recent searches</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {history.map(h => (
+                        <button key={h} type="button" onClick={() => setForm(f => ({ ...f, city: h }))}
+                          style={{ padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' }}>
+                          🕐 {h}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px' }}>
                   {loading ? '⏳ Analyzing...' : '🔍 Analyze Market'}
                 </button>

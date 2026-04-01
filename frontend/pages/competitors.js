@@ -139,6 +139,7 @@ export default function Competitors() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('rating');
+  const [distKm, setDistKm] = useState(5);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
@@ -148,8 +149,19 @@ export default function Competitors() {
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
   const categories = ['All', ...new Set(data.businesses?.map(b => b.category) || [])];
+
+  // Distance filter using haversine approximation
+  const userLat = data.userLat;
+  const userLng = data.userLng;
+  const withinDist = (b) => {
+    if (!userLat || !userLng || !b.latitude || !b.longitude) return true;
+    const dLat = (b.latitude - userLat) * 111;
+    const dLng = (b.longitude - userLng) * 111 * Math.cos(userLat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng) <= distKm;
+  };
+
   const filtered = (data.businesses || [])
-    .filter(b => (filter === 'All' || b.category === filter) && b.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(b => (filter === 'All' || b.category === filter) && b.name.toLowerCase().includes(search.toLowerCase()) && withinDist(b))
     .sort((a, b) => sort === 'rating' ? b.rating - a.rating : b.reviewCount - a.reviewCount);
 
   return (
@@ -169,6 +181,12 @@ export default function Competitors() {
           <select value={sort} onChange={e => setSort(e.target.value)} className="input-field" style={{ width: '160px' }}>
             <option value="rating">Sort: Rating</option>
             <option value="reviews">Sort: Reviews</option>
+          </select>
+          <select value={distKm} onChange={e => setDistKm(Number(e.target.value))} className="input-field" style={{ width: '140px' }}>
+            <option value={1}>Within 1 km</option>
+            <option value={2}>Within 2 km</option>
+            <option value={3}>Within 3 km</option>
+            <option value={5}>Within 5 km</option>
           </select>
         </div>
 

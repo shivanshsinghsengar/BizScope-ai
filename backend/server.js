@@ -706,6 +706,134 @@ app.get('/api/suggestions', authMiddleware, async (req, res) => {
   res.json(await PublicSuggestion.findAll({ order: [['createdAt', 'DESC']] }));
 });
 
+// 0. Real-time streaming analysis via SSE
+app.get('/api/analyze-stream', async (req, res) => {
+  const location = req.query.location;
+  if (!location) return res.status(400).json({ error: 'location required' });
+
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+
+  const send = (step, message, sub, progress) => {
+    res.write(`data: ${JSON.stringify({ step, message, sub, progress })}\n\n`);
+  };
+
+  try {
+    const cacheKey = location.toLowerCase().trim();
+    const cached = getCached(cacheKey);
+    if (cached && cached.aiSuggestions !== 'Generating AI recommendations...') {
+      send('cache', 'Loading from cache...', 'Instant results', 10);
+      send('done', 'Complete!', 'Results ready', 100);
+      res.write(`data: ${JSON.stringify({ step: 'result', data: cached })}\n\n`);
+      return res.end();
+    }
+
+    // Step 1: Geocode
+    send('geocode', 'Finding your location on the map...', 'Geocoding your area', 10);
+    const geo = await geocodeLocation(location);
+    if (!geo) {
+      res.write(`data: ${JSON.stringify({ step: 'error', message: 'Location not found. Please check the spelling.' })}\n\n`);
+      return res.end();
+    }
+    const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
+    send('geocode', `Found: ${displayName.split(',').slice(0, 2).join(', ')}`, 'Location confirmed', 20);
+
+    // Step 2: Fetch businesses
+    send('fetch', 'Scanning businesses nearby...', 'Fetching real data from OpenStreetMap', 30);
+    const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
+      fetchRealBusinesses(latitude, longitude, 5000),
+      fetchFoursquareBusinesses(latitude, longitude, 5000),
+      ManualBusiness.findAll().then(all => all.filter(b =>
+        b.latitude && b.longitude &&
+        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
+      )),
+    ]);
+
+    const seen = new Set();
+    let businesses = [...osmBusinesses, ...fsqBusinesses,
+      ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+    ].filter(b => {
+      const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (businesses.length === 0) {
+      send('fetch', 'Retrying with extended search...', 'Expanding search radius', 40);
+      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 55000);
+      const retrySeen = new Set();
+      businesses = [...retryBusinesses, ...fsqBusinesses,
+        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+      ].filter(b => {
+        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+        if (retrySeen.has(key)) return false;
+        retrySeen.add(key);
+        return true;
+      });
+    }
+
+    if (businesses.length === 0) {
+      res.write(`data: ${JSON.stringify({ step: 'error', message: 'No businesses found in this area.' })}\n\n`);
+      return res.end();
+    }
+
+    send('count', `Found ${businesses.length} businesses nearby`, 'Analyzing shops, restaurants & more', 55);
+
+    // Step 3: Category stats
+    send('score', 'Calculating market scores...', 'Running competition analysis', 65);
+    const categoryStats = {};
+    businesses.forEach(({ category, rating, reviewCount }) => {
+      if (!categoryStats[category]) categoryStats[category] = { count: 0, totalRating: 0, totalReviews: 0 };
+      categoryStats[category].count++;
+      categoryStats[category].totalRating += parseFloat(rating);
+      categoryStats[category].totalReviews += reviewCount;
+    });
+    Object.keys(categoryStats).forEach(cat => {
+      const s = categoryStats[cat];
+      s.avgRating = (s.totalRating / s.count).toFixed(1);
+      s.popularityScore = Math.sqrt(s.totalReviews);
+      s.competitorScore = (s.count * 0.4) + (parseFloat(s.avgRating) * 0.3) + (s.popularityScore * 0.3);
+    });
+    const scores = Object.values(categoryStats).map(s => s.competitorScore);
+    const minScore = Math.min(...scores);
+    const maxScore = Math.max(...scores);
+    Object.keys(categoryStats).forEach(cat => {
+      const s = categoryStats[cat];
+      s.riskScore = maxScore === minScore ? 50 : Math.round(((s.competitorScore - minScore) / (maxScore - minScore)) * 100);
+      s.riskLevel = s.riskScore >= 70 ? 'High' : s.riskScore >= 35 ? 'Medium' : 'Low';
+      s.demandScore = Math.min(10, parseFloat((s.popularityScore / (s.count || 1) * 2).toFixed(1)));
+    });
+    const sortedStats = Object.entries(categoryStats)
+      .map(([category, stats]) => ({ category, ...stats }))
+      .sort((a, b) => b.competitorScore - a.competitorScore);
+
+    // Step 4: AI
+    send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
+    const aiSuggestions = await getAISuggestions(location, categoryStats);
+
+    send('done', 'Analysis complete!', 'Preparing your market report', 100);
+
+    const result = {
+      location: { displayName, latitude, longitude },
+      partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
+      businesses, categoryStats: sortedStats, aiSuggestions,
+      userLat: latitude, userLng: longitude,
+    };
+    setCache(cacheKey, result);
+    res.write(`data: ${JSON.stringify({ step: 'result', data: result })}\n\n`);
+    res.end();
+  } catch (error) {
+    console.error(error);
+    res.write(`data: ${JSON.stringify({ step: 'error', message: 'Analysis failed. Please try again.' })}\n\n`);
+    res.end();
+  }
+});
+
 // 1. Location Analysis
 app.post('/api/analyze-location', async (req, res) => {
   try {
