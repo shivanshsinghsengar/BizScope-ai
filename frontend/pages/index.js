@@ -219,6 +219,20 @@ export default function Home() {
               Analyze competitors, discover market gaps, and find the perfect location — all powered by real data and AI.
             </p>
 
+            {/* Social proof */}
+            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', marginBottom: '40px' }}>
+              {[
+                { icon: '🇮🇳', text: 'Built for Indian markets' },
+                { icon: '🗺️', text: '50M+ businesses indexed' },
+                { icon: '⚡', text: 'Results in under 10 seconds' },
+                { icon: '🆓', text: 'Free — no credit card' },
+              ].map(s => (
+                <div key={s.text} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)' }}>
+                  <span>{s.icon}</span><span>{s.text}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Form Card */}
             <div className="anim-scale delay-3" style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -256,6 +270,34 @@ export default function Home() {
                   {loading ? '⏳ Analyzing...' : '🔍 Analyze Market'}
                 </button>
               </form>
+            </div>
+
+            {/* Demo Video Section */}
+            <div className="anim-fade-up delay-4" style={{ maxWidth: '800px', margin: '0 auto 64px', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#ef4444', marginBottom: '16px' }}>
+                ▶ Watch Demo
+              </div>
+              <h2 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>See BizScope in Action</h2>
+              <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>Full walkthrough — from entering a location to reading AI insights</p>
+              <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', cursor: 'pointer' }}
+                onClick={() => window.open('https://www.youtube.com/watch?v=demo', '_blank')}>
+                {/* Placeholder thumbnail */}
+                <div style={{ width: '100%', paddingTop: '56.25%', background: 'linear-gradient(135deg, var(--surface2), var(--surface))', position: 'relative' }}>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+                    <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', boxShadow: '0 8px 30px rgba(200,240,58,0.4)', transition: 'transform 0.2s' }}>▶</div>
+                    <div style={{ fontSize: '14px', color: 'var(--muted)' }}>2 min product walkthrough</div>
+                  </div>
+                  {/* Mock UI preview */}
+                  <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', display: 'flex', gap: '8px' }}>
+                    {['📍 Enter Location', '📊 View Analysis', '🤖 AI Insights'].map((s, i) => (
+                      <div key={i} style={{ flex: 1, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', color: 'white', textAlign: 'center' }}>{s}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '12px' }}>
+                Or <span onClick={() => window.open('/', '_self')} style={{ color: '#c8f03a', cursor: 'pointer', fontWeight: '600' }}>try it live →</span> no signup required
+              </p>
             </div>
 
             {/* Stats bar */}

@@ -10,13 +10,13 @@ const plans = [
     cta: 'Get Started Free', href: '/',
   },
   {
-    name: 'Pro', price: '₹499', period: '/month', color: '#6366f1', popular: true,
+    name: 'Pro', price: '₹499', period: '/month', color: '#c8f03a', popular: true,
     features: ['Unlimited analyses', 'PDF report export', 'Saved searches (unlimited)', 'AI business recommendations', 'Full competitor data', 'Priority support', 'Advanced trend charts'],
     missing: ['White-label reports', 'API access'],
     cta: 'Start Pro', href: '/register',
   },
   {
-    name: 'Business', price: '₹1,999', period: '/month', color: '#f59e0b',
+    name: 'Business', price: '₹1,999', period: '/month', color: '#ef4444',
     features: ['Everything in Pro', 'White-label PDF reports', 'API access', 'Multiple team members', 'Custom branding', 'Dedicated support', 'Bulk location analysis'],
     missing: [],
     cta: 'Contact Us', href: 'mailto:hello@bizscope.ai',
@@ -38,8 +38,8 @@ export default function Pricing() {
         {/* Navbar */}
         <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🚀</div>
-            <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#6366f1,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg,#c8f03a,#a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🚀</div>
+            <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#c8f03a,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{dark ? '☀️' : '🌙'}</button>
@@ -59,7 +59,7 @@ export default function Pricing() {
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 {p.popular && (
-                  <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: 'white', padding: '4px 18px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', padding: '4px 18px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}>
                     Most Popular
                   </div>
                 )}
@@ -82,7 +82,7 @@ export default function Pricing() {
                   ))}
                 </div>
                 <a href={p.href}
-                  style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '12px', background: p.popular ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : 'var(--surface2)', color: p.popular ? 'white' : 'var(--text)', fontWeight: '600', fontSize: '14px', textDecoration: 'none', border: p.popular ? 'none' : '1px solid var(--border2)', cursor: 'pointer' }}>
+                  style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '12px', background: p.popular ? 'linear-gradient(135deg,#c8f03a,#a8d420)' : 'var(--surface2)', color: p.popular ? '#0a0f0a' : 'var(--text)', fontWeight: '700', fontSize: '14px', textDecoration: 'none', border: p.popular ? 'none' : '1px solid var(--border2)', cursor: 'pointer' }}>
                   {p.cta}
                 </a>
               </div>

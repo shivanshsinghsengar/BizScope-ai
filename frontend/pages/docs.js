@@ -171,8 +171,8 @@ export default function Docs() {
         {/* Navbar */}
         <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
           <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🚀</div>
-            <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#6366f1,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg,#c8f03a,#a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🚀</div>
+            <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#c8f03a,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{dark ? '☀️' : '🌙'}</button>
@@ -187,7 +187,7 @@ export default function Docs() {
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Documentation</div>
             {sections.map(s => (
               <button key={s.id} onClick={() => setActive(s.id)}
-                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: active === s.id ? '600' : '400', marginBottom: '2px', background: active === s.id ? 'linear-gradient(135deg,#4f46e510,#7c3aed10)' : 'transparent', color: active === s.id ? '#a78bfa' : 'var(--muted)', borderLeft: active === s.id ? '2px solid #6366f1' : '2px solid transparent', transition: 'all 0.15s' }}>
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: active === s.id ? '600' : '400', marginBottom: '2px', background: active === s.id ? 'rgba(200,240,58,0.08)' : 'transparent', color: active === s.id ? '#a8d420' : 'var(--muted)', borderLeft: active === s.id ? '2px solid #c8f03a' : '2px solid transparent', transition: 'all 0.15s' }}>
                 {s.title}
               </button>
             ))}
