@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
+import ReviewWidget from '../components/ReviewWidget';
 import { useTheme } from '../context/ThemeContext';
 
 // Real-time steps driven by SSE events
@@ -72,8 +73,13 @@ export default function Home() {
   const [loadState, setLoadState] = useState({ step: 'geocode', message: '', sub: '', progress: 0 });
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
+  const [reviews, setReviews] = useState({ reviews: [], avg: 0, total: 0 });
   const router = useRouter();
   const { dark, toggle } = useTheme();
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/reviews`).then(r => r.json()).then(d => setReviews(d)).catch(() => {});
+  }, []);
 
   // Load search history from localStorage
   useEffect(() => {
@@ -122,6 +128,8 @@ export default function Home() {
           evtSource.close();
           saveToHistory(form.city || form.address);
           sessionStorage.setItem('analysisData', JSON.stringify(msg.data));
+          // Trigger review widget after successful analysis
+          setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
           router.push('/analysis');
           return;
         }
@@ -201,35 +209,39 @@ export default function Home() {
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px 40px' }}>
 
             {/* Badge */}
-            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(200,240,58,0.1)', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#c8f03a' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c8f03a', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                Powered by OpenStreetMap + AI
+                🇮🇳 #1 Free Business Intelligence Tool for India
               </div>
             </div>
 
             {/* Headline */}
-            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(32px, 6vw, 64px)', fontWeight: '800', lineHeight: '1.1', marginBottom: '20px', color: 'var(--text)' }}>
-              Find Your Next<br />
-              <span className="gradient-text-animated">
-                Business Opportunity
-              </span>
+            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(32px, 6vw, 68px)', fontWeight: '900', lineHeight: '1.05', marginBottom: '20px', color: 'var(--text)', letterSpacing: '-1px' }}>
+              Know Your Market<br />
+              <span className="gradient-text-animated">Before You Invest</span>
             </h1>
-            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(14px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '560px', margin: '0 auto 40px', lineHeight: '1.7' }}>
-              Analyze competitors, discover market gaps, and find the perfect location — all powered by real data and AI.
+            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 19px)', color: 'var(--muted)', maxWidth: '580px', margin: '0 auto 28px', lineHeight: '1.7' }}>
+              Enter any city in India — get real competitor data, AI business recommendations, available properties, and market scores in seconds. <strong style={{ color: 'var(--text)' }}>100% free.</strong>
             </p>
 
-            {/* Social proof */}
-            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', marginBottom: '40px' }}>
-              {[
-                { icon: '🇮🇳', text: 'Built for Indian markets' },
-                { icon: '🗺️', text: '50M+ businesses indexed' },
-                { icon: '⚡', text: 'Results in under 10 seconds' },
-                { icon: '🆓', text: 'Free — no credit card' },
-              ].map(s => (
-                <div key={s.text} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)' }}>
-                  <span>{s.icon}</span><span>{s.text}</span>
+            {/* Star rating social proof */}
+            {reviews.total > 0 && (
+              <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} style={{ fontSize: '18px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>⭐</span>
+                  ))}
                 </div>
+                <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>{reviews.avg}</span>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>from {reviews.total} reviews</span>
+              </div>
+            )}
+
+            {/* Trust pills */}
+            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '40px' }}>
+              {['🗺️ Real OSM Data', '🤖 Gemini AI', '⚡ Under 10 sec', '🔒 No signup needed', '📄 PDF Export'].map(s => (
+                <div key={s} style={{ padding: '5px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--muted)', fontWeight: '500' }}>{s}</div>
               ))}
             </div>
 

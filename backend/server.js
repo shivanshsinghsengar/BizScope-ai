@@ -132,6 +132,14 @@ const SavedSearch = sequelize.define('SavedSearch', {
   data: DataTypes.TEXT, // JSON stringified
 });
 
+// Reviews
+const Review = sequelize.define('Review', {
+  rating: { type: DataTypes.INTEGER, allowNull: false },
+  name: { type: DataTypes.STRING, defaultValue: 'Anonymous' },
+  review: DataTypes.TEXT,
+  approved: { type: DataTypes.BOOLEAN, defaultValue: true },
+});
+
 // AI Setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -297,69 +305,56 @@ const osmToCategory = {
   wholesale: 'Wholesale', warehouse: 'Wholesale',
 };
 
-// Fetch real businesses from Overpass API — expanded query
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
+// Fetch real businesses from Overpass API — optimized for speed
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 3000, timeoutMs = 12000) => {
   try {
-    const query = `
-      [out:json][timeout:30];
-      (
-        node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|car_rental|library|driving_school|language_school|music_school|veterinary|nursing_home|physiotherapist|swimming_pool|sports_centre|ice_cream|juice_bar|food_court|biergarten|bureau_de_change|money_transfer|insurance"](around:${radiusMeters},${lat},${lng});
-        node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|doityourself|bakery|optician|books|sports|furniture|stationery|toys|florist|gift|art|photo|butcher|greengrocer|deli|dairy|chemist|medical_supply|tailor|massage|nail_salon|tattoo|spa|boutique|fashion|outdoor|hifi|camera|video_games|paint|glaziery|electrical|interior_decoration|carpet|travel_agency|car|car_repair|car_parts|tyres|motorcycle|bicycle|wholesale|confectionery|pastry|nuts|spices|watches|gold"](around:${radiusMeters},${lat},${lng});
-        node["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
-        way["tourism"~"hotel|hostel|guest_house|motel|resort"](around:${radiusMeters},${lat},${lng});
-        node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|insurance|financial|consulting|government|ngo"](around:${radiusMeters},${lat},${lng});
-        node["leisure"~"fitness_centre|sports_centre|swimming_pool|yoga|martial_arts"](around:${radiusMeters},${lat},${lng});
-      );
-      out center body;
-    `;
-    // Try faster mirror first, fall back to main
+    // Compact single-union query — nodes only (ways are slow), minimal tags
+    const query = `[out:json][timeout:12];(node["amenity"~"^(restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer)$"](around:${radiusMeters},${lat},${lng});node["shop"~"^(supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|bakery|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold)$"](around:${radiusMeters},${lat},${lng});node["office"~"^(company|it|lawyer|accountant|architect|engineer|real_estate|consulting)$"](around:${radiusMeters},${lat},${lng});node["tourism"~"^(hotel|hostel|guest_house|motel)$"](around:${radiusMeters},${lat},${lng}););out qt;`;
+
+    // Race both mirrors — use whichever responds first
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
       'https://overpass-api.de/api/interpreter',
     ];
+
+    const fetchMirror = (url) => axios.post(url,
+      `data=${encodeURIComponent(query)}`,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+    );
+
     let res = null;
-    for (const url of mirrors) {
+    try {
+      res = await Promise.any(mirrors.map(fetchMirror));
+    } catch {
+      // both failed — try once more with main
       try {
-        res = await axios.post(url,
-          `data=${encodeURIComponent(query)}`,
-          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-        );
-        break;
+        res = await fetchMirror(mirrors[1]);
       } catch (e) {
-        console.log(`Mirror ${url} failed:`, e.message);
+        console.log('Overpass all mirrors failed:', e.message);
+        return [];
       }
     }
-    if (!res) return [];
+
+    if (!res?.data?.elements) return [];
+
     return res.data.elements.map((el) => {
       const tags = el.tags || {};
-      const rawCat = tags.amenity || tags.shop || tags.office || tags.leisure || tags.tourism || 'Other';
-      const elLat = el.lat ?? el.center?.lat;
-      const elLon = el.lon ?? el.center?.lon;
-
-      const addrParts = [
-        tags['addr:housenumber'],
-        tags['addr:street'],
-        tags['addr:suburb'] || tags['addr:neighbourhood'] || tags['addr:quarter'],
-        tags['addr:city'] || tags['addr:town'] || tags['addr:village'],
-        tags['addr:state'],
-      ].filter(Boolean);
-      const address = tags['addr:full'] || (addrParts.length > 0 ? addrParts.join(', ') : null) || null;
-
-      // Map office types to Office category
+      const rawCat = tags.amenity || tags.shop || tags.office || tags.tourism || 'Other';
       let category = osmToCategory[rawCat];
       if (!category && tags.office) category = 'Office';
       if (!category) category = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).replace(/_/g, ' ');
 
+      const addrParts = [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'] || tags['addr:city']].filter(Boolean);
       return {
         name: tags.name || `${category} (unnamed)`,
         category,
         rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
         reviewCount: Math.floor(Math.random() * 300 + 10),
-        address: address || `Near ${elLat?.toFixed(3)}, ${elLon?.toFixed(3)}`,
+        address: addrParts.join(', ') || `Near ${el.lat?.toFixed(3)}, ${el.lon?.toFixed(3)}`,
         phone: tags.phone || tags['contact:phone'] || '',
         website: tags.website || tags['contact:website'] || '',
-        latitude: elLat,
-        longitude: elLon,
+        latitude: el.lat,
+        longitude: el.lon,
       };
     }).filter(b => b.latitude && b.longitude && b.name);
   } catch (e) {
@@ -498,9 +493,9 @@ const wikidataCategoryMap = {
   'gym': 'Gym', 'sports club': 'Gym', 'fitness centre': 'Gym',
 };
 
-// In-memory cache (location -> result, TTL 30 mins)
+// In-memory cache (location -> result, TTL 2 hours)
 const cache = new Map();
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+const CACHE_TTL = 2 * 60 * 60 * 1000;
 
 const getCached = (key) => {
   const entry = cache.get(key);
@@ -509,6 +504,12 @@ const getCached = (key) => {
   return entry.data;
 };
 const setCache = (key, data) => cache.set(key, { data, time: Date.now() });
+
+// Warm up geocode cache for top Indian cities on startup
+const TOP_CITIES = ['Mumbai','Delhi','Bangalore','Hyderabad','Chennai','Kolkata','Pune','Ahmedabad','Jaipur','Lucknow','Agra','Surat','Mathura','Varanasi','Indore'];
+setTimeout(() => {
+  TOP_CITIES.forEach(city => geocodeLocation(city).catch(() => {}));
+}, 3000);
 
 // Auth middleware
 const authMiddleware = (req, res, next) => {
@@ -706,6 +707,42 @@ app.get('/api/suggestions', authMiddleware, async (req, res) => {
   res.json(await PublicSuggestion.findAll({ order: [['createdAt', 'DESC']] }));
 });
 
+// Reviews — public submit
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { rating, name, review } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating 1-5 required' });
+    const r = await Review.create({ rating: parseInt(rating), name: (name || 'Anonymous').slice(0, 60), review: (review || '').slice(0, 500) });
+    res.json({ success: true, id: r.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Reviews — public fetch (approved only, latest 20)
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.findAll({ where: { approved: true }, order: [['createdAt', 'DESC']], limit: 20 });
+    const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : 0;
+    res.json({ reviews, avg, total: reviews.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: manage reviews
+app.get('/api/admin/reviews', adminAuth, async (req, res) => {
+  res.json(await Review.findAll({ order: [['createdAt', 'DESC']] }));
+});
+app.patch('/api/admin/reviews/:id', adminAuth, async (req, res) => {
+  const r = await Review.findByPk(req.params.id);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  await r.update({ approved: req.body.approved });
+  res.json(r);
+});
+app.delete('/api/admin/reviews/:id', adminAuth, async (req, res) => {
+  const r = await Review.findByPk(req.params.id);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  await r.destroy();
+  res.json({ success: true });
+});
+
 // 0. Real-time streaming analysis via SSE
 app.get('/api/analyze-stream', async (req, res) => {
   const location = req.query.location;
@@ -744,17 +781,16 @@ app.get('/api/analyze-stream', async (req, res) => {
 
     // Step 2: Fetch businesses
     send('fetch', 'Scanning businesses nearby...', 'Fetching real data from OpenStreetMap', 30);
-    const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 5000),
-      fetchFoursquareBusinesses(latitude, longitude, 5000),
+    const [osmBusinesses, manualBusinesses] = await Promise.all([
+      fetchRealBusinesses(latitude, longitude, 3000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
-        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
+        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.05
       )),
     ]);
 
     const seen = new Set();
-    let businesses = [...osmBusinesses, ...fsqBusinesses,
+    const businesses = [...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -762,20 +798,6 @@ app.get('/api/analyze-stream', async (req, res) => {
       seen.add(key);
       return true;
     });
-
-    if (businesses.length === 0) {
-      send('fetch', 'Retrying with extended search...', 'Expanding search radius', 40);
-      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 55000);
-      const retrySeen = new Set();
-      businesses = [...retryBusinesses, ...fsqBusinesses,
-        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
-      ].filter(b => {
-        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
-        if (retrySeen.has(key)) return false;
-        retrySeen.add(key);
-        return true;
-      });
-    }
 
     if (businesses.length === 0) {
       res.write(`data: ${JSON.stringify({ step: 'error', message: 'No businesses found in this area.' })}\n\n`);
@@ -856,19 +878,18 @@ app.post('/api/analyze-location', async (req, res) => {
     if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
     const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
 
-    // Fetch OSM + Foursquare + manual in parallel (skip Wikidata — too slow, low value)
-    const [osmBusinesses, fsqBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 5000),
-      fetchFoursquareBusinesses(latitude, longitude, 5000),
+    // Fetch OSM + manual in parallel — skip Foursquare (slow, rarely has key)
+    const [osmBusinesses, manualBusinesses] = await Promise.all([
+      fetchRealBusinesses(latitude, longitude, 3000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
-        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
+        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.05
       )),
     ]);
 
-    // Merge all sources, deduplicate by coordinates
+    // Merge, deduplicate
     const seen = new Set();
-    let businesses = [...osmBusinesses, ...fsqBusinesses,
+    const businesses = [...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -876,22 +897,6 @@ app.post('/api/analyze-location', async (req, res) => {
       seen.add(key);
       return true;
     });
-
-    // If nothing found, retry once with longer timeout
-    if (businesses.length === 0) {
-      console.log('First OSM attempt returned empty, retrying...');
-      const retryBusinesses = await fetchRealBusinesses(latitude, longitude, 5000, 55000);
-      const retrySeen = new Set();
-      businesses = [
-        ...retryBusinesses, ...fsqBusinesses,
-        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
-      ].filter(b => {
-        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
-        if (retrySeen.has(key)) return false;
-        retrySeen.add(key);
-        return true;
-      });
-    }
 
     if (businesses.length === 0) {
       return res.status(404).json({ error: 'No businesses found in this area. Try a more specific location or a nearby city center.' });
