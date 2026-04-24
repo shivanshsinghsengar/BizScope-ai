@@ -363,73 +363,108 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
 };
 
 // TomTom POI fetch — great coverage for Indian cities
-const tomtomCategoryMap = {
-  'restaurant': 'Restaurant', 'cafe/pub': 'Cafe', 'coffee shop': 'Cafe',
-  'bakery': 'Bakery', 'grocery': 'Grocery', 'supermarket': 'Grocery',
-  'pharmacy': 'Pharmacy', 'hospital': 'Hospital', 'clinic': 'Hospital',
-  'doctor': 'Hospital', 'dentist': 'Hospital',
-  'gym': 'Gym', 'fitness center': 'Gym', 'sports center': 'Gym',
-  'beauty salon': 'Salon', 'hair salon': 'Salon', 'spa': 'Salon',
-  'clothing store': 'Clothing', 'fashion': 'Clothing',
-  'electronics': 'Electronics', 'mobile phone': 'Electronics',
-  'hotel': 'Hotel', 'hostel': 'Hotel', 'motel': 'Hotel',
-  'bank': 'Finance', 'atm': 'Finance',
-  'school': 'Education', 'college': 'Education', 'university': 'Education',
-  'jewellery': 'Jewellery', 'jewelry': 'Jewellery',
-  'car repair': 'Automotive', 'gas station': 'Automotive', 'petrol station': 'Automotive',
-  'hardware store': 'Hardware', 'furniture store': 'Furniture',
-  'laundry': 'Laundry', 'dry cleaning': 'Laundry',
-  'office': 'Office', 'company': 'Office',
-};
 
 const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
   if (!process.env.TOMTOM_API_KEY || process.env.TOMTOM_API_KEY === 'your_tomtom_key_here') return [];
   try {
-    const categories = [
-      'restaurant', 'cafe', 'grocery', 'pharmacy', 'hospital',
-      'gym', 'beauty salon', 'clothing store', 'electronics store',
-      'hotel', 'bank', 'school', 'jewellery', 'car repair', 'bakery'
+    // Use category codes instead of text search — more reliable and returns more results
+    // TomTom category IDs: https://developer.tomtom.com/search-api/documentation/product-information/supported-categories
+    const categoryIds = [
+      '7315', // Restaurant
+      '9376', // Cafe/pub
+      '9361', // Grocery/supermarket
+      '7321', // Pharmacy
+      '7321015', // Hospital
+      '7320', // Doctor
+      '7318', // Gym/fitness
+      '7326', // Beauty salon/spa
+      '9361065', // Clothing store
+      '7332', // Electronics
+      '7314', // Hotel
+      '7332005', // Bank
+      '7372', // School/education
+      '7994', // Jewellery
+      '7310', // Automotive/car repair
+      '9361061', // Bakery
+      '7315037', // Fast food
+      '7315036', // Pizza
+      '9361067', // Hardware store
+      '7315034', // Indian restaurant
     ];
+
+    // Fetch all categories in parallel with limit=50 each
+    const fetches = categoryIds.map(catId =>
+      axios.get(`https://api.tomtom.com/search/2/categorySearch/.json`, {
+        params: {
+          key: process.env.TOMTOM_API_KEY,
+          lat, lon: lng,
+          radius: radiusMeters,
+          limit: 50,
+          categorySet: catId,
+          language: 'en-GB',
+          countrySet: 'IN',
+        },
+        timeout: 10000,
+      }).catch(e => { console.log(`TomTom cat ${catId} failed:`, e.message); return null; })
+    );
+
+    const responses = await Promise.all(fetches);
     const results = [];
-    // Fetch top categories in parallel (max 5 at once to avoid rate limit)
-    const chunks = [categories.slice(0, 5), categories.slice(5, 10), categories.slice(10)];
-    for (const chunk of chunks) {
-      const fetches = chunk.map(cat =>
-        axios.get('https://api.tomtom.com/search/2/poiSearch/' + encodeURIComponent(cat) + '.json', {
-          params: {
-            key: process.env.TOMTOM_API_KEY,
-            lat, lon: lng,
-            radius: radiusMeters,
-            limit: 20,
-            countrySet: 'IN',
-            language: 'en-GB',
-          },
-          timeout: 8000,
-        }).catch(() => null)
-      );
-      const responses = await Promise.all(fetches);
-      responses.forEach((res, i) => {
-        if (!res?.data?.results) return;
-        res.data.results.forEach(place => {
-          const catName = categories[chunk === chunks[0] ? i : chunk === chunks[1] ? i + 5 : i + 10];
-          const mapped = tomtomCategoryMap[catName] || 'Other';
-          const pos = place.position;
-          if (!pos?.lat || !pos?.lon) return;
-          results.push({
-            name: place.poi?.name || `${mapped} (unnamed)`,
-            category: mapped,
-            rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
-            reviewCount: Math.floor(Math.random() * 200 + 20),
-            address: [place.address?.streetName, place.address?.municipalitySubdivision, place.address?.municipality].filter(Boolean).join(', ') || `Near ${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`,
-            phone: place.poi?.phone || '',
-            website: place.poi?.url || '',
-            latitude: pos.lat,
-            longitude: pos.lon,
-            source: 'tomtom',
-          });
+    const seen = new Set();
+
+    responses.forEach(res => {
+      if (!res?.data?.results) return;
+      res.data.results.forEach(place => {
+        const pos = place.position;
+        if (!pos?.lat || !pos?.lon) return;
+
+        // Deduplicate by name+position
+        const key = `${place.poi?.name}_${Math.round(pos.lat * 1000)}_${Math.round(pos.lon * 1000)}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        // Map TomTom category to our category
+        const cats = place.poi?.categories || [];
+        const catStr = cats.join(' ').toLowerCase();
+        let category = 'Other';
+        if (catStr.includes('restaurant') || catStr.includes('food')) category = 'Restaurant';
+        else if (catStr.includes('cafe') || catStr.includes('coffee') || catStr.includes('tea')) category = 'Cafe';
+        else if (catStr.includes('grocery') || catStr.includes('supermarket') || catStr.includes('convenience')) category = 'Grocery';
+        else if (catStr.includes('pharmacy') || catStr.includes('chemist') || catStr.includes('drug')) category = 'Pharmacy';
+        else if (catStr.includes('hospital') || catStr.includes('clinic') || catStr.includes('doctor') || catStr.includes('medical')) category = 'Hospital';
+        else if (catStr.includes('gym') || catStr.includes('fitness') || catStr.includes('sport')) category = 'Gym';
+        else if (catStr.includes('salon') || catStr.includes('beauty') || catStr.includes('spa') || catStr.includes('hair')) category = 'Salon';
+        else if (catStr.includes('cloth') || catStr.includes('fashion') || catStr.includes('apparel')) category = 'Clothing';
+        else if (catStr.includes('electron') || catStr.includes('mobile') || catStr.includes('computer')) category = 'Electronics';
+        else if (catStr.includes('hotel') || catStr.includes('hostel') || catStr.includes('motel') || catStr.includes('lodge')) category = 'Hotel';
+        else if (catStr.includes('bank') || catStr.includes('atm') || catStr.includes('finance')) category = 'Finance';
+        else if (catStr.includes('school') || catStr.includes('college') || catStr.includes('university') || catStr.includes('education')) category = 'Education';
+        else if (catStr.includes('jewel') || catStr.includes('gold') || catStr.includes('jewelry')) category = 'Jewellery';
+        else if (catStr.includes('car') || catStr.includes('auto') || catStr.includes('petrol') || catStr.includes('fuel')) category = 'Automotive';
+        else if (catStr.includes('bakery') || catStr.includes('pastry') || catStr.includes('bread')) category = 'Bakery';
+        else if (catStr.includes('hardware') || catStr.includes('tool')) category = 'Hardware';
+        else if (catStr.includes('furniture') || catStr.includes('home')) category = 'Furniture';
+        else if (catStr.includes('laundry') || catStr.includes('dry clean')) category = 'Laundry';
+
+        results.push({
+          name: place.poi?.name || `${category} (unnamed)`,
+          category,
+          rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
+          reviewCount: Math.floor(Math.random() * 200 + 20),
+          address: [
+            place.address?.streetName,
+            place.address?.municipalitySubdivision,
+            place.address?.municipality,
+          ].filter(Boolean).join(', ') || `Near ${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`,
+          phone: place.poi?.phone || '',
+          website: place.poi?.url || '',
+          latitude: pos.lat,
+          longitude: pos.lon,
+          source: 'tomtom',
         });
       });
-    }
+    });
+
     console.log(`TomTom returned ${results.length} businesses`);
     return results;
   } catch (e) {
