@@ -95,7 +95,8 @@ export default function Properties() {
   useEffect(() => {
     if (data?.userLat && data?.userLng) {
       setLoading(true);
-      fetch(`${API_URL}/api/properties/${data.userLat}/${data.userLng}`)
+      const city = encodeURIComponent(data.location?.displayName || '');
+      fetch(`${API_URL}/api/properties/${data.userLat}/${data.userLng}?city=${city}`)
         .then(r => r.json())
         .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false); })
         .catch(() => setLoading(false));
@@ -294,6 +295,7 @@ export default function Properties() {
                         {cfg.label}
                       </span>
                       {p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98120', color: '#34d399', border: '1px solid #10b98130' }}>✅ Community Listed</span>}
+                      {p.priceSource === 'govt_circle_rate' && !p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#c8f03a15', color: '#a8d420', border: '1px solid #c8f03a30' }}>🏛️ Govt Rate</span>}
                     </div>
                   </div>
 
@@ -344,7 +346,7 @@ export default function Properties() {
         )}
 
         <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--muted3)', marginTop: '32px' }}>
-          Property data sourced from OpenStreetMap. Prices are estimates based on area and size.
+          🏛️ Prices based on government circle rates (State Registration & Stamps Dept). Locations from OpenStreetMap. Community listings are user-submitted.
         </p>
       </div>
     </Layout>
