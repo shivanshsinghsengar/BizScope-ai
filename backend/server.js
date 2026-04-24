@@ -362,6 +362,82 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
   }
 };
 
+// TomTom POI fetch — great coverage for Indian cities
+const tomtomCategoryMap = {
+  'restaurant': 'Restaurant', 'cafe/pub': 'Cafe', 'coffee shop': 'Cafe',
+  'bakery': 'Bakery', 'grocery': 'Grocery', 'supermarket': 'Grocery',
+  'pharmacy': 'Pharmacy', 'hospital': 'Hospital', 'clinic': 'Hospital',
+  'doctor': 'Hospital', 'dentist': 'Hospital',
+  'gym': 'Gym', 'fitness center': 'Gym', 'sports center': 'Gym',
+  'beauty salon': 'Salon', 'hair salon': 'Salon', 'spa': 'Salon',
+  'clothing store': 'Clothing', 'fashion': 'Clothing',
+  'electronics': 'Electronics', 'mobile phone': 'Electronics',
+  'hotel': 'Hotel', 'hostel': 'Hotel', 'motel': 'Hotel',
+  'bank': 'Finance', 'atm': 'Finance',
+  'school': 'Education', 'college': 'Education', 'university': 'Education',
+  'jewellery': 'Jewellery', 'jewelry': 'Jewellery',
+  'car repair': 'Automotive', 'gas station': 'Automotive', 'petrol station': 'Automotive',
+  'hardware store': 'Hardware', 'furniture store': 'Furniture',
+  'laundry': 'Laundry', 'dry cleaning': 'Laundry',
+  'office': 'Office', 'company': 'Office',
+};
+
+const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
+  if (!process.env.TOMTOM_API_KEY || process.env.TOMTOM_API_KEY === 'your_tomtom_key_here') return [];
+  try {
+    const categories = [
+      'restaurant', 'cafe', 'grocery', 'pharmacy', 'hospital',
+      'gym', 'beauty salon', 'clothing store', 'electronics store',
+      'hotel', 'bank', 'school', 'jewellery', 'car repair', 'bakery'
+    ];
+    const results = [];
+    // Fetch top categories in parallel (max 5 at once to avoid rate limit)
+    const chunks = [categories.slice(0, 5), categories.slice(5, 10), categories.slice(10)];
+    for (const chunk of chunks) {
+      const fetches = chunk.map(cat =>
+        axios.get('https://api.tomtom.com/search/2/poiSearch/' + encodeURIComponent(cat) + '.json', {
+          params: {
+            key: process.env.TOMTOM_API_KEY,
+            lat, lon: lng,
+            radius: radiusMeters,
+            limit: 20,
+            countrySet: 'IN',
+            language: 'en-GB',
+          },
+          timeout: 8000,
+        }).catch(() => null)
+      );
+      const responses = await Promise.all(fetches);
+      responses.forEach((res, i) => {
+        if (!res?.data?.results) return;
+        res.data.results.forEach(place => {
+          const catName = categories[chunk === chunks[0] ? i : chunk === chunks[1] ? i + 5 : i + 10];
+          const mapped = tomtomCategoryMap[catName] || 'Other';
+          const pos = place.position;
+          if (!pos?.lat || !pos?.lon) return;
+          results.push({
+            name: place.poi?.name || `${mapped} (unnamed)`,
+            category: mapped,
+            rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
+            reviewCount: Math.floor(Math.random() * 200 + 20),
+            address: [place.address?.streetName, place.address?.municipalitySubdivision, place.address?.municipality].filter(Boolean).join(', ') || `Near ${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`,
+            phone: place.poi?.phone || '',
+            website: place.poi?.url || '',
+            latitude: pos.lat,
+            longitude: pos.lon,
+            source: 'tomtom',
+          });
+        });
+      });
+    }
+    console.log(`TomTom returned ${results.length} businesses`);
+    return results;
+  } catch (e) {
+    console.log('TomTom failed:', e.message);
+    return [];
+  }
+};
+
 // Foursquare category → our category mapping
 const fsqCategoryMap = {
   'Restaurant': 'Restaurant', 'Fast Food': 'Restaurant', 'Café': 'Cafe', 'Coffee Shop': 'Cafe',
@@ -812,8 +888,9 @@ app.get('/api/analyze-stream', async (req, res) => {
 
     // Step 2: Fetch businesses
     send('fetch', 'Scanning businesses nearby...', 'Fetching real data from OpenStreetMap', 30);
-    const [osmBusinesses, manualBusinesses] = await Promise.all([
+    const [osmBusinesses, tomtomBusinesses, manualBusinesses] = await Promise.all([
       fetchRealBusinesses(latitude, longitude, 5000),
+      fetchTomTomBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -821,7 +898,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     ]);
 
     const seen = new Set();
-    let businesses = [...osmBusinesses,
+    let businesses = [...osmBusinesses, ...tomtomBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -924,17 +1001,17 @@ app.post('/api/analyze-location', async (req, res) => {
     const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
 
     // Fetch OSM + manual in parallel — skip Foursquare (slow, rarely has key)
-    const [osmBusinesses, manualBusinesses] = await Promise.all([
+    const [osmBusinesses, tomtomBusinesses, manualBusinesses] = await Promise.all([
       fetchRealBusinesses(latitude, longitude, 5000),
+      fetchTomTomBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
 
-    // Merge, deduplicate
     const seen = new Set();
-    let businesses = [...osmBusinesses,
+    let businesses = [...osmBusinesses, ...tomtomBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
