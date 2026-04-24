@@ -306,9 +306,9 @@ const osmToCategory = {
 };
 
 // Fetch real businesses from Overpass API — optimized for speed
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 3000, timeoutMs = 12000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
   try {
-    const query = `[out:json][timeout:12];(node["amenity"~"^(restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer)$"](around:${radiusMeters},${lat},${lng});node["shop"~"^(supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|bakery|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold)$"](around:${radiusMeters},${lat},${lng});node["office"~"^(company|it|lawyer|accountant|architect|engineer|real_estate|consulting)$"](around:${radiusMeters},${lat},${lng});node["tourism"~"^(hotel|hostel|guest_house|motel)$"](around:${radiusMeters},${lat},${lng}););out qt;`;
+    const query = `[out:json][timeout:25];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
@@ -780,10 +780,10 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Step 2: Fetch businesses
     send('fetch', 'Scanning businesses nearby...', 'Fetching real data from OpenStreetMap', 30);
     const [osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 3000),
+      fetchRealBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
-        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.05
+        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
 
@@ -892,10 +892,10 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Fetch OSM + manual in parallel — skip Foursquare (slow, rarely has key)
     const [osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 3000),
+      fetchRealBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
-        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.05
+        Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
 
@@ -912,7 +912,7 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
-      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 20000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 8000, 30000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
