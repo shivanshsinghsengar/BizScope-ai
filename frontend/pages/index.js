@@ -115,6 +115,7 @@ export default function Home() {
 
     try {
       const evtSource = new EventSource(`${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`);
+      let gotResult = false;
 
       evtSource.onmessage = (e) => {
         const msg = JSON.parse(e.data);
@@ -125,10 +126,10 @@ export default function Home() {
           return;
         }
         if (msg.step === 'result') {
+          gotResult = true;
           evtSource.close();
           saveToHistory(form.city || form.address);
           sessionStorage.setItem('analysisData', JSON.stringify(msg.data));
-          // Trigger review widget after successful analysis
           setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
           router.push('/analysis');
           return;
@@ -136,10 +137,26 @@ export default function Home() {
         setLoadState({ step: msg.step, message: msg.message, sub: msg.sub, progress: msg.progress });
       };
 
-      evtSource.onerror = () => {
+      evtSource.onerror = async () => {
         evtSource.close();
-        setError('Connection lost. Please try again.');
-        setLoading(false);
+        if (gotResult) return;
+        // Fallback to regular POST if SSE fails
+        try {
+          setLoadState({ step: 'fetch', message: 'Connecting...', sub: 'Switching to direct mode', progress: 20 });
+          const res = await fetch(`${API_URL}/api/analyze-location`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ location }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          saveToHistory(form.city || form.address);
+          sessionStorage.setItem('analysisData', JSON.stringify(data));
+          setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+          router.push('/analysis');
+        } catch (err) {
+          setError(err.message || 'Analysis failed. Please try again.');
+          setLoading(false);
+        }
       };
     } catch (err) {
       setError(err.message || 'Analysis failed.');

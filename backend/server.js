@@ -308,10 +308,8 @@ const osmToCategory = {
 // Fetch real businesses from Overpass API — optimized for speed
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 3000, timeoutMs = 12000) => {
   try {
-    // Compact single-union query — nodes only (ways are slow), minimal tags
     const query = `[out:json][timeout:12];(node["amenity"~"^(restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer)$"](around:${radiusMeters},${lat},${lng});node["shop"~"^(supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|bakery|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold)$"](around:${radiusMeters},${lat},${lng});node["office"~"^(company|it|lawyer|accountant|architect|engineer|real_estate|consulting)$"](around:${radiusMeters},${lat},${lng});node["tourism"~"^(hotel|hostel|guest_house|motel)$"](around:${radiusMeters},${lat},${lng}););out qt;`;
 
-    // Race both mirrors — use whichever responds first
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
       'https://overpass-api.de/api/interpreter',
@@ -322,16 +320,14 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 3000, timeoutMs = 12
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
     );
 
+    // Try mirrors sequentially — Promise.any not available in all Node versions
     let res = null;
-    try {
-      res = await Promise.any(mirrors.map(fetchMirror));
-    } catch {
-      // both failed — try once more with main
+    for (const url of mirrors) {
       try {
-        res = await fetchMirror(mirrors[1]);
+        res = await fetchMirror(url);
+        if (res?.data?.elements?.length >= 0) break;
       } catch (e) {
-        console.log('Overpass all mirrors failed:', e.message);
-        return [];
+        console.log(`Mirror ${url} failed:`, e.message);
       }
     }
 
@@ -753,6 +749,8 @@ app.get('/api/analyze-stream', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering
   res.flushHeaders();
 
   const send = (step, message, sub, progress) => {
@@ -790,7 +788,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     ]);
 
     const seen = new Set();
-    const businesses = [...osmBusinesses,
+    let businesses = [...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -799,13 +797,27 @@ app.get('/api/analyze-stream', async (req, res) => {
       return true;
     });
 
+    // Retry with wider radius if empty
     if (businesses.length === 0) {
-      res.write(`data: ${JSON.stringify({ step: 'error', message: 'No businesses found in this area.' })}\n\n`);
+      send('fetch', 'Expanding search radius...', 'Trying 5km radius', 40);
+      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 20000);
+      const seen2 = new Set();
+      businesses = [...wider,
+        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+      ].filter(b => {
+        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+        if (seen2.has(key)) return false;
+        seen2.add(key);
+        return true;
+      });
+    }
+
+    if (businesses.length === 0) {
+      res.write(`data: ${JSON.stringify({ step: 'error', message: 'No businesses found. Try a larger city name like "Mumbai" or "Delhi".' })}\n\n`);
       return res.end();
     }
 
     send('count', `Found ${businesses.length} businesses nearby`, 'Analyzing shops, restaurants & more', 55);
-
     // Step 3: Category stats
     send('score', 'Calculating market scores...', 'Running competition analysis', 65);
     const categoryStats = {};
@@ -889,7 +901,7 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Merge, deduplicate
     const seen = new Set();
-    const businesses = [...osmBusinesses,
+    let businesses = [...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -897,6 +909,20 @@ app.post('/api/analyze-location', async (req, res) => {
       seen.add(key);
       return true;
     });
+
+    // Retry with wider radius if empty
+    if (businesses.length === 0) {
+      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 20000);
+      const seen2 = new Set();
+      businesses = [...wider,
+        ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+      ].filter(b => {
+        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+        if (seen2.has(key)) return false;
+        seen2.add(key);
+        return true;
+      });
+    }
 
     if (businesses.length === 0) {
       return res.status(404).json({ error: 'No businesses found in this area. Try a more specific location or a nearby city center.' });
