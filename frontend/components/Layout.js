@@ -130,11 +130,26 @@ export default function Layout({ children }) {
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
-            <span style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI</span>
+            <span style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI · Built by Shivansh Singh Sengar</span>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
-            <span style={{ fontSize: '12px', color: 'var(--muted3)' }}>All systems operational</span>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {[
+              { label: 'About', href: '/about' },
+              { label: 'Docs', href: '/docs' },
+              { label: 'Pricing', href: '/pricing' },
+              { label: 'How it Works', href: '/how-it-works' },
+              { label: 'Privacy', href: '/privacy' },
+              { label: 'Terms', href: '/terms' },
+            ].map(l => (
+              <span key={l.label} onClick={() => router.push(l.href)}
+                style={{ fontSize: '12px', color: 'var(--muted3)', cursor: 'pointer', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                onMouseLeave={e => e.target.style.color = 'var(--muted3)'}>{l.label}</span>
+            ))}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
+              <span style={{ fontSize: '12px', color: 'var(--muted3)' }}>All systems operational</span>
+            </div>
           </div>
         </div>
       </footer>

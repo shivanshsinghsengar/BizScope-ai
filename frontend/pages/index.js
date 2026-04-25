@@ -301,32 +301,23 @@ export default function Home() {
               </form>
             </div>
 
-            {/* Demo Video Section */}
-            <div className="anim-fade-up delay-4" style={{ maxWidth: '800px', margin: '0 auto 64px', textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#ef4444', marginBottom: '16px' }}>
-                ▶ Watch Demo
-              </div>
-              <h2 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>See BizScope in Action</h2>
-              <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>Full walkthrough — from entering a location to reading AI insights</p>
-              <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', cursor: 'pointer' }}
-                onClick={() => window.open('https://www.youtube.com/watch?v=demo', '_blank')}>
-                {/* Placeholder thumbnail */}
-                <div style={{ width: '100%', paddingTop: '56.25%', background: 'linear-gradient(135deg, var(--surface2), var(--surface))', position: 'relative' }}>
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-                    <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', boxShadow: '0 8px 30px rgba(200,240,58,0.4)', transition: 'transform 0.2s' }}>▶</div>
-                    <div style={{ fontSize: '14px', color: 'var(--muted)' }}>2 min product walkthrough</div>
-                  </div>
-                  {/* Mock UI preview */}
-                  <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', display: 'flex', gap: '8px' }}>
-                    {['📍 Enter Location', '📊 View Analysis', '🤖 AI Insights'].map((s, i) => (
-                      <div key={i} style={{ flex: 1, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', color: 'white', textAlign: 'center' }}>{s}</div>
-                    ))}
-                  </div>
+            {/* Try it live CTA */}
+            <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid #c8f03a30', borderRadius: '24px', padding: '36px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
+                <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed — just try it</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>
+                  Type any Indian city above and see real competitor data, AI insights, and property prices in under 10 seconds. No signup, no credit card.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {['Mumbai', 'Delhi', 'Mathura', 'Jaipur', 'Bangalore'].map(city => (
+                    <button key={city} onClick={() => { setForm(f => ({ ...f, city })); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #c8f03a40', background: '#c8f03a10', color: '#a8d420', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                      📍 {city}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '12px' }}>
-                Or <span onClick={() => window.open('/', '_self')} style={{ color: '#c8f03a', cursor: 'pointer', fontWeight: '600' }}>try it live →</span> no signup required
-              </p>
             </div>
 
             {/* Stats bar */}
@@ -396,15 +387,33 @@ export default function Home() {
                 <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>AI-powered business intelligence for entrepreneurs.</p>
               </div>
               {[
-                { title: 'Product', links: ['Features', 'Pricing', 'Changelog'] },
-                { title: 'Resources', links: ['Docs', 'API', 'Support'] },
-                { title: 'Company', links: ['About', 'Privacy', 'Terms'] },
+                { title: 'Product', links: [
+                  { label: '✨ Features', href: '/#features' },
+                  { label: '💰 Pricing', href: '/pricing' },
+                  { label: '⚙️ How it Works', href: '/how-it-works' },
+                  { label: '📖 Docs', href: '/docs' },
+                ]},
+                { title: 'Company', links: [
+                  { label: '👤 About', href: '/about' },
+                  { label: '🔒 Privacy Policy', href: '/privacy' },
+                  { label: '📋 Terms of Service', href: '/terms' },
+                  { label: '➕ List Business', href: '/register' },
+                ]},
+                { title: 'Data Sources', links: [
+                  { label: '🗺️ OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
+                  { label: '🤖 Google Gemini AI', href: 'https://ai.google.dev' },
+                  { label: '📍 TomTom POI', href: 'https://developer.tomtom.com' },
+                  { label: '🏛️ Govt Circle Rates', href: 'https://ngdrs.gov.in' },
+                ]},
               ].map(col => (
                 <div key={col.title}>
                   <h4 style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text2)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.title}</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {col.links.map(link => (
-                      <span key={link} style={{ fontSize: '13px', color: 'var(--muted)', cursor: 'pointer' }}>{link}</span>
+                      <span key={link.label} onClick={() => link.href.startsWith('http') ? window.open(link.href, '_blank') : router.push(link.href)}
+                        style={{ fontSize: '13px', color: 'var(--muted)', cursor: 'pointer', transition: 'color 0.2s' }}
+                        onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                        onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{link.label}</span>
                     ))}
                   </div>
                 </div>
