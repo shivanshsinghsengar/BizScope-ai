@@ -77,7 +77,7 @@ export default function Terms() {
           </Section>
 
           <Section title="10. Contact">
-            <p>Questions about these terms: <a href="mailto:shivanshsinghsengar@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar@gmail.com</a></p>
+            <p>Questions about these terms: <a href="mailto:shivanshsinghsengar8@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar8@gmail.com</a></p>
           </Section>
         </div>
       </div>

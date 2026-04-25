@@ -68,11 +68,11 @@ export default function Privacy() {
           </Section>
 
           <Section title="5. Your Rights">
-            <p>You can request deletion of your account and all associated data at any time by emailing <a href="mailto:shivanshsinghsengar@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar@gmail.com</a>. We will process deletion requests within 7 days.</p>
+            <p>You can request deletion of your account and all associated data at any time by emailing <a href="mailto:shivanshsinghsengar8@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar8@gmail.com</a>. We will process deletion requests within 7 days.</p>
           </Section>
 
           <Section title="6. Contact">
-            <p>For any privacy concerns, contact: <a href="mailto:shivanshsinghsengar@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar@gmail.com</a></p>
+            <p>For any privacy concerns, contact: <a href="mailto:shivanshsinghsengar8@gmail.com" style={{ color: '#c8f03a' }}>shivanshsinghsengar8@gmail.com</a></p>
           </Section>
         </div>
       </div>
