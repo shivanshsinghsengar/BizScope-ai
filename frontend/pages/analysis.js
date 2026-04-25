@@ -81,7 +81,62 @@ export default function Dashboard() {
         <title>Dashboard — BizScope AI</title>
         <meta name="description" content={`Market analysis for ${data.location?.displayName?.split(',')[0]} — ${data.businesses?.length} businesses analyzed`} />
       </Head>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
+      <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '32px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+
+        {/* ── Left Sidebar ── */}
+        <div className="hide-mobile" style={{ width: '200px', flexShrink: 0, position: 'sticky', top: '84px' }}>
+          {/* City illustration card */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '56px', marginBottom: '8px', lineHeight: 1 }}>🏙️</div>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
+              {data.location?.displayName?.split(',')[0]}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{data.businesses?.length} businesses found</div>
+            <div style={{ marginTop: '12px', height: '3px', borderRadius: '2px', background: 'linear-gradient(90deg, #c8f03a, #ef4444)' }} />
+          </div>
+
+          {/* Quick nav */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Quick Nav</div>
+            {[
+              { icon: '📊', label: 'Dashboard', href: '/analysis' },
+              { icon: '🏪', label: 'Competitors', href: '/competitors' },
+              { icon: '🤖', label: 'AI Insights', href: '/insights' },
+              { icon: '🏠', label: 'Properties', href: '/properties' },
+              { icon: '📈', label: 'Trends', href: '/trends' },
+              { icon: '🗺️', label: 'Map View', href: `/map?lat=${data.userLat}&lng=${data.userLng}` },
+            ].map(n => (
+              <div key={n.href} onClick={() => router.push(n.href)}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: 'var(--muted)', marginBottom: '2px', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; }}>
+                <span style={{ fontSize: '16px' }}>{n.icon}</span>
+                <span>{n.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Risk legend */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Risk Legend</div>
+            {[
+              { color: '#10b981', label: 'Low Risk', desc: '0–34 score' },
+              { color: '#f59e0b', label: 'Medium Risk', desc: '35–69 score' },
+              { color: '#ef4444', label: 'High Risk', desc: '70–100 score' },
+            ].map(r => (
+              <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: r.color, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{r.label}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{r.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Main Content ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
 
         {/* Partial match warning */}
         {data.partialMatch && (
@@ -189,7 +244,79 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
+        </div>{/* end main content */}
+
+        {/* ── Right Sidebar ── */}
+        <div className="hide-mobile" style={{ width: '220px', flexShrink: 0, position: 'sticky', top: '84px' }}>
+
+          {/* Viability gauge */}
+          <div style={{ background: 'var(--surface)', border: `1px solid ${viabilityColor}30`, borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Market Viability</div>
+            {/* Circular gauge using SVG */}
+            <svg width="100" height="100" viewBox="0 0 100 100" style={{ margin: '0 auto 12px', display: 'block' }}>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--surface2)" strokeWidth="10" />
+              <circle cx="50" cy="50" r="40" fill="none" stroke={viabilityColor} strokeWidth="10"
+                strokeDasharray={`${(viabilityScore / 100) * 251} 251`}
+                strokeLinecap="round"
+                transform="rotate(-90 50 50)"
+                style={{ transition: 'stroke-dasharray 1s ease' }} />
+              <text x="50" y="46" textAnchor="middle" fill="var(--text)" fontSize="18" fontWeight="800">{viabilityScore}</text>
+              <text x="50" y="60" textAnchor="middle" fill="var(--muted)" fontSize="9">/100</text>
+            </svg>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: viabilityColor }}>{viabilityLabel}</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Overall market score</div>
+          </div>
+
+          {/* Top opportunities */}
+          <div style={{ background: 'var(--surface)', border: '1px solid #10b98125', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>🟢 Top Opportunities</div>
+            {[...data.categoryStats].reverse().slice(0, 4).map((s, i) => (
+              <div key={i} onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: '18px' }}>{categoryIcons[s.category] || '🏪'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.count} competitors</div>
+                </div>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '100px', background: '#10b98115', color: '#34d399', fontWeight: '700', flexShrink: 0 }}>Low</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Watch out */}
+          <div style={{ background: 'var(--surface)', border: '1px solid #ef444425', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>🔴 Most Saturated</div>
+            {data.categoryStats.slice(0, 3).map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ fontSize: '18px' }}>{categoryIcons[s.category] || '🏪'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.count} competitors</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Actions</div>
+            {[
+              { icon: '📄', label: 'Export PDF', action: () => document.getElementById('export-pdf-btn')?.click() },
+              { icon: '🔗', label: 'Share Report', action: handleShare },
+              { icon: '🔍', label: 'New Analysis', action: () => router.push('/') },
+            ].map(a => (
+              <button key={a.label} onClick={a.action}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '9px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--muted)', background: 'transparent', marginBottom: '2px', textAlign: 'left', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; }}>
+                <span style={{ fontSize: '16px' }}>{a.icon}</span>
+                <span>{a.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>{/* end outer flex */}
     </Layout>
   );
 }
