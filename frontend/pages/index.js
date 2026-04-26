@@ -1,4 +1,5 @@
 import API_URL from '../utils/api';
+import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -79,6 +80,7 @@ export default function Home() {
 
   useEffect(() => {
     fetch(`${API_URL}/api/reviews`).then(r => r.json()).then(d => setReviews(d)).catch(() => {});
+    trackEvent('home_viewed');
   }, []);
 
   // Load search history from localStorage
@@ -112,6 +114,7 @@ export default function Home() {
     setLoading(true); setError('');
     const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
     const location = parts.join(', ');
+    trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
     try {
       const evtSource = new EventSource(`${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`);
@@ -123,6 +126,7 @@ export default function Home() {
           evtSource.close();
           setError(msg.message);
           setLoading(false);
+          trackEvent('analysis_failed', { mode: 'stream', reason: msg.message || 'stream_error' });
           return;
         }
         if (msg.step === 'result') {
@@ -131,6 +135,7 @@ export default function Home() {
           saveToHistory(form.city || form.address);
           sessionStorage.setItem('analysisData', JSON.stringify(msg.data));
           setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+          trackEvent('analysis_succeeded', { mode: 'stream', businesses: msg.data?.businesses?.length || 0 });
           router.push('/analysis');
           return;
         }
@@ -152,15 +157,18 @@ export default function Home() {
           saveToHistory(form.city || form.address);
           sessionStorage.setItem('analysisData', JSON.stringify(data));
           setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+          trackEvent('analysis_succeeded', { mode: 'direct', businesses: data?.businesses?.length || 0 });
           router.push('/analysis');
         } catch (err) {
           setError(err.message || 'Analysis failed. Please try again.');
           setLoading(false);
+          trackEvent('analysis_failed', { mode: 'direct', reason: err.message || 'direct_error' });
         }
       };
     } catch (err) {
       setError(err.message || 'Analysis failed.');
       setLoading(false);
+      trackEvent('analysis_failed', { mode: 'init', reason: err.message || 'init_error' });
     }
   };
 
@@ -423,7 +431,7 @@ export default function Home() {
               <p style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI. All rights reserved.</p>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
-                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>All systems operational</span>
+                <span onClick={() => router.push('/status')} style={{ fontSize: '12px', color: 'var(--muted)', cursor: 'pointer' }}>All systems operational</span>
               </div>
             </div>
           </div>

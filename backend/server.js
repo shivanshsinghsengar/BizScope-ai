@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 const OpenAI = require('openai');
 const { Sequelize, DataTypes } = require('sequelize');
 const axios = require('axios');
@@ -12,10 +13,90 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'bizscope_secret_2026';
+const isProduction = process.env.NODE_ENV === 'production';
+const JWT_SECRET = process.env.JWT_SECRET || (!isProduction ? crypto.randomBytes(32).toString('hex') : '');
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || (!isProduction ? crypto.randomBytes(32).toString('hex') : '');
 
-app.use(cors());
+if (isProduction && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is required in production');
+}
+if (isProduction && !process.env.ADMIN_JWT_SECRET) {
+  throw new Error('ADMIN_JWT_SECRET is required in production');
+}
+if (isProduction && !process.env.ADMIN_PASSWORD_HASH) {
+  throw new Error('ADMIN_PASSWORD_HASH is required in production');
+}
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const devOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const corsAllowlist = isProduction ? allowedOrigins : [...new Set([...allowedOrigins, ...devOrigins])];
+
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    if (!isProduction) return cb(null, true);
+    if (corsAllowlist.includes(origin)) return cb(null, true);
+    return cb(new Error('CORS blocked: origin not allowed'));
+  },
+  credentials: true,
+}));
 app.use(express.json());
+
+const appStartTime = Date.now();
+const requestMetrics = {
+  total: 0,
+  byRoute: {},
+  byStatus: {},
+  slowRequests: 0,
+};
+
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const routeKey = `${req.method} ${req.path}`;
+  requestMetrics.total += 1;
+  requestMetrics.byRoute[routeKey] = (requestMetrics.byRoute[routeKey] || 0) + 1;
+  const reqId = crypto.randomBytes(6).toString('hex');
+  res.setHeader('X-Request-Id', reqId);
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const statusKey = String(res.statusCode);
+    requestMetrics.byStatus[statusKey] = (requestMetrics.byStatus[statusKey] || 0) + 1;
+    if (durationMs > 2000) requestMetrics.slowRequests += 1;
+    const level = durationMs > 2000 ? 'WARN' : 'INFO';
+    console.log(`[${level}] ${reqId} ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`);
+  });
+  next();
+});
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').toLowerCase());
+const sanitizeLocationInput = (location = '') => location.replace(/\s+/g, ' ').trim();
+const isSafeLocation = (location = '') => location.length >= 2 && location.length <= 160;
+const isStrongPassword = (password = '') => typeof password === 'string' && password.length >= 8;
+const isValidEventName = (event = '') => /^[a-z0-9_]{3,64}$/.test(event);
+
+const buildDataQuality = (businesses = [], aiSuggestions = '') => {
+  const sourceCounts = businesses.reduce((acc, b) => {
+    const source = b.source || (b.isMock ? 'mock' : b.isManual ? 'manual' : 'unknown');
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {});
+  const usesMockData = businesses.some((b) => b.isMock);
+  const hasEstimatedMetrics = businesses.some((b) => b.ratingEstimated || b.reviewCountEstimated);
+  const aiReady = !!aiSuggestions && aiSuggestions !== 'Generating AI recommendations...' && aiSuggestions !== 'AI suggestions unavailable (no OpenAI key set).';
+  const warnings = [];
+  if (usesMockData) warnings.push('Some records are fallback mock data due to missing live provider results.');
+  if (hasEstimatedMetrics) warnings.push('Ratings/review counts may include model-based estimates where providers do not supply them.');
+  if (!aiReady) warnings.push('AI recommendations are unavailable or still being generated.');
+  return {
+    sourceCounts,
+    usesMockData,
+    hasEstimatedMetrics,
+    aiReady,
+    warnings,
+  };
+};
 
 // Rate limiting
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later.' } });
@@ -138,6 +219,14 @@ const Review = sequelize.define('Review', {
   name: { type: DataTypes.STRING, defaultValue: 'Anonymous' },
   review: DataTypes.TEXT,
   approved: { type: DataTypes.BOOLEAN, defaultValue: true },
+});
+
+const AnalyticsEvent = sequelize.define('AnalyticsEvent', {
+  event: { type: DataTypes.STRING, allowNull: false },
+  route: DataTypes.STRING,
+  sessionId: DataTypes.STRING,
+  userId: DataTypes.INTEGER,
+  meta: DataTypes.TEXT,
 });
 
 // AI Setup
@@ -351,6 +440,9 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
         website: tags.website || tags['contact:website'] || '',
         latitude: el.lat,
         longitude: el.lon,
+        source: 'osm',
+        ratingEstimated: true,
+        reviewCountEstimated: true,
       };
     }).filter(b => b.latitude && b.longitude && b.name);
 
@@ -461,6 +553,8 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
           latitude: pos.lat,
           longitude: pos.lon,
           source: 'tomtom',
+          ratingEstimated: true,
+          reviewCountEstimated: true,
         });
       });
     });
@@ -516,6 +610,8 @@ const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
         latitude: geo?.latitude,
         longitude: geo?.longitude,
         source: 'foursquare',
+        ratingEstimated: !place.rating,
+        reviewCountEstimated: !place.stats?.total_ratings,
       };
     }).filter(b => b.latitude && b.longitude);
   } catch (e) {
@@ -574,6 +670,8 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
         latitude: parseFloat(b.lat?.value),
         longitude: parseFloat(b.lng?.value),
         source: 'wikidata',
+        ratingEstimated: true,
+        reviewCountEstimated: true,
       };
     }).filter(b => b && b.latitude && b.longitude && !isNaN(b.latitude));
   } catch (e) {
@@ -715,6 +813,9 @@ const generateMockBusinesses = (lat, lng) => {
         latitude: lat + (Math.random() - 0.5) * 0.08,
         longitude: lng + (Math.random() - 0.5) * 0.08,
         isMock: true,
+        source: 'mock',
+        ratingEstimated: true,
+        reviewCountEstimated: true,
       });
     }
   });
@@ -752,8 +853,8 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, businessName } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
-    if (!email?.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return res.status(400).json({ error: 'Valid email is required' });
-    if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
+    if (!isStrongPassword(password)) return res.status(400).json({ error: 'Password must be at least 8 characters' });
     if (await User.findOne({ where: { email: email.toLowerCase() } })) return res.status(400).json({ error: 'Email already registered' });
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ name: name.trim(), email: email.toLowerCase(), password: hashed, businessName: businessName?.trim() });
@@ -767,6 +868,7 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
     const user = await User.findOne({ where: { email: email.toLowerCase() } });
     if (!user || !(await bcrypt.compare(password, user.password))) return res.status(400).json({ error: 'Invalid email or password' });
     const token = jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
@@ -849,16 +951,17 @@ app.get('/api/searches/:id', authMiddleware, async (req, res) => {
 // Admin login (password-only, no username)
 app.post('/api/admin/login', async (req, res) => {
   const { password } = req.body;
+  if (!password || typeof password !== 'string') return res.status(400).json({ error: 'Password is required' });
   const valid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
   if (!valid) return res.status(401).json({ error: 'Wrong password' });
-  const token = jwt.sign({ role: 'admin' }, process.env.ADMIN_JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign({ role: 'admin' }, ADMIN_JWT_SECRET, { expiresIn: '8h' });
   res.json({ token });
 });
 
 const adminAuth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token' });
-  try { const d = jwt.verify(token, process.env.ADMIN_JWT_SECRET); if (d.role !== 'admin') throw new Error(); next(); }
+  try { const d = jwt.verify(token, ADMIN_JWT_SECRET); if (d.role !== 'admin') throw new Error(); next(); }
   catch { res.status(401).json({ error: 'Unauthorized' }); }
 };
 
@@ -894,6 +997,7 @@ app.post('/api/enquiries', async (req, res) => {
   try {
     const { name, email, phone, message, propertyAddress, propertyType, propertyPrice } = req.body;
     if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
     const enquiry = await PropertyEnquiry.create({ name, email, phone, message, propertyAddress, propertyType, propertyPrice });
     res.json({ success: true, id: enquiry.id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -925,6 +1029,7 @@ app.post('/api/suggestions', async (req, res) => {
   try {
     const { name, category, address, city, pincode, phone, description, submitterName } = req.body;
     if (!name || !city) return res.status(400).json({ error: 'Name and city are required' });
+    if (String(name).length > 120 || String(city).length > 80) return res.status(400).json({ error: 'Input too long' });
     const suggestion = await PublicSuggestion.create({ name, category: category || 'Other', address, city, pincode, phone, description, submitterName });
     res.json({ success: true, id: suggestion.id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -954,6 +1059,47 @@ app.get('/api/reviews', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/events', async (req, res) => {
+  try {
+    const { event, route, sessionId, meta } = req.body || {};
+    if (!isValidEventName(event)) return res.status(400).json({ error: 'Invalid event name' });
+    await AnalyticsEvent.create({
+      event,
+      route: String(route || '').slice(0, 120),
+      sessionId: String(sessionId || '').slice(0, 80),
+      userId: Number.isInteger(meta?.userId) ? meta.userId : null,
+      meta: meta ? JSON.stringify(meta).slice(0, 3000) : null,
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to ingest event' });
+  }
+});
+
+// Health endpoint for uptime/monitoring
+app.get('/api/health', async (req, res) => {
+  const uptimeSeconds = Math.floor((Date.now() - appStartTime) / 1000);
+  let dbHealthy = false;
+  try {
+    await sequelize.authenticate();
+    dbHealthy = true;
+  } catch (_) {
+    dbHealthy = false;
+  }
+  res.json({
+    status: dbHealthy ? 'ok' : 'degraded',
+    uptimeSeconds,
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+    database: dbHealthy ? 'connected' : 'unreachable',
+    memory: process.memoryUsage(),
+    metrics: {
+      totalRequests: requestMetrics.total,
+      slowRequests: requestMetrics.slowRequests,
+    },
+  });
+});
+
 // Admin: manage reviews
 app.get('/api/admin/reviews', adminAuth, async (req, res) => {
   res.json(await Review.findAll({ order: [['createdAt', 'DESC']] }));
@@ -971,10 +1117,39 @@ app.delete('/api/admin/reviews/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// Admin metrics snapshot
+app.get('/api/admin/metrics', adminAuth, async (req, res) => {
+  const uptimeSeconds = Math.floor((Date.now() - appStartTime) / 1000);
+  res.json({
+    uptimeSeconds,
+    totalRequests: requestMetrics.total,
+    slowRequests: requestMetrics.slowRequests,
+    byStatus: requestMetrics.byStatus,
+    topRoutes: Object.entries(requestMetrics.byRoute)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([route, hits]) => ({ route, hits })),
+  });
+});
+
+app.get('/api/admin/events', adminAuth, async (req, res) => {
+  try {
+    const rows = await AnalyticsEvent.findAll({
+      attributes: ['event', [sequelize.fn('COUNT', sequelize.col('event')), 'count']],
+      group: ['event'],
+      order: [[sequelize.literal('count'), 'DESC']],
+      limit: 50,
+    });
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load events' });
+  }
+});
+
 // 0. Real-time streaming analysis via SSE
 app.get('/api/analyze-stream', async (req, res) => {
-  const location = req.query.location;
-  if (!location) return res.status(400).json({ error: 'location required' });
+  const location = sanitizeLocationInput(req.query.location || '');
+  if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -1090,6 +1265,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
       businesses, categoryStats: sortedStats, aiSuggestions,
       userLat: latitude, userLng: longitude,
+      dataQuality: buildDataQuality(businesses, aiSuggestions),
     };
     setCache(cacheKey, result);
     res.write(`data: ${JSON.stringify({ step: 'result', data: result })}\n\n`);
@@ -1104,7 +1280,9 @@ app.get('/api/analyze-stream', async (req, res) => {
 // 1. Location Analysis
 app.post('/api/analyze-location', async (req, res) => {
   try {
-    const { location, nocache } = req.body;
+    const { nocache } = req.body;
+    const location = sanitizeLocationInput(req.body.location || '');
+    if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
     const cacheKey = location.toLowerCase().trim();
 
     // Return cached result instantly (skip if nocache requested)
@@ -1203,6 +1381,7 @@ app.post('/api/analyze-location', async (req, res) => {
       aiSuggestions: 'Generating AI recommendations...',
       userLat: latitude,
       userLng: longitude,
+      dataQuality: buildDataQuality(businesses, 'Generating AI recommendations...'),
     };
 
     // Send response immediately, then get AI in background
@@ -1212,6 +1391,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // Update cache with AI result after response sent
     getAISuggestions(location, categoryStats).then(ai => {
       result.aiSuggestions = ai;
+      result.dataQuality = buildDataQuality(result.businesses, ai);
       setCache(cacheKey, result);
     });
 
@@ -1359,6 +1539,8 @@ app.post('/api/properties/submit', async (req, res) => {
   try {
     const { title, type, price, size, address, city, pincode, phone, description, submitterName, submitterEmail, latitude, longitude } = req.body;
     if (!address || !city || !type || !price) return res.status(400).json({ error: 'Address, city, type and price are required' });
+    if (!['rent', 'sale'].includes(String(type).toLowerCase())) return res.status(400).json({ error: 'type must be rent or sale' });
+    if (submitterEmail && !isValidEmail(submitterEmail)) return res.status(400).json({ error: 'Valid submitter email is required' });
     const prop = await ListedProperty.create({ title, type, price: parseFloat(price), size: parseFloat(size) || 0, address, city, pincode, phone, description, submitterName, submitterEmail, latitude: parseFloat(latitude) || null, longitude: parseFloat(longitude) || null });
     res.json({ success: true, id: prop.id });
   } catch (e) { res.status(500).json({ error: e.message }); }

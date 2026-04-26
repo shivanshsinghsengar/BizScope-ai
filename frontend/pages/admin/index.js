@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users'];
+const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users', 'Analytics'];
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
   const [listedProps, setListedProps] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,11 +30,13 @@ export default function AdminPanel() {
       fetch(`${API_URL}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/enquiries`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/properties`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-    ]).then(([s, u, e, p]) => {
+      fetch(`${API_URL}/api/admin/events`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([s, u, e, p, ev]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
       setEnquiries(Array.isArray(e) ? e : []);
       setListedProps(Array.isArray(p) ? p : []);
+      setEvents(Array.isArray(ev) ? ev : []);
       setLoading(false);
     }).catch(() => router.push('/admin/login'));
   }, [token]);
@@ -116,7 +119,7 @@ export default function AdminPanel() {
 
           <nav style={{ padding: '16px 12px', flex: 1 }}>
             {TABS.map(t => {
-              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥' };
+              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥', Analytics: '📈' };
               const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps };
               const active = tab === t;
               return (
@@ -427,6 +430,53 @@ export default function AdminPanel() {
               ))}
             </div>
           )}
+
+          {/* Analytics Tab */}
+          {!loading && tab === 'Analytics' && (() => {
+            const toNum = (v) => parseInt(v, 10) || 0;
+            const getEventCount = (name) => {
+              const row = events.find((e) => e.event === name);
+              return row ? toNum(row.count) : 0;
+            };
+            const started = getEventCount('analysis_started');
+            const succeeded = getEventCount('analysis_succeeded');
+            const failed = getEventCount('analysis_failed');
+            const conversion = started > 0 ? Math.round((succeeded / started) * 100) : 0;
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+                  {[
+                    { label: 'Analysis Started', value: started, color: '#60a5fa', icon: '🚀' },
+                    { label: 'Analysis Succeeded', value: succeeded, color: '#34d399', icon: '✅' },
+                    { label: 'Analysis Failed', value: failed, color: '#f87171', icon: '⚠️' },
+                    { label: 'Conversion Rate', value: `${conversion}%`, color: '#a78bfa', icon: '🎯' },
+                  ].map((s) => (
+                    <div key={s.label} style={{ background: '#080d18', border: `1px solid ${s.color}30`, borderRadius: '14px', padding: '16px' }}>
+                      <div style={{ fontSize: '22px' }}>{s.icon}</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: s.color, lineHeight: 1.1, marginTop: '6px' }}>{s.value}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: '#080d18', border: '1px solid #0f1f35', borderRadius: '14px', padding: '18px' }}>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '14px', marginBottom: '12px' }}>Top Tracked Events</div>
+                  {events.length === 0 && <div style={{ color: '#475569', fontSize: '13px' }}>No analytics events yet.</div>}
+                  {events.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                      {events.map((e, i) => (
+                        <div key={`${e.event}_${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a1020', border: '1px solid #0f1f35', borderRadius: '10px', padding: '10px 12px' }}>
+                          <span style={{ color: '#cbd5e1', fontSize: '13px', fontWeight: '600' }}>{e.event}</span>
+                          <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '800' }}>{toNum(e.count)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </>

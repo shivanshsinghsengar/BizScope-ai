@@ -9,6 +9,7 @@ import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
 import ExportPDF from '../components/ExportPDF';
 import { useAuth } from '../context/AuthContext';
+import { trackEvent } from '../utils/analytics';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const categoryColors = {
@@ -51,7 +52,11 @@ export default function Dashboard() {
   const handleShare = () => {
     const loc = data.location?.displayName?.split(',').slice(0, 2).join(',') || '';
     const url = `${window.location.origin}/?location=${encodeURIComponent(loc)}`;
-    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      trackEvent('report_shared', { location: loc });
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const saveSearch = async () => {
@@ -63,6 +68,7 @@ export default function Dashboard() {
         body: JSON.stringify({ location: data.location?.displayName, displayName: data.location?.displayName?.split(',').slice(0, 2).join(','), data }),
       });
       setSaved(true);
+      trackEvent('search_saved', { location: data.location?.displayName?.split(',')[0] || '' });
     } catch (_) {}
   };
 
@@ -169,7 +175,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>🏪 {data.businesses?.length} businesses</span>
             <span>📂 {data.categoryStats?.length} categories</span>
-            <ExportPDF data={data} />
+            <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #c8f03a40', background: copied ? '#c8f03a15' : 'transparent', color: copied ? '#c8f03a' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
               {copied ? '✅ Copied!' : '🔗 Share'}
@@ -182,6 +188,22 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Data quality disclosure */}
+        {(data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics || data.dataQuality?.warnings?.length) && (
+          <div style={{ background: '#f59e0b12', border: '1px solid #f59e0b40', borderRadius: '14px', padding: '12px 16px', marginBottom: '24px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Data Quality Notice</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>
+              {data.dataQuality?.usesMockData && <div>Some records are fallback data because live providers returned no results for this location.</div>}
+              {data.dataQuality?.hasEstimatedMetrics && <div>Ratings and review counts may include estimates where source APIs do not provide them.</div>}
+              {(data.dataQuality?.sourceCounts && Object.keys(data.dataQuality.sourceCounts).length > 0) && (
+                <div>
+                  Sources: {Object.entries(data.dataQuality.sourceCounts).map(([k, v]) => `${k} (${v})`).join(', ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stat cards */}
         <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>

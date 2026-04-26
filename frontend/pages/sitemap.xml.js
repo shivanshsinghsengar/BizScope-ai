@@ -5,6 +5,10 @@ const PAGES = [
   { path: '/how-it-works', priority: '0.8', changefreq: 'monthly' },
   { path: '/pricing', priority: '0.8', changefreq: 'monthly' },
   { path: '/docs', priority: '0.7', changefreq: 'monthly' },
+  { path: '/about', priority: '0.7', changefreq: 'monthly' },
+  { path: '/privacy', priority: '0.5', changefreq: 'yearly' },
+  { path: '/terms', priority: '0.5', changefreq: 'yearly' },
+  { path: '/status', priority: '0.6', changefreq: 'daily' },
   { path: '/login', priority: '0.5', changefreq: 'yearly' },
   { path: '/register', priority: '0.5', changefreq: 'yearly' },
 ];

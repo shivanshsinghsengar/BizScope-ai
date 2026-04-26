@@ -176,6 +176,12 @@ export default function Competitors() {
           <p style={{ color: 'var(--muted)', fontSize: '15px' }}>{data.businesses?.length} businesses found within 5km of your location</p>
         </div>
 
+        {(data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics) && (
+          <div style={{ background: '#f59e0b12', border: '1px solid #f59e0b40', borderRadius: '14px', padding: '10px 14px', marginBottom: '20px', fontSize: '12px', color: 'var(--muted)' }}>
+            ⚠️ Data quality: {data.dataQuality?.usesMockData ? 'fallback entries are included' : 'all entries are live'}; ratings/review counts can include estimates.
+          </div>
+        )}
+
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', marginBottom: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search by name..." className="input-field" style={{ flex: 1, minWidth: '200px' }} />
           <select value={sort} onChange={e => setSort(e.target.value)} className="input-field" style={{ width: '160px' }}>

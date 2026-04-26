@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function ExportPDF({ data }) {
+export default function ExportPDF({ data, onExported }) {
   const [loading, setLoading] = useState(false);
 
   const exportPDF = async () => {
@@ -43,6 +43,19 @@ export default function ExportPDF({ data }) {
       newLine(8);
       addText(`Most Competitive: ${data.categoryStats?.[0]?.category}`, 20, 11, 'normal', [239, 68, 68]);
       newLine(16);
+
+      // Data quality summary
+      if (data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics) {
+        doc.setFillColor(255, 247, 237);
+        doc.roundedRect(14, y - 4, W - 28, 16, 3, 3, 'F');
+        addText('Data Quality Notice:', 18, 10, 'bold', [180, 83, 9]);
+        newLine(5);
+        const qualityText = data.dataQuality?.usesMockData
+          ? 'Some entries are fallback data; ratings/reviews may include estimates.'
+          : 'Ratings/reviews may include estimates where providers do not expose metrics.';
+        addText(qualityText, 18, 9, 'normal', [120, 113, 108]);
+        newLine(11);
+      }
 
       // Category breakdown
       addText('Market Category Breakdown', 14, 14, 'bold', [30, 30, 30]);
@@ -120,6 +133,7 @@ export default function ExportPDF({ data }) {
 
       const filename = `BizScope_${data.location?.displayName?.split(',')[0]?.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
       doc.save(filename);
+      if (onExported) onExported(filename);
     } catch (e) {
       console.error('PDF export failed:', e);
       alert('PDF export failed. Please try again.');

@@ -140,6 +140,7 @@ export default function Layout({ children }) {
               { label: 'How it Works', href: '/how-it-works' },
               { label: 'Privacy', href: '/privacy' },
               { label: 'Terms', href: '/terms' },
+              { label: 'Status', href: '/status' },
             ].map(l => (
               <span key={l.label} onClick={() => router.push(l.href)}
                 style={{ fontSize: '12px', color: 'var(--muted3)', cursor: 'pointer', transition: 'color 0.2s' }}
