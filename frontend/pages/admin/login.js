@@ -1,5 +1,5 @@
 import API_URL from '../../utils/api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
@@ -7,7 +7,19 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+  const [autoRedirect, setAutoRedirect] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!autoRedirect) return;
+    if (countdown <= 0) {
+      router.push('/analysis');
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [autoRedirect, countdown, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,14 +51,32 @@ export default function AdminLogin() {
           <form onSubmit={handleSubmit}>
             <label style={{ display: 'block', fontSize: '11px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Password</label>
             <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              type="password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); if (autoRedirect) setAutoRedirect(false); }}
               placeholder="Enter admin password" required autoFocus
               style={{ width: '100%', background: '#0a0f1a', border: '1px solid #1e293b', color: 'white', padding: '11px 14px', borderRadius: '12px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '14px' }}
             />
             {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
+            {autoRedirect ? (
+              <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '10px', textAlign: 'center' }}>
+                Redirecting to dashboard in {countdown}s...
+              </p>
+            ) : (
+              <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '10px', textAlign: 'center' }}>
+                Auto-redirect paused.
+              </p>
+            )}
             <button type="submit" disabled={loading}
               style={{ width: '100%', padding: '11px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: 'white', fontWeight: '600', fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Checking...' : 'Enter'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/analysis')}
+              style={{ width: '100%', marginTop: '10px', padding: '10px', borderRadius: '12px', border: '1px solid #334155', background: 'transparent', color: '#94a3b8', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+            >
+              ← Back to Dashboard
             </button>
           </form>
         </div>

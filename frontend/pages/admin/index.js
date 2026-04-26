@@ -134,6 +134,12 @@ export default function AdminPanel() {
           </nav>
 
           <div style={{ padding: '16px 12px', borderTop: '1px solid #0f1f35' }}>
+            <button
+              onClick={() => router.push('/analysis')}
+              style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid #1e293b', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '12px', fontWeight: '600', marginBottom: '8px' }}
+            >
+              ← Dashboard
+            </button>
             <button onClick={logout} style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1px solid #1e293b', background: 'transparent', color: '#475569', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
               🚪 Sign Out
             </button>
