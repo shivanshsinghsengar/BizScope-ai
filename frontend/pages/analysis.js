@@ -173,8 +173,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>🏪 {data.businesses?.length} businesses</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> {data.businesses?.length} businesses</span>
             <span>📂 {data.categoryStats?.length} categories</span>
+            <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>✅ Live OSM Data</span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #c8f03a40', background: copied ? '#c8f03a15' : 'transparent', color: copied ? '#c8f03a' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
@@ -204,6 +205,30 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Next Steps card */}
+        <div style={{ background: 'linear-gradient(135deg, #c8f03a12, #ef444408)', border: '1px solid #c8f03a25', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '36px' }}>🎯</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What to do next</div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {[
+                { step: '1', text: `Visit top ${data.categoryStats?.[0]?.category || ''} competitors nearby`, href: '/competitors', icon: '🏪' },
+                { step: '2', text: 'Check AI business recommendations', href: '/insights', icon: '🤖' },
+                { step: '3', text: 'Browse available commercial properties', href: '/properties', icon: '🏠' },
+                { step: '4', text: 'Export PDF report to share with partners', href: null, icon: '📄' },
+              ].map(s => (
+                <div key={s.step} onClick={() => s.href && router.push(s.href)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--text2)', cursor: s.href ? 'pointer' : 'default', fontWeight: '500', transition: 'all 0.15s' }}
+                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#c8f03a60')}
+                  onMouseLeave={e => s.href && (e.currentTarget.style.borderColor = 'var(--border2)')}>
+                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#c8f03a', color: '#0a0f0a', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
+                  <span>{s.icon} {s.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Stat cards */}
         <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>

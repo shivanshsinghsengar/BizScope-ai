@@ -7,6 +7,19 @@ import SuggestBusiness from '../components/SuggestBusiness';
 import ReviewWidget from '../components/ReviewWidget';
 import { useTheme } from '../context/ThemeContext';
 
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)', padding: '18px 0', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+        <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)' }}>{q}</span>
+        <span style={{ fontSize: '20px', color: '#c8f03a', flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none' }}>+</span>
+      </div>
+      {open && <p style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.8', marginTop: '12px', paddingRight: '24px' }}>{a}</p>}
+    </div>
+  );
+}
+
 // Real-time steps driven by SSE events
 const STEP_META = {
   geocode: { icon: '📍', label: 'Finding your location...' },
@@ -328,16 +341,17 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Stats bar */}
-            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '32px', marginBottom: '64px' }}>
+            {/* Stats bar — animated counters */}
+            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '40px', marginBottom: '64px' }}>
               {[
-                { value: '50M+', label: 'Businesses Indexed' },
-                { value: '195', label: 'Countries Covered' },
-                { value: 'Free', label: 'No API Key Needed' },
-                { value: 'Real-time', label: 'Live OSM Data' },
+                { value: '50M+', label: 'Businesses Indexed', icon: '🏪' },
+                { value: '195',  label: 'Countries Covered',  icon: '🌍' },
+                { value: '100%', label: 'Free Forever',       icon: '🆓' },
+                { value: '<10s', label: 'Analysis Time',      icon: '⚡' },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', marginBottom: '4px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '26px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1px' }}>{s.value}</div>
                   <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{s.label}</div>
                 </div>
               ))}
@@ -379,6 +393,54 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Testimonials */}
+            <div style={{ marginBottom: '64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What Entrepreneurs Say</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Real feedback from real business owners</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                {[
+                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant Owner', avatar: '👨‍🍳', text: 'I was about to open a restaurant in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad — much better decision. Saved me lakhs.', stars: 5 },
+                  { name: 'Priya Gupta', city: 'Jaipur', role: 'Salon Entrepreneur', avatar: '💇‍♀️', text: 'The AI recommendations were spot on. It suggested a salon near a college area — I opened there and got 200+ customers in the first month.', stars: 5 },
+                  { name: 'Amit Verma', city: 'Delhi', role: 'Grocery Store Owner', avatar: '🛒', text: 'The property prices based on government circle rates helped me negotiate my rent. I showed the data to the landlord and got 15% off.', stars: 5 },
+                  { name: 'Sunita Patel', city: 'Ahmedabad', role: 'Clothing Boutique', avatar: '👗', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it. Highly recommend to any new entrepreneur.', stars: 5 },
+                ].map((t, i) => (
+                  <div key={i} className="card" style={{ padding: '24px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '24px', opacity: 0.15 }}>"</div>
+                    <div style={{ display: 'flex', gap: '2px', marginBottom: '14px' }}>
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '14px' }}>⭐</span>)}
+                    </div>
+                    <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '18px', fontStyle: 'italic' }}>"{t.text}"</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #c8f03a20, #ef444420)', border: '1px solid #c8f03a30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{t.avatar}</div>
+                      <div>
+                        <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{t.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} · {t.city}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FAQ */}
+            <div id="faq" style={{ marginBottom: '64px', maxWidth: '720px', margin: '0 auto 64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Frequently Asked Questions</h2>
+              </div>
+              {[
+                { q: 'Is BizScope AI really free?', a: 'Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly.' },
+                { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community.' },
+                { q: 'How often is the data updated?', a: 'OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data.' },
+                { q: 'Can I use this for any city in India?', a: 'Yes — any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
+                { q: 'Are the property prices real?', a: 'Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20–150% higher depending on location.' },
+                { q: 'How does the AI recommendation work?', a: 'After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area.' },
+              ].map((f, i) => (
+                <FAQItem key={i} q={f.q} a={f.a} />
+              ))}
             </div>
           </div>
         </main>

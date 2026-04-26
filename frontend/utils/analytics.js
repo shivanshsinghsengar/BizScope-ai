@@ -1,30 +1,15 @@
-import API_URL from './api';
-
-const SESSION_KEY = 'bizscope_session_id';
-
-const getSessionId = () => {
-  if (typeof window === 'undefined') return 'server';
-  const existing = sessionStorage.getItem(SESSION_KEY);
-  if (existing) return existing;
-  const sid = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-  sessionStorage.setItem(SESSION_KEY, sid);
-  return sid;
-};
-
-export const trackEvent = async (event, meta = {}) => {
+// Lightweight analytics — logs events to console in dev, sends to backend in prod
+export const trackEvent = (event, props = {}) => {
   try {
-    if (typeof window === 'undefined') return;
-    await fetch(`${API_URL}/api/events`, {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Analytics]', event, props);
+      return;
+    }
+    // Fire-and-forget — don't block UI
+    fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event,
-        route: window.location.pathname,
-        sessionId: getSessionId(),
-        meta,
-      }),
-    });
-  } catch (_) {
-    // Silent by design; analytics should never block UX
-  }
+      body: JSON.stringify({ event, props, ts: Date.now() }),
+    }).catch(() => {});
+  } catch (_) {}
 };
