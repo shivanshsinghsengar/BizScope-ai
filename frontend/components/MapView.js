@@ -90,7 +90,7 @@ function BusinessPopup({ b, color }) {
   );
 }
 
-export default function MapView({ center, businesses, properties, categoryColors }) {
+export default function MapView({ center, businesses, properties, categoryColors, radiusKm }) {
   return (
     <MapContainer
       center={[center.lat, center.lng]}
@@ -106,7 +106,7 @@ export default function MapView({ center, businesses, properties, categoryColors
 
       <Circle
         center={[center.lat, center.lng]}
-        radius={5000}
+        radius={radiusKm * 1000}
         pathOptions={{ color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.05, weight: 1.5, dashArray: '6' }}
       />
 

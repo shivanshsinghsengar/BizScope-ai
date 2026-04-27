@@ -1569,9 +1569,69 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
 
 // 3. Get Businesses for Map
 app.get('/api/businesses/:lat/:lng', async (req, res) => {
-  const { lat, lng } = req.params;
+  const lat = parseFloat(req.params.lat);
+  const lng = parseFloat(req.params.lng);
+  const radiusKm = Math.min(Math.max(parseFloat(req.query.radius) || 5, 1), 10);
+  const radiusMeters = radiusKm * 1000;
+
   const businesses = await Business.findAll({ limit: 50, order: [['reviewCount', 'DESC']] });
   if (businesses.length > 0) return res.json(businesses);
+
+  try {
+    const query = `
+      [out:json][timeout:25];
+      (
+        node["amenity"](around:${radiusMeters},${lat},${lng});
+        node["shop"](around:${radiusMeters},${lat},${lng});
+        node["office"](around:${radiusMeters},${lat},${lng});
+        way["amenity"](around:${radiusMeters},${lat},${lng});
+        way["shop"](around:${radiusMeters},${lat},${lng});
+        way["office"](around:${radiusMeters},${lat},${lng});
+      );
+      out center body;
+    `;
+
+    const osmRes = await axios.post(
+      'https://overpass-api.de/api/interpreter',
+      `data=${encodeURIComponent(query)}`,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 25000 }
+    );
+
+    const elements = (osmRes.data.elements || []).filter(el => {
+      const elLat = el.lat ?? el.center?.lat;
+      const elLon = el.lon ?? el.center?.lon;
+      return elLat && elLon;
+    });
+
+    if (elements.length > 0) {
+      const osmBusinesses = elements.slice(0, 30).map((el, i) => {
+        const tags = el.tags || {};
+        const elLat = el.lat ?? el.center?.lat;
+        const elLon = el.lon ?? el.center?.lon;
+        const name = tags.name || tags.brand || tags.operator || tags.ref || `Nearby Business ${i + 1}`;
+        const category = tags.amenity || tags.shop || tags.office || tags.tourism || tags.leisure || 'Business';
+        const addressParts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:suburb'], tags['addr:city'], tags['addr:postcode']].filter(Boolean);
+        const address = addressParts.join(', ') || tags['addr:full'] || tags['addr:place'] || null;
+
+        return {
+          id: `${el.type}_${el.id}`,
+          name,
+          category,
+          rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
+          reviewCount: Math.floor(Math.random() * 240 + 8),
+          address,
+          latitude: elLat,
+          longitude: elLon,
+          phone: tags.phone || tags['contact:phone'] || null,
+        };
+      });
+
+      return res.json(osmBusinesses);
+    }
+  } catch (e) {
+    console.log('OSM business fetch failed:', e.message);
+  }
+
   // fallback mock
   const cats = ['Restaurant', 'Cafe', 'Grocery', 'Gym', 'Salon', 'Pharmacy', 'Bakery', 'Laundry'];
   const mock = Array.from({ length: 20 }, (_, i) => ({
