@@ -281,6 +281,53 @@ Be specific to ${cityName} — mention real areas, markets, and local context (e
   return 'AI suggestions unavailable (no OpenAI key set).';
 };
 
+const generateBusinessPlan = async (location, categoryStats, selectedBusiness) => {
+  const cityName = location.split(',')[0].trim();
+  const prompt = `You are a business consultant specializing in Indian markets. A user wants to create a detailed business plan for starting a ${selectedBusiness} in ${cityName}.
+
+Here is the current market data for ${cityName} (businesses found within 5km):
+${JSON.stringify(categoryStats, null, 2)}
+
+Create a comprehensive business plan for starting a ${selectedBusiness} in ${cityName}. Include the following sections:
+
+1. Executive Summary (brief overview)
+2. Market Analysis (based on the provided data)
+3. Business Description
+4. Marketing and Sales Strategy
+5. Operations Plan
+6. Financial Projections (startup costs, monthly revenue, break-even analysis)
+7. Risk Analysis
+8. Conclusion
+
+Make it specific to ${cityName} and the ${selectedBusiness} category. Use realistic numbers for India. Keep the plan concise but comprehensive.`;
+
+  // Try Gemini first
+  if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (e) {
+      console.log('Gemini failed for business plan:', e.message);
+    }
+  }
+
+  // Fallback to OpenAI
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key') {
+    try {
+      const res = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+      });
+      return res.choices[0].message.content;
+    } catch (e) {
+      console.log('OpenAI failed for business plan:', e.message);
+    }
+  }
+
+  return 'Business plan generation unavailable (no AI key set).';
+};
+
 // Geocode cache (in-memory, no expiry — city coords don't change)
 const geocodeCache = new Map();
 
@@ -1073,6 +1120,18 @@ app.post('/api/events', async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: 'Failed to ingest event' });
+  }
+});
+
+// Generate business plan
+app.post('/api/business-plan', authMiddleware, async (req, res) => {
+  try {
+    const { location, categoryStats, selectedBusiness } = req.body;
+    if (!location || !selectedBusiness) return res.status(400).json({ error: 'Location and selected business required' });
+    const plan = await generateBusinessPlan(location, categoryStats, selectedBusiness);
+    res.json({ plan });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

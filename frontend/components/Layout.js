@@ -10,6 +10,7 @@ const navItems = [
   { href: '/properties', icon: '🏠', label: 'Properties' },
   { href: '/insights', icon: '🤖', label: 'AI Insights' },
   { href: '/trends', icon: '📈', label: 'Trends' },
+  { href: '/business-plan', icon: '📋', label: 'Business Plan' },
   { href: '/list-business', icon: '➕', label: 'List Business' },
   { href: '/saved', icon: '🔖', label: 'Saved' },
 ];
