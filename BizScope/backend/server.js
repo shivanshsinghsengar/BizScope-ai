@@ -269,8 +269,10 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000) => {
       if (!category && tags.office) category = 'Office';
       if (!category) category = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).replace(/_/g, ' ');
 
+      const businessName = tags.name || tags['name:en'] || tags['name:short'] || tags.brand || tags.operator || tags['name:local'] || `${category} (unnamed)`;
+
       return {
-        name: tags.name || `${category} (unnamed)`,
+        name: businessName,
         category,
         rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
         reviewCount: Math.floor(Math.random() * 300 + 10),
@@ -628,8 +630,30 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
 app.get('/api/businesses/:lat/:lng', async (req, res) => {
   const { lat, lng } = req.params;
   const radius = parseFloat(req.query.radius) || 5;
-  const businesses = await Business.findAll({ limit: 50, order: [['reviewCount', 'DESC']] });
+  const radiusMeters = radius * 1000;
+
+  const [osmBusinesses, manualBusinesses] = await Promise.all([
+    fetchRealBusinesses(parseFloat(lat), parseFloat(lng), radiusMeters),
+    ManualBusiness.findAll().then(all => all.filter(b =>
+      b.latitude && b.longitude &&
+      Math.sqrt(Math.pow(b.latitude - parseFloat(lat), 2) + Math.pow(b.longitude - parseFloat(lng), 2)) < 0.08
+    )).then(all => all.map(b => ({
+      name: b.name,
+      category: b.category,
+      rating: 4.0,
+      reviewCount: 50,
+      address: b.address,
+      phone: b.phone,
+      website: b.website,
+      latitude: b.latitude,
+      longitude: b.longitude,
+      isManual: true,
+    })) ),
+  ]);
+
+  const businesses = [...osmBusinesses, ...manualBusinesses];
   if (businesses.length > 0) return res.json(businesses);
+
   // fallback mock
   const cats = ['Restaurant', 'Cafe', 'Grocery', 'Gym', 'Salon', 'Pharmacy', 'Bakery', 'Laundry'];
   const spread = (radius / 5) * 0.01; // scale spread with radius
