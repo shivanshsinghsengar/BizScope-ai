@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 // Leaflet must be loaded client-side only
 const MapView = dynamic(() => import('../components/MapView'), { ssr: false });
+const ReviewWidget = dynamic(() => import('../components/ReviewWidget'), { ssr: false });
 
 const CATEGORY_COLORS = {
   restaurant: '#ef4444', cafe: '#f97316', retail: '#8b5cf6',
@@ -69,6 +70,7 @@ export default function MapPage() {
           />
         </div>
       </div>
+      <ReviewWidget />
     </>
   );
 }
