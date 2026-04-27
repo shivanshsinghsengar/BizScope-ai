@@ -58,19 +58,19 @@ export default function BusinessPlan() {
   return (
     <Layout>
       <Head>
-        <title>Business Plan Generator — BizScope AI</title>
-        <meta name="description" content="Generate detailed business plans for your startup ideas" />
+        <title>Premium Interior Ideas — BizScope AI</title>
+        <meta name="description" content="Generate premium interior design ideas for your business place" />
       </Head>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text)' }}>
-          Business Plan Generator
+          Premium Interior Ideas
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-          Get a comprehensive business plan tailored to your selected business type and location.
+          Discover premium interior design concepts for your business space, tailored to your category and local market.
         </p>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '16px' }}>Select Business Type</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '16px' }}>Choose Your Business Space</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
             {data.categoryStats?.map(stat => (
               <button
@@ -107,7 +107,7 @@ export default function BusinessPlan() {
               fontWeight: '600',
             }}
           >
-            {loading ? 'Generating Plan...' : 'Generate Business Plan'}
+            {loading ? 'Generating Ideas...' : 'Generate Premium Interior Ideas'}
           </button>
           {error && <p style={{ color: '#ef4444', marginTop: '12px' }}>{error}</p>}
         </div>
