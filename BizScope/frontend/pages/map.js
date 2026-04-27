@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 const GoogleMap = dynamic(() => import('@react-google-maps/api').then(m => m.GoogleMap), { ssr: false });
 const LoadScript = dynamic(() => import('@react-google-maps/api').then(m => m.LoadScript), { ssr: false });
 const Marker = dynamic(() => import('@react-google-maps/api').then(m => m.Marker), { ssr: false });
+const ReviewWidget = dynamic(() => import('../../components/ReviewWidget'), { ssr: false });
 
 export default function MapPage() {
   const [center, setCenter] = useState({ lat: 28.6139, lng: 77.2090 });
@@ -64,6 +65,7 @@ export default function MapPage() {
           </LoadScript>
         </div>
       </div>
+      <ReviewWidget />
     </>
   );
 }

@@ -12,19 +12,19 @@ export default function ReviewWidget() {
   const [step, setStep] = useState('rating'); // rating | form | done
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  const [name, setName] = useState('');
-  const [review, setReview] = useState('');
+  const [email, setEmail] = useState('');
+  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [prompt] = useState(PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
 
   useEffect(() => {
-    // Show after 45s on first visit, or after analysis (triggered externally)
+    // Show after 20s on first visit, or after analysis (triggered externally)
     const shown = sessionStorage.getItem('review_shown');
     if (shown) return;
     const t = setTimeout(() => {
       setShow(true);
       sessionStorage.setItem('review_shown', '1');
-    }, 45000);
+    }, 20000);
     return () => clearTimeout(t);
   }, []);
 
@@ -44,13 +44,13 @@ export default function ReviewWidget() {
   };
 
   const handleSubmit = async () => {
-    if (!rating) return;
+    if (!rating || !email) return;
     setSubmitting(true);
     try {
       await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating, name: name.trim() || 'Anonymous', review: review.trim() }),
+        body: JSON.stringify({ rating, email: email.trim(), review: description.trim() }),
       });
     } catch (_) {}
     setStep('done');
@@ -116,16 +116,18 @@ export default function ReviewWidget() {
               <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '16px' }}>
                 {rating >= 4 ? 'Awesome! Tell others about it 🙌' : 'Thanks for the feedback!'}
               </div>
-              <input value={name} onChange={e => setName(e.target.value)}
-                placeholder="Your name (optional)"
+              <input value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="Your email address"
+                type="email"
+                required
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: '13px', marginBottom: '10px', outline: 'none' }} />
-              <textarea value={review} onChange={e => setReview(e.target.value)}
-                placeholder={rating >= 4 ? "What did you love most?" : "How can we improve?"}
+              <textarea value={description} onChange={e => setDescription(e.target.value)}
+                placeholder="Tell us your feedback..."
                 rows={3}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: '13px', resize: 'none', outline: 'none', marginBottom: '14px' }} />
-              <button onClick={handleSubmit} disabled={submitting}
+              <button onClick={handleSubmit} disabled={submitting || !email}
                 style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', color: '#0a0f0a', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer' }}>
-                {submitting ? 'Submitting...' : 'Submit Review'}
+                {submitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
             </>
           )}
