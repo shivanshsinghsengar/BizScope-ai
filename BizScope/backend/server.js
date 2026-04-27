@@ -570,15 +570,17 @@ app.post('/api/analyze-location', async (req, res) => {
 app.get('/api/properties/:lat/:lng', async (req, res) => {
   const lat = parseFloat(req.params.lat);
   const lng = parseFloat(req.params.lng);
+  const radius = parseFloat(req.query.radius) || 5;
+  const radiusMeters = radius * 1000;
   try {
     const query = `
       [out:json][timeout:15];
       (
-        node["shop"="vacant"](around:5000,${lat},${lng});
-        node["office"](around:5000,${lat},${lng});
-        node["amenity"="marketplace"](around:5000,${lat},${lng});
-        node["building"~"commercial|retail|office"](around:5000,${lat},${lng});
-        node["commercial"](around:5000,${lat},${lng});
+        node["shop"="vacant"](around:${radiusMeters},${lat},${lng});
+        node["office"](around:${radiusMeters},${lat},${lng});
+        node["amenity"="marketplace"](around:${radiusMeters},${lat},${lng});
+        node["building"~"commercial|retail|office"](around:${radiusMeters},${lat},${lng});
+        node["commercial"](around:${radiusMeters},${lat},${lng});
       );
       out body;
     `;
@@ -625,18 +627,20 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
 // 3. Get Businesses for Map
 app.get('/api/businesses/:lat/:lng', async (req, res) => {
   const { lat, lng } = req.params;
+  const radius = parseFloat(req.query.radius) || 5;
   const businesses = await Business.findAll({ limit: 50, order: [['reviewCount', 'DESC']] });
   if (businesses.length > 0) return res.json(businesses);
   // fallback mock
   const cats = ['Restaurant', 'Cafe', 'Grocery', 'Gym', 'Salon', 'Pharmacy', 'Bakery', 'Laundry'];
+  const spread = (radius / 5) * 0.01; // scale spread with radius
   const mock = Array.from({ length: 20 }, (_, i) => ({
     name: `Business ${i + 1}`,
     category: cats[i % cats.length],
     rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
     reviewCount: Math.floor(Math.random() * 300 + 10),
     address: `Address ${i + 1}`,
-    latitude: parseFloat(lat) + (Math.random() - 0.5) * 0.01,
-    longitude: parseFloat(lng) + (Math.random() - 0.5) * 0.01,
+    latitude: parseFloat(lat) + (Math.random() - 0.5) * spread,
+    longitude: parseFloat(lng) + (Math.random() - 0.5) * spread,
   }));
   res.json(mock);
 });

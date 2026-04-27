@@ -11,21 +11,26 @@ export default function MapPage() {
   const [center, setCenter] = useState({ lat: 28.6139, lng: 77.2090 });
   const [businesses, setBusinesses] = useState([]);
   const [properties, setProperties] = useState([]);
+  const [radius, setRadius] = useState(5);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const lat = parseFloat(urlParams.get('lat'));
     const lng = parseFloat(urlParams.get('lng'));
-    if (lat && lng) { setCenter({ lat, lng }); loadMapData(lat, lng); }
-  }, []);
+    if (lat && lng) { setCenter({ lat, lng }); loadMapData(lat, lng, radius); }
+  }, [radius]);
 
-  const loadMapData = async (lat, lng) => {
+  const loadMapData = async (lat, lng, rad) => {
     const [bizRes, propRes] = await Promise.all([
-      fetch(`http://localhost:5000/api/businesses/${lat}/${lng}`),
-      fetch(`http://localhost:5000/api/properties/${lat}/${lng}`),
+      fetch(`http://localhost:5000/api/businesses/${lat}/${lng}?radius=${rad}`),
+      fetch(`http://localhost:5000/api/properties/${lat}/${lng}?radius=${rad}`),
     ]);
     setBusinesses(await bizRes.json());
     setProperties(await propRes.json());
+  };
+
+  const increaseRadius = () => {
+    setRadius(prev => prev + 5);
   };
 
   return (
@@ -38,7 +43,10 @@ export default function MapPage() {
         </nav>
         <div style={{ padding: '24px' }}>
           <div style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--muted)' }}>
-            {businesses.length} businesses · {properties.length} properties · 5km radius
+            {businesses.length} businesses · {properties.length} properties · {radius}km radius
+            <button onClick={increaseRadius} style={{ marginLeft: '12px', padding: '4px 8px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+              +5km
+            </button>
           </div>
           <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
             <GoogleMap mapContainerStyle={{ height: '80vh', width: '100%', borderRadius: '16px' }} center={center} zoom={14}>
