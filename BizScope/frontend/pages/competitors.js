@@ -72,29 +72,55 @@ export default function Competitors() {
 
         <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '16px' }}>{filtered.length} results</div>
 
-        <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+        <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
           {filtered.map((b, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', cursor: 'default' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = (categoryColors[b.category] || '#6366f1') + '60'; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${(categoryColors[b.category] || '#6366f1')}15`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `${categoryColors[b.category] || '#6366f1'}20`, border: `1px solid ${categoryColors[b.category] || '#6366f1'}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+            <div key={i} style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%)', border: '1.5px solid var(--border)', borderRadius: '20px', padding: '24px', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = (categoryColors[b.category] || '#6366f1'); e.currentTarget.style.transform = 'translateY(-6px) scale(1.02)'; e.currentTarget.style.boxShadow = `0 20px 40px ${(categoryColors[b.category] || '#6366f1')}25, inset 0 1px 0 ${(categoryColors[b.category] || '#6366f1')}15`; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}>
+              
+              {/* Category Badge */}
+              <div style={{ position: 'absolute', top: '16px', right: '16px', background: `${categoryColors[b.category] || '#6366f1'}25`, border: `1px solid ${categoryColors[b.category] || '#6366f1'}50`, padding: '6px 14px', borderRadius: '50px', fontSize: '11px', fontWeight: '700', color: categoryColors[b.category] || '#6366f1' }}>
+                {b.category}
+              </div>
+
+              {/* Icon + Header */}
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: `linear-gradient(135deg, ${categoryColors[b.category] || '#6366f1'}30 0%, ${categoryColors[b.category] || '#6366f1'}15 100%)`, border: `1.5px solid ${categoryColors[b.category] || '#6366f1'}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', flexShrink: 0 }}>
                   {categoryIcons[b.category] || '🏪'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getBusinessName(b)}</div>
-                  <div style={{ fontSize: '11px', color: categoryColors[b.category] || '#6366f1', fontWeight: '600', marginBottom: '8px' }}>{b.category}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {b.address}</div>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: '#f59e0b', fontSize: '13px' }}>⭐</span>
-                      <span style={{ color: 'var(--text)', fontWeight: '700', fontSize: '13px' }}>{b.rating}</span>
-                    </div>
-                    <span style={{ color: 'var(--muted)', fontSize: '12px' }}>{b.reviewCount} reviews</span>
-                    {b.phone && <span style={{ color: 'var(--muted)', fontSize: '11px' }}>📞</span>}
+                <div style={{ flex: 1, minWidth: 0, marginTop: '2px' }}>
+                  <h3 style={{ fontWeight: '800', color: 'var(--text)', fontSize: '16px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.2' }}>{getBusinessName(b)}</h3>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    📍 {b.address || 'Location not available'}
                   </div>
                 </div>
               </div>
+
+              {/* Rating Bar */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px', padding: '12px', background: 'var(--surface2)', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flex: 1 }}>
+                  <span style={{ color: '#f59e0b', fontSize: '16px' }}>⭐</span>
+                  <span style={{ color: 'var(--text)', fontWeight: '800', fontSize: '15px' }}>{b.rating}</span>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px' }}>·</span>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px' }}>{b.reviewCount} reviews</span>
+                </div>
+                <div style={{ width: '1px', height: '20px', background: 'var(--border)' }}></div>
+                {b.distance && <span style={{ color: 'var(--muted)', fontSize: '11px', fontWeight: '600' }}>📏 {b.distance}m</span>}
+              </div>
+
+              {/* Contact Info */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {b.phone && <div style={{ fontSize: '11px', color: 'var(--muted)', background: 'var(--surface2)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>📞 {b.phone}</div>}
+                {b.website && <div style={{ fontSize: '11px', color: 'var(--muted)', background: 'var(--surface2)', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>🌐 Website</div>}
+                {b.source && <div style={{ fontSize: '10px', color: 'var(--muted)', opacity: 0.6 }}>via {b.source}</div>}
+              </div>
+
+              {/* Action Button */}
+              <button style={{ width: '100%', padding: '12px', background: `linear-gradient(135deg, ${categoryColors[b.category] || '#6366f1'} 0%, ${categoryColors[b.category] || '#6366f1'}dd 100%)`, color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: `0 4px 15px ${(categoryColors[b.category] || '#6366f1')}40` }}
+                onMouseEnter={e => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = `0 6px 20px ${(categoryColors[b.category] || '#6366f1')}50`; }}
+                onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = `0 4px 15px ${(categoryColors[b.category] || '#6366f1')}40`; }}>
+                View Details →
+              </button>
             </div>
           ))}
         </div>
