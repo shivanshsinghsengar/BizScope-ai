@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
 import { useState, useEffect } from 'react';
 import { PageSkeleton } from '../components/Skeleton';
+import { fetchJson } from '../utils/api';
 
 const categoryColors = {
   Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#10b981', Gym: '#3b82f6',
@@ -41,12 +42,10 @@ export default function Insights() {
       const interval = setInterval(async () => {
         attempts++;
         try {
-          const res = await fetch('http://localhost:5000/api/analyze-location', {
+          const fresh = await fetchJson('/api/analyze-location', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ location }),
           });
-          const fresh = await res.json();
           if (fresh.aiSuggestions && fresh.aiSuggestions !== 'Generating AI recommendations...') {
             setAiText(fresh.aiSuggestions);
             // update sessionStorage too

@@ -7,6 +7,7 @@ import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
 import ExportPDF from '../components/ExportPDF';
 import { useAuth } from '../context/AuthContext';
+import { fetchJson } from '../utils/api';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -38,9 +39,9 @@ export default function Dashboard() {
   const saveSearch = async () => {
     if (!user) return;
     try {
-      await fetch('http://localhost:5000/api/searches/save', {
+      await fetchJson('/api/searches/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ location: data.location?.displayName, displayName: data.location?.displayName?.split(',').slice(0, 2).join(','), data }),
       });
       setSaved(true);

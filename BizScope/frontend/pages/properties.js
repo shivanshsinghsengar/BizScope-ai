@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
+import { fetchJson } from '../utils/api';
 
 const typeConfig = {
   rent: { label: '🔑 FOR RENT', color: '#3b82f6', light: '#3b82f615', border: '#3b82f630', btn: 'linear-gradient(135deg,#3b82f6,#2563eb)', suffix: '/month' },
@@ -19,8 +20,7 @@ export default function Properties() {
   useEffect(() => {
     if (data?.userLat && data?.userLng) {
       setLoading(true);
-      fetch(`http://localhost:5000/api/properties/${data.userLat}/${data.userLng}`)
-        .then(r => r.json())
+      fetchJson(`/api/properties/${data.userLat}/${data.userLng}`)
         .then(d => { setProperties(Array.isArray(d) ? d : []); setLoading(false); })
         .catch(() => setLoading(false));
     }

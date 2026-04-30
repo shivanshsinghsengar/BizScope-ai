@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { fetchJson } from '../../utils/api';
 
 const TABS = ['Suggestions', 'Users'];
 
@@ -22,8 +23,8 @@ export default function AdminPanel() {
     if (!token) return;
     setLoading(true);
     Promise.all([
-      fetch('http://localhost:5000/api/admin/suggestions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('http://localhost:5000/api/admin/users', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetchJson('/api/admin/suggestions', { headers: { Authorization: `Bearer ${token}` } }),
+      fetchJson('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } }),
     ]).then(([s, u]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
@@ -32,8 +33,8 @@ export default function AdminPanel() {
   }, [token]);
 
   const updateStatus = async (id, status) => {
-    await fetch(`http://localhost:5000/api/admin/suggestions/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    await fetchJson(`/api/admin/suggestions/${id}`, {
+      method: 'PATCH', headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
     });
     setSuggestions(s => s.map(x => x.id === id ? { ...x, status } : x));
@@ -41,7 +42,7 @@ export default function AdminPanel() {
 
   const deleteSuggestion = async (id) => {
     if (!confirm('Delete this suggestion?')) return;
-    await fetch(`http://localhost:5000/api/admin/suggestions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await fetchJson(`/api/admin/suggestions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setSuggestions(s => s.filter(x => x.id !== id));
   };
 

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import Head from 'next/head';
+import { fetchJson } from '../utils/api';
 
 export default function Suggestions() {
   const { user, token } = useAuth();
@@ -13,10 +14,9 @@ export default function Suggestions() {
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
-    fetch('http://localhost:5000/api/suggestions', {
+    fetchJson('/api/suggestions', {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(r => r.json())
       .then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => { setError('Could not load suggestions'); setLoading(false); });
   }, [user]);

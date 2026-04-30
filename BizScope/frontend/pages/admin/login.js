@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { fetchJson } from '../../utils/api';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -12,13 +13,10 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/admin/login', {
+      const data = await fetchJson('/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       sessionStorage.setItem('adminToken', data.token);
       router.push('/admin');
     } catch (err) { setError(err.message); }

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
+import { fetchJson } from '../utils/api';
 
 export default function Home() {
   const [form, setForm] = useState({ city: '', address: '', pincode: '' });
@@ -18,12 +19,10 @@ export default function Home() {
     setLoading(true); setError('');
     try {
       const location = `${form.address}, ${form.city}, ${form.pincode}`;
-      const res = await fetch('http://localhost:5000/api/analyze-location', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const data = await fetchJson('/api/analyze-location', {
+        method: 'POST',
         body: JSON.stringify({ location }),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       sessionStorage.setItem('analysisData', JSON.stringify(data));
       router.push('/analysis');
     } catch (err) {

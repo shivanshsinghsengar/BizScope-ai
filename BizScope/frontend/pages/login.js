@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { fetchJson } from '../utils/api';
 
 export default function Auth() {
   const [tab, setTab] = useState('login');
@@ -19,12 +20,10 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const data = await fetchJson('/api/auth/login', {
+        method: 'POST',
         body: JSON.stringify(loginForm),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       login(data.token, data.user);
       router.push('/analysis');
     } catch (err) { setError(err.message); }
@@ -35,12 +34,10 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const data = await fetchJson('/api/auth/register', {
+        method: 'POST',
         body: JSON.stringify(regForm),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       login(data.token, data.user);
       router.push('/list-business');
     } catch (err) { setError(err.message); }

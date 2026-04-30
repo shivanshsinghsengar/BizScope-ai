@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fetchJson } from '../utils/api';
 
 const categories = ['Restaurant','Cafe','Grocery','Gym','Salon','Pharmacy','Bakery','Laundry','Retail','Electronics','Clothing','Hardware','Medical','Education','Finance','Hospitality','Other'];
 
@@ -15,13 +16,10 @@ export default function SuggestBusiness() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/suggestions', {
+      await fetchJson('/api/suggestions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       setDone(true);
     } catch (err) { setError(err.message); }
     setLoading(false);

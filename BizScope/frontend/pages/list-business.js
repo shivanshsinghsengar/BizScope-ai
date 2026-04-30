@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
+import { fetchJson } from '../utils/api';
 
 const categories = ['Restaurant', 'Cafe', 'Grocery', 'Gym', 'Salon', 'Pharmacy', 'Bakery', 'Laundry', 'Retail', 'Electronics', 'Clothing', 'Jewellery', 'Hardware', 'Medical', 'Education', 'Finance', 'Hospitality', 'Other'];
 const categoryIcons = { Restaurant: '🍽️', Cafe: '☕', Grocery: '🛒', Gym: '💪', Salon: '✂️', Pharmacy: '💊', Bakery: '🥐', Laundry: '👕', Retail: '🛍️', Electronics: '📱', Clothing: '👗', Jewellery: '💍', Hardware: '🔧', Medical: '🏥', Education: '📚', Finance: '🏦', Hospitality: '🏨', Other: '🏪' };
@@ -25,8 +26,7 @@ export default function ListBusiness() {
   }, [user]);
 
   const fetchMyBusinesses = async () => {
-    const res = await fetch('http://localhost:5000/api/businesses/my', { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
+    const data = await fetchJson('/api/businesses/my', { headers: { Authorization: `Bearer ${token}` } });
     setMyBusinesses(Array.isArray(data) ? data : []);
   };
 
@@ -35,14 +35,13 @@ export default function ListBusiness() {
     setLoading(true); setError(''); setSuccess('');
     try {
       const url = editingId
-        ? `http://localhost:5000/api/businesses/manual/${editingId}`
-        : 'http://localhost:5000/api/businesses/manual';
+        ? `/api/businesses/manual/${editingId}`
+        : '/api/businesses/manual';
       const method = editingId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      const data = await fetchJson(url, {
+        method, headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
       if (data.error) throw new Error(data.error);
       setSuccess(editingId ? 'Business updated!' : 'Business listed successfully!');
       setShowForm(false); setEditingId(null);
@@ -61,7 +60,7 @@ export default function ListBusiness() {
 
   const handleDelete = async (id) => {
     if (!confirm('Remove this listing?')) return;
-    await fetch(`http://localhost:5000/api/businesses/manual/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await fetchJson(`/api/businesses/manual/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     fetchMyBusinesses();
   };
 

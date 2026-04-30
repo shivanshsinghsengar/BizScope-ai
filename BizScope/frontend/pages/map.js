@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
+import { fetchJson } from '../utils/api';
 
 // Lazy load Google Maps — only loads when this page is visited
 const GoogleMap = dynamic(() => import('@react-google-maps/api').then(m => m.GoogleMap), { ssr: false });
@@ -22,12 +23,12 @@ export default function MapPage() {
   }, [radius]);
 
   const loadMapData = async (lat, lng, rad) => {
-    const [bizRes, propRes] = await Promise.all([
-      fetch(`http://localhost:5000/api/businesses/${lat}/${lng}?radius=${rad}`),
-      fetch(`http://localhost:5000/api/properties/${lat}/${lng}?radius=${rad}`),
+    const [bizData, propData] = await Promise.all([
+      fetchJson(`/api/businesses/${lat}/${lng}?radius=${rad}`),
+      fetchJson(`/api/properties/${lat}/${lng}?radius=${rad}`),
     ]);
-    setBusinesses(await bizRes.json());
-    setProperties(await propRes.json());
+    setBusinesses(Array.isArray(bizData) ? bizData : []);
+    setProperties(Array.isArray(propData) ? propData : []);
   };
 
   const increaseRadius = () => {

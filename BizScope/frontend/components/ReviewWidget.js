@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchJson } from '../utils/api';
 
 const PROMPTS = [
   "You just analyzed a market — how was it? 🚀",
@@ -46,9 +47,8 @@ export default function ReviewWidget() {
     if (!rating || !email) return;
     setSubmitting(true);
     try {
-      await fetch('http://localhost:5000/api/reviews', {
+      await fetchJson('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating, email: email.trim(), review: description.trim() }),
       });
     } catch (_) {}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useAuth } from '../context/AuthContext';
 import LoginDialog from '../components/LoginDialog';
+import { fetchJson } from '../utils/api';
 
 export default function ReviewPage() {
   const [reviews, setReviews] = useState([]);
@@ -19,8 +20,7 @@ export default function ReviewPage() {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/reviews');
-      const data = await res.json();
+      const data = await fetchJson('/api/reviews');
       setReviews(data.reviews);
       setAvg(data.avg);
       setTotal(data.total);
@@ -35,9 +35,9 @@ export default function ReviewPage() {
     if (!user) { setShowLogin(true); return; }
     setSubmitting(true);
     try {
-      await fetch('http://localhost:5000/api/reviews', {
+      await fetchJson('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating: submitForm.rating, name: user.name, review: submitForm.review }),
       });
       setSubmitForm({ rating: 0, review: '' });

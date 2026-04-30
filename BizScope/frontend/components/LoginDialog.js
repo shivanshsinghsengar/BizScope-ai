@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { fetchJson } from '../utils/api';
 
 export default function LoginDialog({ onClose, onSuccess }) {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -13,12 +14,10 @@ export default function LoginDialog({ onClose, onSuccess }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const data = await fetchJson('/api/auth/login', {
+        method: 'POST',
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
       login(data.token, data.user);
       onSuccess && onSuccess();
       onClose();
