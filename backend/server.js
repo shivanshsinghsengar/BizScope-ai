@@ -71,7 +71,12 @@ app.use((req, res, next) => {
 });
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').toLowerCase());
-const sanitizeLocationInput = (location = '') => location.replace(/\s+/g, ' ').trim();
+const sanitizeLocationInput = (location = '') => {
+  let cleaned = location.replace(/\s+/g, ' ').trim();
+  cleaned = cleaned.replace(/^,+|,+$/g, '').trim();
+  cleaned = cleaned.split(',').map(p => p.trim()).filter(Boolean).join(', ');
+  return cleaned;
+};
 const isSafeLocation = (location = '') => location.length >= 2 && location.length <= 160;
 const isStrongPassword = (password = '') => typeof password === 'string' && password.length >= 8;
 const isValidEventName = (event = '') => /^[a-z0-9_]{3,64}$/.test(event);
