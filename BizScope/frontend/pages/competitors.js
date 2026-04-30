@@ -23,6 +23,8 @@ const categoryIcons = {
   Office: '🏢', Other: '🏪',
 };
 
+const getBusinessName = (business) => business.name || business.businessName || business.title || 'Unnamed business';
+
 export default function Competitors() {
   const data = useAnalysis();
   const [search, setSearch] = useState('');
@@ -33,7 +35,10 @@ export default function Competitors() {
 
   const categories = ['All', ...new Set(data.businesses?.map(b => b.category) || [])];
   const filtered = (data.businesses || [])
-    .filter(b => (filter === 'All' || b.category === filter) && b.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(b => {
+      const label = getBusinessName(b).toLowerCase();
+      return (filter === 'All' || b.category === filter) && label.includes(search.toLowerCase());
+    })
     .sort((a, b) => sort === 'rating' ? b.rating - a.rating : b.reviewCount - a.reviewCount);
 
   return (
@@ -77,7 +82,7 @@ export default function Competitors() {
                   {categoryIcons[b.category] || '🏪'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getBusinessName(b)}</div>
                   <div style={{ fontSize: '11px', color: categoryColors[b.category] || '#6366f1', fontWeight: '600', marginBottom: '8px' }}>{b.category}</div>
                   <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {b.address}</div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

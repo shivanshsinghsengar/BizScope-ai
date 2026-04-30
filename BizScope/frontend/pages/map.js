@@ -54,7 +54,7 @@ export default function MapPage() {
             <GoogleMap mapContainerStyle={{ height: '80vh', width: '100%', borderRadius: '16px' }} center={center} zoom={14}>
               <Marker position={center} icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png' }} />
               {businesses.map((b, i) => (
-                <Marker key={i} position={{ lat: b.latitude, lng: b.longitude }} title={b.name}
+                <Marker key={i} position={{ lat: b.latitude, lng: b.longitude }} title={b.name || b.businessName || 'Business'}
                   icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }} />
               ))}
               {properties.map((p, i) => (

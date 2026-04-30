@@ -18,7 +18,10 @@ export default function Home() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const location = `${form.address}, ${form.city}, ${form.pincode}`;
+      const location = [form.address, form.city, form.pincode]
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(', ');
       const data = await fetchJson('/api/analyze-location', {
         method: 'POST',
         body: JSON.stringify({ location }),
