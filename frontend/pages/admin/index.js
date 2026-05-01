@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users', 'Analytics'];
+const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users', 'Analytics', 'System Health'];
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -14,6 +14,9 @@ export default function AdminPanel() {
   const [enquiries, setEnquiries] = useState([]);
   const [listedProps, setListedProps] = useState([]);
   const [events, setEvents] = useState([]);
+  const [errors, setErrors] = useState([]);
+  const [health, setHealth] = useState([]);
+  const [healthChecking, setHealthChecking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,12 +34,16 @@ export default function AdminPanel() {
       fetch(`${API_URL}/api/admin/enquiries`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/properties`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/events`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-    ]).then(([s, u, e, p, ev]) => {
+      fetch(`${API_URL}/api/admin/errors`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      fetch(`${API_URL}/api/admin/health`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([s, u, e, p, ev, err, h]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
       setEnquiries(Array.isArray(e) ? e : []);
       setListedProps(Array.isArray(p) ? p : []);
       setEvents(Array.isArray(ev) ? ev : []);
+      setErrors(Array.isArray(err) ? err : []);
+      setHealth(Array.isArray(h) ? h : []);
       setLoading(false);
     }).catch(() => router.push('/admin/login'));
   }, [token]);
@@ -119,8 +126,8 @@ export default function AdminPanel() {
 
           <nav style={{ padding: '16px 12px', flex: 1 }}>
             {TABS.map(t => {
-              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥', Analytics: '📈' };
-              const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps };
+              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥', Analytics: '📈', 'System Health': '🛡️' };
+              const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps, 'System Health': errors.filter(e => !e.resolved).length };
               const active = tab === t;
               return (
                 <button key={t} onClick={() => setTab(t)}
@@ -483,6 +490,146 @@ export default function AdminPanel() {
               </div>
             );
           })()}
+
+          {/* System Health Tab */}
+          {!loading && tab === 'System Health' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+              {/* Service Health Cards */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '15px' }}>🛡️ Service Status</div>
+                  <button
+                    onClick={async () => {
+                      setHealthChecking(true);
+                      try {
+                        const r = await fetch(`${API_URL}/api/admin/health/check`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+                        const d = await r.json();
+                        if (d.results) setHealth(d.results);
+                      } catch (_) {}
+                      setHealthChecking(false);
+                    }}
+                    style={{ padding: '7px 16px', borderRadius: '10px', border: '1px solid #1e293b', background: healthChecking ? '#1e293b' : '#0f1f35', color: healthChecking ? '#475569' : '#94a3b8', cursor: healthChecking ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600' }}>
+                    {healthChecking ? '⏳ Checking...' : '🔄 Run Health Check'}
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: '12px' }}>
+                  {['overpass', 'nominatim', 'gemini', 'database'].map(svc => {
+                    const h = health.find(x => x.service === svc);
+                    const statusColor = { ok: '#10b981', degraded: '#f59e0b', down: '#ef4444' };
+                    const statusIcon = { ok: '✅', degraded: '⚠️', down: '🔴' };
+                    const svcIcon = { overpass: '🗺️', nominatim: '📍', gemini: '🤖', database: '🗄️' };
+                    const status = h?.status || 'unknown';
+                    const color = statusColor[status] || '#64748b';
+                    return (
+                      <div key={svc} style={{ background: '#080d18', border: `1px solid ${color}30`, borderRadius: '14px', padding: '18px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: color }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '24px' }}>{svcIcon[svc]}</span>
+                          <span style={{ fontSize: '18px' }}>{statusIcon[status] || '❓'}</span>
+                        </div>
+                        <div style={{ fontWeight: '700', color: 'white', fontSize: '14px', textTransform: 'capitalize', marginBottom: '4px' }}>{svc}</div>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color, marginBottom: '4px' }}>{status.toUpperCase()}</div>
+                        {h?.latencyMs > 0 && <div style={{ fontSize: '11px', color: '#475569' }}>{h.latencyMs}ms latency</div>}
+                        {h?.detail && <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>{h.detail}</div>}
+                        {!h && <div style={{ fontSize: '11px', color: '#334155' }}>No data — run health check</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Error Log */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '15px' }}>
+                    🚨 Error Log
+                    {errors.filter(e => !e.resolved).length > 0 && (
+                      <span style={{ marginLeft: '8px', background: '#ef444420', color: '#f87171', padding: '2px 8px', borderRadius: '100px', fontSize: '11px', fontWeight: '800' }}>
+                        {errors.filter(e => !e.resolved).length} unresolved
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await fetch(`${API_URL}/api/admin/errors/resolved`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                      setErrors(e => e.filter(x => !x.resolved));
+                    }}
+                    style={{ padding: '7px 16px', borderRadius: '10px', border: '1px solid #1e293b', background: 'transparent', color: '#475569', cursor: 'pointer', fontSize: '12px' }}>
+                    🗑️ Clear Resolved
+                  </button>
+                </div>
+
+                {errors.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '48px', background: '#080d18', border: '1px solid #0f1f35', borderRadius: '16px' }}>
+                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>✅</div>
+                    <div style={{ color: '#10b981', fontWeight: '700', fontSize: '15px' }}>No errors logged</div>
+                    <div style={{ color: '#334155', fontSize: '13px', marginTop: '4px' }}>System is running clean</div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {errors.map(err => {
+                    const sevColor = { info: '#60a5fa', warning: '#f59e0b', error: '#ef4444', critical: '#dc2626' };
+                    const color = sevColor[err.severity] || '#64748b';
+                    let ctx = {};
+                    try { ctx = JSON.parse(err.context || '{}'); } catch (_) {}
+                    return (
+                      <div key={err.id} style={{ background: '#080d18', border: `1px solid ${err.resolved ? '#0f1f35' : color + '40'}`, borderRadius: '12px', padding: '16px 18px', opacity: err.resolved ? 0.5 : 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: '100px', background: color + '20', color, fontSize: '10px', fontWeight: '800', textTransform: 'uppercase' }}>{err.severity}</span>
+                            <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#1e293b', color: '#94a3b8', fontSize: '10px', fontWeight: '700' }}>{err.type}</span>
+                            {err.autoFixed && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#10b98120', color: '#34d399', fontSize: '10px', fontWeight: '700' }}>🔧 Auto-Fixed</span>}
+                            {err.resolved && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#10b98120', color: '#34d399', fontSize: '10px', fontWeight: '700' }}>✅ Resolved</span>}
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#334155', flexShrink: 0 }}>{new Date(err.createdAt).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#e2e8f0', marginTop: '8px', fontWeight: '500' }}>{err.message}</div>
+                        {err.fixNote && <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>🔧 {err.fixNote}</div>}
+                        {Object.keys(ctx).length > 0 && (
+                          <div style={{ fontSize: '11px', color: '#334155', marginTop: '6px', fontFamily: 'monospace', background: '#0a1020', padding: '6px 10px', borderRadius: '6px' }}>
+                            {Object.entries(ctx).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                          </div>
+                        )}
+                        {!err.resolved && (
+                          <button
+                            onClick={async () => {
+                              await fetch(`${API_URL}/api/admin/errors/${err.id}/resolve`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                body: JSON.stringify({ fixNote: 'Manually resolved by admin' }),
+                              });
+                              setErrors(e => e.map(x => x.id === err.id ? { ...x, resolved: true, fixNote: 'Manually resolved by admin' } : x));
+                            }}
+                            style={{ marginTop: '10px', padding: '5px 14px', borderRadius: '8px', border: 'none', background: '#10b98120', color: '#34d399', cursor: 'pointer', fontSize: '11px', fontWeight: '700' }}>
+                            ✅ Mark Resolved
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div style={{ background: '#080d18', border: '1px solid #0f1f35', borderRadius: '16px', padding: '20px' }}>
+                <div style={{ fontWeight: '700', color: 'white', fontSize: '14px', marginBottom: '14px' }}>⚡ Quick Actions</div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {[
+                    { label: '🗑️ Clear Cache', action: async () => { await fetch(`${API_URL}/api/admin/clear-cache`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }); alert('Cache cleared!'); } },
+                    { label: '🔄 Refresh Data', action: () => window.location.reload() },
+                  ].map(a => (
+                    <button key={a.label} onClick={a.action}
+                      style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid #1e293b', background: '#0a1020', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>

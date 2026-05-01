@@ -234,6 +234,25 @@ const AnalyticsEvent = sequelize.define('AnalyticsEvent', {
   meta: DataTypes.TEXT,
 });
 
+// Error Log — stores all backend errors for admin visibility
+const ErrorLog = sequelize.define('ErrorLog', {
+  type: { type: DataTypes.STRING, allowNull: false },       // 'overpass' | 'tomtom' | 'gemini' | 'geocode' | 'db' | 'general'
+  message: { type: DataTypes.TEXT, allowNull: false },
+  context: DataTypes.TEXT,                                   // JSON: location, lat, lng, etc.
+  resolved: { type: DataTypes.BOOLEAN, defaultValue: false },
+  autoFixed: { type: DataTypes.BOOLEAN, defaultValue: false },
+  fixNote: DataTypes.STRING,                                 // what auto-fix was applied
+  severity: { type: DataTypes.STRING, defaultValue: 'warning' }, // 'info' | 'warning' | 'error' | 'critical'
+});
+
+// System Health — periodic health check results
+const HealthCheck = sequelize.define('HealthCheck', {
+  service: { type: DataTypes.STRING, allowNull: false },    // 'overpass' | 'tomtom' | 'gemini' | 'db'
+  status: { type: DataTypes.STRING, allowNull: false },     // 'ok' | 'degraded' | 'down'
+  latencyMs: DataTypes.INTEGER,
+  detail: DataTypes.STRING,
+});
+
 // AI Setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -332,6 +351,90 @@ Make it specific to ${cityName} and the ${selectedBusiness} category. Use realis
 
   return 'Business plan generation unavailable (no AI key set).';
 };
+
+// ── Self-Healing Error System ──
+
+// Log an error to DB (non-blocking)
+const logError = (type, message, context = {}, severity = 'error', autoFixed = false, fixNote = '') => {
+  ErrorLog.create({
+    type, message,
+    context: JSON.stringify(context),
+    severity, autoFixed, fixNote,
+    resolved: autoFixed,
+  }).catch(() => {}); // never throw from logger
+  console.error(`[${severity.toUpperCase()}][${type}] ${message}`, context);
+};
+
+// Mark an error as resolved
+const resolveError = async (id, fixNote = 'Manually resolved') => {
+  await ErrorLog.update({ resolved: true, fixNote }, { where: { id } }).catch(() => {});
+};
+
+// Health check for all external services
+const runHealthChecks = async () => {
+  const checks = [
+    {
+      service: 'overpass',
+      check: async () => {
+        const start = Date.now();
+        const res = await axios.post('https://overpass-api.de/api/interpreter',
+          'data=[out:json][timeout:5];node["amenity"="cafe"](around:100,28.6139,77.2090);out body;',
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 8000 }
+        );
+        return { ok: !!res.data?.elements, latency: Date.now() - start };
+      }
+    },
+    {
+      service: 'nominatim',
+      check: async () => {
+        const start = Date.now();
+        const res = await axios.get('https://nominatim.openstreetmap.org/search?q=Delhi&format=json&limit=1',
+          { headers: { 'User-Agent': 'BizScopeAI/1.0' }, timeout: 6000 }
+        );
+        return { ok: res.data?.length > 0, latency: Date.now() - start };
+      }
+    },
+    {
+      service: 'gemini',
+      check: async () => {
+        if (!genAI) return { ok: false, latency: 0, detail: 'No API key' };
+        const start = Date.now();
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        await model.generateContent('Say OK');
+        return { ok: true, latency: Date.now() - start };
+      }
+    },
+    {
+      service: 'database',
+      check: async () => {
+        const start = Date.now();
+        await sequelize.authenticate();
+        return { ok: true, latency: Date.now() - start };
+      }
+    },
+  ];
+
+  for (const { service, check } of checks) {
+    try {
+      const result = await check();
+      const status = result.ok ? (result.latency > 5000 ? 'degraded' : 'ok') : 'down';
+      await HealthCheck.create({ service, status, latencyMs: result.latency || 0, detail: result.detail || null });
+      if (status === 'down') {
+        logError(service, `${service} health check failed`, {}, 'critical');
+      } else if (status === 'degraded') {
+        logError(service, `${service} is slow (${result.latency}ms)`, { latency: result.latency }, 'warning');
+      }
+    } catch (e) {
+      await HealthCheck.create({ service, status: 'down', latencyMs: 0, detail: e.message });
+      logError(service, `${service} health check threw: ${e.message}`, {}, 'critical');
+    }
+  }
+};
+
+// Run health checks every 10 minutes
+setInterval(runHealthChecks, 10 * 60 * 1000);
+// Run once after 30s startup delay
+setTimeout(runHealthChecks, 30000);
 
 // Geocode cache (in-memory, no expiry — city coords don't change)
 const geocodeCache = new Map();
@@ -470,6 +573,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
       allElements = res.data.elements;
     } catch (e) {
       console.log('All Overpass mirrors failed:', e.message);
+      logError('overpass', `All mirrors failed: ${e.message}`, { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
       return [];
     }
 
@@ -1660,6 +1764,61 @@ app.post('/api/admin/clear-cache', adminAuth, (req, res) => {
   cache.clear();
   geocodeCache.clear();
   res.json({ success: true, message: 'Cache cleared' });
+});
+
+// ── System Health & Error Log endpoints ──
+
+// Get error logs
+app.get('/api/admin/errors', adminAuth, async (req, res) => {
+  try {
+    const errors = await ErrorLog.findAll({
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+    });
+    res.json(errors);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Resolve an error
+app.patch('/api/admin/errors/:id/resolve', adminAuth, async (req, res) => {
+  try {
+    await ErrorLog.update(
+      { resolved: true, fixNote: req.body.fixNote || 'Manually resolved by admin' },
+      { where: { id: req.params.id } }
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Clear all resolved errors
+app.delete('/api/admin/errors/resolved', adminAuth, async (req, res) => {
+  try {
+    const count = await ErrorLog.destroy({ where: { resolved: true } });
+    res.json({ success: true, deleted: count });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get latest health check per service
+app.get('/api/admin/health', adminAuth, async (req, res) => {
+  try {
+    const services = ['overpass', 'nominatim', 'gemini', 'database'];
+    const latest = await Promise.all(services.map(s =>
+      HealthCheck.findOne({ where: { service: s }, order: [['createdAt', 'DESC']] })
+    ));
+    res.json(latest.filter(Boolean));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Trigger manual health check
+app.post('/api/admin/health/check', adminAuth, async (req, res) => {
+  try {
+    await runHealthChecks();
+    const services = ['overpass', 'nominatim', 'gemini', 'database'];
+    const latest = await Promise.all(services.map(s =>
+      HealthCheck.findOne({ where: { service: s }, order: [['createdAt', 'DESC']] })
+    ));
+    res.json({ success: true, results: latest.filter(Boolean) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Submit a property listing (public)
