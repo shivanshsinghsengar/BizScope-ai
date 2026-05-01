@@ -899,6 +899,7 @@ const setCache = (key, data) => cache.set(key, { data, time: Date.now() });
 // Warm up geocode cache for top Indian cities on startup
 const TOP_CITIES = ['Mumbai','Delhi','Bangalore','Hyderabad','Chennai','Kolkata','Pune','Ahmedabad','Jaipur','Lucknow','Agra','Surat','Mathura','Varanasi','Indore'];
 setTimeout(() => {
+  cache.clear(); // clear any stale in-memory cache from previous run
   TOP_CITIES.forEach(city => geocodeLocation(city).catch(() => {}));
 }, 3000);
 
@@ -1251,7 +1252,8 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Cache key includes lat/lon to prevent cross-city collisions
     const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
     const cached = getCached(cacheKey);
-    if (cached && cached.aiSuggestions !== 'Generating AI recommendations...') {
+    // Skip cache if it contains mock/estimated data — always re-fetch for real data
+    if (cached && cached.aiSuggestions !== 'Generating AI recommendations...' && !cached.estimatedData) {
       send('cache', 'Loading from cache...', 'Instant results', 20);
       send('done', 'Complete!', 'Results ready', 100);
       res.write(`data: ${JSON.stringify({ step: 'result', data: cached })}\n\n`);
@@ -1369,10 +1371,10 @@ app.post('/api/analyze-location', async (req, res) => {
     // Cache key includes lat/lon to prevent cross-city collisions
     const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
 
-    // Return cached result instantly (skip if nocache requested)
+    // Return cached result instantly — but skip if it was estimated/mock data
     if (!nocache) {
       const cached = getCached(cacheKey);
-      if (cached) {
+      if (cached && !cached.estimatedData) {
         console.log('Cache hit:', cacheKey);
         return res.json(cached);
       }
