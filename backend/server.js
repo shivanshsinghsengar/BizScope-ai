@@ -384,6 +384,7 @@ const geocodeLocation = async (location) => {
     partialMatch,
     matchedQuery,
   };
+  console.log(`Geocoded "${location}" to ${geo.latitude}, ${geo.longitude} (${geo.displayName})`);
   geocodeCache.set(key, geo);
   return geo;
 };
@@ -449,32 +450,41 @@ const osmToCategory = {
 // Fetch real businesses from Overpass API — optimized for speed
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
   try {
-    const query = `[out:json][timeout:25];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
+    const queries = [
+      `[out:json][timeout:25];node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});out body;`,
+      `[out:json][timeout:25];node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});out body;`,
+      `[out:json][timeout:25];node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});out body;`,
+      `[out:json][timeout:25];node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng});out body;`,
+    ];
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
       'https://overpass-api.de/api/interpreter',
+      'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
-    const fetchMirror = (url) => axios.post(url,
-      `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-    );
-
-    // Try mirrors sequentially — Promise.any not available in all Node versions
-    let res = null;
-    for (const url of mirrors) {
-      try {
-        res = await fetchMirror(url);
-        if (res?.data?.elements?.length >= 0) break;
-      } catch (e) {
-        console.log(`Mirror ${url} failed:`, e.message);
+    const fetchQuery = async (query) => {
+      for (const url of mirrors) {
+        try {
+          const res = await axios.post(url,
+            `data=${encodeURIComponent(query)}`,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+          );
+          if (res?.data?.elements) return res.data.elements;
+        } catch (e) {
+          console.log(`Mirror ${url} failed for query:`, e.message);
+        }
       }
+      return [];
+    };
+
+    const allElements = [];
+    for (const query of queries) {
+      const elements = await fetchQuery(query);
+      allElements.push(...elements);
     }
 
-    if (!res?.data?.elements) return [];
-
-    const results = res.data.elements.map((el) => {
+    const results = allElements.map((el) => {
       const tags = el.tags || {};
       const rawCat = tags.amenity || tags.shop || tags.office || tags.tourism || 'Other';
       let category = osmToCategory[rawCat];
@@ -498,7 +508,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
       };
     }).filter(b => b.latitude && b.longitude && b.name);
 
-    console.log(`Overpass returned ${res.data.elements.length} elements, ${results.length} valid businesses for (${lat},${lng}) r=${radiusMeters}`);
+    console.log(`Overpass returned ${allElements.length} elements, ${results.length} valid businesses for (${lat},${lng}) r=${radiusMeters}`);
     return results;
   } catch (e) {
     console.log('Overpass API failed:', e.message);
@@ -1229,16 +1239,7 @@ app.get('/api/analyze-stream', async (req, res) => {
   };
 
   try {
-    const cacheKey = location.toLowerCase().trim();
-    const cached = getCached(cacheKey);
-    if (cached && cached.aiSuggestions !== 'Generating AI recommendations...') {
-      send('cache', 'Loading from cache...', 'Instant results', 10);
-      send('done', 'Complete!', 'Results ready', 100);
-      res.write(`data: ${JSON.stringify({ step: 'result', data: cached })}\n\n`);
-      return res.end();
-    }
-
-    // Step 1: Geocode
+    // Step 1: Geocode FIRST to get coordinates, then create cache key with lat/lon
     send('geocode', 'Finding your location on the map...', 'Geocoding your area', 10);
     const geo = await geocodeLocation(location);
     if (!geo) {
@@ -1246,6 +1247,16 @@ app.get('/api/analyze-stream', async (req, res) => {
       return res.end();
     }
     const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
+
+    // Cache key includes lat/lon to prevent cross-city collisions
+    const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
+    const cached = getCached(cacheKey);
+    if (cached && cached.aiSuggestions !== 'Generating AI recommendations...') {
+      send('cache', 'Loading from cache...', 'Instant results', 20);
+      send('done', 'Complete!', 'Results ready', 100);
+      res.write(`data: ${JSON.stringify({ step: 'result', data: cached })}\n\n`);
+      return res.end();
+    }
     send('geocode', `Found: ${displayName.split(',').slice(0, 2).join(', ')}`, 'Location confirmed', 20);
 
     // Step 2: Fetch businesses
@@ -1347,7 +1358,14 @@ app.post('/api/analyze-location', async (req, res) => {
     const { nocache } = req.body;
     const location = sanitizeLocationInput(req.body.location || '');
     if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
-    const cacheKey = location.toLowerCase().trim();
+
+    // Geocode first to get coordinates for cache key
+    const geo = await geocodeLocation(location);
+    if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling.' });
+    const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
+
+    // Cache key includes lat/lon to prevent cross-city collisions
+    const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
 
     // Return cached result instantly (skip if nocache requested)
     if (!nocache) {
@@ -1360,15 +1378,10 @@ app.post('/api/analyze-location', async (req, res) => {
       cache.delete(cacheKey);
     }
 
-    // Geocode first
-    const geo = await geocodeLocation(location);
-    if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling or try a nearby city name.' });
-    const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
-
     // Fetch OSM + manual in parallel — skip Foursquare (slow, rarely has key)
     const [osmBusinesses, tomtomBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 5000),
-      fetchTomTomBusinesses(latitude, longitude, 5000),
+      fetchRealBusinesses(latitude, longitude, 10000),
+      fetchTomTomBusinesses(latitude, longitude, 10000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -1387,7 +1400,7 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
-      const wider = await fetchRealBusinesses(latitude, longitude, 8000, 30000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 15000, 30000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
