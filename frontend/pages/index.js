@@ -129,59 +129,42 @@ export default function Home() {
     const location = parts.join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
+    // Animate loading steps while POST runs
+    const steps = [
+      { step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 15 },
+      { step: 'fetch',   message: 'Scanning businesses nearby...', sub: 'Fetching from OpenStreetMap', progress: 35 },
+      { step: 'count',   message: 'Counting competitors...', sub: 'Analyzing categories', progress: 55 },
+      { step: 'score',   message: 'Calculating market scores...', sub: 'Running competition analysis', progress: 75 },
+      { step: 'ai',      message: 'Asking AI for recommendations...', sub: 'Generating insights', progress: 90 },
+    ];
+    let stepIdx = 0;
+    setLoadState(steps[0]);
+    const stepTimer = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+      setLoadState(steps[stepIdx]);
+    }, 3000);
+
     try {
-      const evtSource = new EventSource(`${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`);
-      let gotResult = false;
-
-      evtSource.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.step === 'error') {
-          evtSource.close();
-          setError(msg.message);
-          setLoading(false);
-          trackEvent('analysis_failed', { mode: 'stream', reason: msg.message || 'stream_error' });
-          return;
-        }
-        if (msg.step === 'result') {
-          gotResult = true;
-          evtSource.close();
-          saveToHistory(form.city || form.address);
-          sessionStorage.setItem('analysisData', JSON.stringify(msg.data));
-          setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
-          trackEvent('analysis_succeeded', { mode: 'stream', businesses: msg.data?.businesses?.length || 0 });
-          router.push('/analysis');
-          return;
-        }
-        setLoadState({ step: msg.step, message: msg.message, sub: msg.sub, progress: msg.progress });
-      };
-
-      evtSource.onerror = async () => {
-        evtSource.close();
-        if (gotResult) return;
-        // Fallback to regular POST if SSE fails
-        try {
-          setLoadState({ step: 'fetch', message: 'Connecting...', sub: 'Switching to direct mode', progress: 20 });
-          const res = await fetch(`${API_URL}/api/analyze-location`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ location }),
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          saveToHistory(form.city || form.address);
-          sessionStorage.setItem('analysisData', JSON.stringify(data));
-          setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
-          trackEvent('analysis_succeeded', { mode: 'direct', businesses: data?.businesses?.length || 0 });
-          router.push('/analysis');
-        } catch (err) {
-          setError(err.message || 'Analysis failed. Please try again.');
-          setLoading(false);
-          trackEvent('analysis_failed', { mode: 'direct', reason: err.message || 'direct_error' });
-        }
-      };
+      const res = await fetch(`${API_URL}/api/analyze-location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location }),
+      });
+      clearInterval(stepTimer);
+      if (!res.ok) throw new Error(`Server error ${res.status} — please try again`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
+      saveToHistory(form.city || form.address);
+      sessionStorage.setItem('analysisData', JSON.stringify(data));
+      setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+      trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
+      router.push('/analysis');
     } catch (err) {
-      setError(err.message || 'Analysis failed.');
+      clearInterval(stepTimer);
+      setError(err.message || 'Analysis failed. Please try again.');
       setLoading(false);
-      trackEvent('analysis_failed', { mode: 'init', reason: err.message || 'init_error' });
+      trackEvent('analysis_failed', { reason: err.message });
     }
   };
 
