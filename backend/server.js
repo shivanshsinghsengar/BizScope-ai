@@ -1454,8 +1454,8 @@ app.get('/api/analyze-stream', async (req, res) => {
 app.post('/api/analyze-location', async (req, res) => {
   try {
     const { nocache } = req.body;
-    const location = sanitizeLocationInput(req.body.location || '');
-    if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
+    const location = (req.body.location || '').toString().trim().slice(0, 200);
+    if (!location) return res.status(400).json({ error: 'Valid location required' });
 
     // Geocode first to get coordinates for cache key
     const geo = await geocodeLocation(location);
