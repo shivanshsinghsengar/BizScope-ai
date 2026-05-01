@@ -4,6 +4,6 @@
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://bizscope-ai-2.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://bizscope-ai-og.onrender.com"
   }
 }
