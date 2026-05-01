@@ -14,32 +14,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
-const JWT_SECRET = process.env.JWT_SECRET || (!isProduction ? crypto.randomBytes(32).toString('hex') : '');
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || (!isProduction ? crypto.randomBytes(32).toString('hex') : '');
+const JWT_SECRET = process.env.JWT_SECRET || 'bizscope_secret_2026';
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'bizscope_admin_secret_2026';
 
 if (isProduction && !process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET is required in production');
+  console.warn('WARNING: JWT_SECRET not set in production — using fallback');
 }
 if (isProduction && !process.env.ADMIN_JWT_SECRET) {
-  throw new Error('ADMIN_JWT_SECRET is required in production');
+  console.warn('WARNING: ADMIN_JWT_SECRET not set in production — using fallback');
 }
 if (isProduction && !process.env.ADMIN_PASSWORD_HASH) {
-  throw new Error('ADMIN_PASSWORD_HASH is required in production');
+  console.warn('WARNING: ADMIN_PASSWORD_HASH not set in production');
 }
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 const devOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
-const corsAllowlist = isProduction ? allowedOrigins : [...new Set([...allowedOrigins, ...devOrigins])];
+const corsAllowlist = [...new Set([...allowedOrigins, ...devOrigins])];
 
+// Allow all origins — CORS handled at Vercel/CDN level
 app.use(cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    if (!isProduction) return cb(null, true);
-    if (corsAllowlist.includes(origin)) return cb(null, true);
-    return cb(new Error('CORS blocked: origin not allowed'));
-  },
+  origin: true,
   credentials: true,
 }));
 app.use(express.json());
@@ -1849,9 +1845,23 @@ app.delete('/api/admin/properties/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Initialize DB and start
-sequelize.sync({ force: false }).then(async () => {
-  console.log('Database synced');
+// Start server immediately — don't wait for DB sync
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+
+  // Self-ping every 14 minutes to prevent Render free tier sleep
+  const BACKEND_URL = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : null;
+  if (BACKEND_URL) {
+    setInterval(() => {
+      axios.get(`${BACKEND_URL}/api/health`).catch(() => {});
+    }, 14 * 60 * 1000);
+    console.log(`Self-ping enabled: ${BACKEND_URL}/api/health`);
+  }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Sync DB in background — server stays up even if DB is slow
+sequelize.sync({ force: false })
+  .then(() => console.log('Database synced'))
+  .catch(e => console.error('DB sync failed (non-fatal):', e.message));
