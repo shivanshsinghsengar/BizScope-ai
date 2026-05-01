@@ -447,15 +447,11 @@ const osmToCategory = {
   wholesale: 'Wholesale', warehouse: 'Wholesale',
 };
 
-// Fetch real businesses from Overpass API — optimized for speed
+// Fetch real businesses from Overpass API — single combined query, parallel mirrors
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
   try {
-    const queries = [
-      `[out:json][timeout:25];node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});out body;`,
-      `[out:json][timeout:25];node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});out body;`,
-      `[out:json][timeout:25];node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});out body;`,
-      `[out:json][timeout:25];node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng});out body;`,
-    ];
+    // ONE combined query — much faster than 4 separate requests
+    const query = `[out:json][timeout:25];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
@@ -463,25 +459,18 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
       'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
-    const fetchQuery = async (query) => {
-      for (const url of mirrors) {
-        try {
-          const res = await axios.post(url,
-            `data=${encodeURIComponent(query)}`,
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-          );
-          if (res?.data?.elements) return res.data.elements;
-        } catch (e) {
-          console.log(`Mirror ${url} failed for query:`, e.message);
-        }
-      }
+    // Race all mirrors — use whichever responds first
+    let allElements = [];
+    try {
+      const res = await Promise.any(mirrors.map(url =>
+        axios.post(url, `data=${encodeURIComponent(query)}`,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+        ).then(r => { if (!r?.data?.elements) throw new Error('no elements'); return r; })
+      ));
+      allElements = res.data.elements;
+    } catch (e) {
+      console.log('All Overpass mirrors failed:', e.message);
       return [];
-    };
-
-    const allElements = [];
-    for (const query of queries) {
-      const elements = await fetchQuery(query);
-      allElements.push(...elements);
     }
 
     const results = allElements.map((el) => {
