@@ -40,6 +40,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Trust Render/Railway/Vercel proxy headers
+app.set('trust proxy', 1);
+
 const appStartTime = Date.now();
 const requestMetrics = {
   total: 0,
@@ -275,7 +278,7 @@ Be specific to ${cityName} — mention real areas, markets, and local context (e
   // Try Gemini first (free)
   if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (e) {
@@ -324,7 +327,7 @@ Make it specific to ${cityName} and the ${selectedBusiness} category. Use realis
   // Try Gemini first
   if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (e) {
@@ -395,7 +398,7 @@ const runHealthChecks = async () => {
       check: async () => {
         if (!genAI) return { ok: false, latency: 0, detail: 'No API key' };
         const start = Date.now();
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         await model.generateContent('Say OK');
         return { ok: true, latency: Date.now() - start };
       }
@@ -558,18 +561,25 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
       'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
-    // Race all mirrors — use whichever responds first
+    // Try mirrors one by one — Promise.any unreliable on some Node versions
     let allElements = [];
-    try {
-      const res = await Promise.any(mirrors.map(url =>
-        axios.post(url, `data=${encodeURIComponent(query)}`,
+    let fetched = false;
+    for (const url of mirrors) {
+      try {
+        const res = await axios.post(url, `data=${encodeURIComponent(query)}`,
           { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-        ).then(r => { if (!r?.data?.elements) throw new Error('no elements'); return r; })
-      ));
-      allElements = res.data.elements;
-    } catch (e) {
-      console.log('All Overpass mirrors failed:', e.message);
-      logError('overpass', `All mirrors failed: ${e.message}`, { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
+        );
+        if (res?.data?.elements?.length > 0) {
+          allElements = res.data.elements;
+          fetched = true;
+          break;
+        }
+      } catch (e) {
+        console.log(`Overpass mirror ${url} failed:`, e.message);
+      }
+    }
+    if (!fetched) {
+      logError('overpass', 'All mirrors failed', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
       return [];
     }
 
