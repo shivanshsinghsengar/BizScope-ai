@@ -981,13 +981,8 @@ const generateMockBusinesses = (lat, lng) => {
 const cache = new Map();
 const CACHE_TTL = 2 * 60 * 60 * 1000;
 
-const getCached = (key) => {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.time > CACHE_TTL) { cache.delete(key); return null; }
-  return entry.data;
-};
-const setCache = (key, data) => cache.set(key, { data, time: Date.now() });
+const getCached = (_key) => null; // Cache disabled — always fetch fresh data
+const setCache = (_key, _data) => {}; // no-op
 
 // Warm up geocode cache for top Indian cities on startup
 const TOP_CITIES = ['Mumbai','Delhi','Bangalore','Hyderabad','Chennai','Kolkata','Pune','Ahmedabad','Jaipur','Lucknow','Agra','Surat','Mathura','Varanasi','Indore'];
