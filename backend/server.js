@@ -851,31 +851,31 @@ const getCircleRate = (displayName) => {
   return DEFAULT_RATE;
 };
 
-// Mock business generator — used as fallback when Overpass is unavailable
+// Mock business generator — used as last-resort fallback when ALL data sources fail
+// Uses deterministic values (no Math.random) so results are consistent
 const generateMockBusinesses = (lat, lng) => {
   const cats = [
-    { cat: 'Restaurant', count: 12 }, { cat: 'Cafe', count: 6 },
-    { cat: 'Grocery', count: 8 }, { cat: 'Pharmacy', count: 5 },
-    { cat: 'Hospital', count: 3 }, { cat: 'Gym', count: 4 },
-    { cat: 'Salon', count: 7 }, { cat: 'Clothing', count: 9 },
-    { cat: 'Electronics', count: 5 }, { cat: 'Education', count: 6 },
-    { cat: 'Finance', count: 4 }, { cat: 'Hotel', count: 3 },
-    { cat: 'Automotive', count: 4 }, { cat: 'Bakery', count: 3 },
+    { cat: 'Restaurant', count: 8 }, { cat: 'Cafe', count: 4 },
+    { cat: 'Grocery', count: 6 }, { cat: 'Pharmacy', count: 3 },
+    { cat: 'Hospital', count: 2 }, { cat: 'Gym', count: 3 },
+    { cat: 'Salon', count: 5 }, { cat: 'Clothing', count: 6 },
+    { cat: 'Electronics', count: 4 }, { cat: 'Education', count: 4 },
+    { cat: 'Finance', count: 3 }, { cat: 'Hotel', count: 2 },
   ];
   const businesses = [];
-  cats.forEach(({ cat, count }) => {
+  cats.forEach(({ cat, count }, ci) => {
     for (let i = 0; i < count; i++) {
       businesses.push({
-        name: `${cat} ${i + 1}`,
+        name: `${cat} (Estimated)`,
         category: cat,
-        rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
-        reviewCount: Math.floor(Math.random() * 300 + 10),
+        rating: parseFloat((3.2 + (i % 4) * 0.2).toFixed(1)),
+        reviewCount: 15 + (i * 12) + (ci * 5),
         address: `Near ${lat.toFixed(3)}, ${lng.toFixed(3)}`,
         phone: '', website: '',
-        latitude: lat + (Math.random() - 0.5) * 0.08,
-        longitude: lng + (Math.random() - 0.5) * 0.08,
+        latitude: lat + ((ci * 0.003 + i * 0.002) - 0.04),
+        longitude: lng + ((ci * 0.002 + i * 0.003) - 0.03),
         isMock: true,
-        source: 'mock',
+        source: 'estimated',
         ratingEstimated: true,
         reviewCountEstimated: true,
       });
@@ -1296,11 +1296,12 @@ app.get('/api/analyze-stream', async (req, res) => {
     }
 
     if (businesses.length === 0) {
-      console.log('No OSM data for SSE, using mock fallback');
+      console.log('No live data for SSE, using estimated fallback');
       businesses.push(...generateMockBusinesses(latitude, longitude));
     }
 
-    send('count', `Found ${businesses.length} businesses nearby`, 'Analyzing shops, restaurants & more', 55);
+    const usingEstimated = businesses.some(b => b.isMock);
+    send('count', `Found ${businesses.length} businesses nearby`, usingEstimated ? 'Using estimated data — live sources unavailable' : 'Analyzing shops, restaurants & more', 55);
     // Step 3: Category stats
     send('score', 'Calculating market scores...', 'Running competition analysis', 65);
     const categoryStats = {};
@@ -1338,6 +1339,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     const result = {
       location: { displayName, latitude, longitude },
       partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
+      estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses, categoryStats: sortedStats, aiSuggestions,
       userLat: latitude, userLng: longitude,
       dataQuality: buildDataQuality(businesses, aiSuggestions),
@@ -1413,7 +1415,7 @@ app.post('/api/analyze-location', async (req, res) => {
     }
 
     if (businesses.length === 0) {
-      console.log('No OSM data for POST, using mock fallback');
+      console.log('No live data for POST, using estimated fallback');
       businesses.push(...generateMockBusinesses(latitude, longitude));
     }
 
@@ -1429,11 +1431,9 @@ app.post('/api/analyze-location', async (req, res) => {
       const s = categoryStats[cat];
       s.avgRating = (s.totalRating / s.count).toFixed(1);
       s.popularityScore = Math.sqrt(s.totalReviews);
-      // Weighted score: count (40%) + avg rating (30%) + popularity (30%)
       s.competitorScore = (s.count * 0.4) + (parseFloat(s.avgRating) * 0.3) + (s.popularityScore * 0.3);
     });
 
-    // Normalize to 0-100 relative risk score
     const scores = Object.values(categoryStats).map(s => s.competitorScore);
     const minScore = Math.min(...scores);
     const maxScore = Math.max(...scores);
@@ -1441,7 +1441,6 @@ app.post('/api/analyze-location', async (req, res) => {
       const s = categoryStats[cat];
       s.riskScore = maxScore === minScore ? 50 : Math.round(((s.competitorScore - minScore) / (maxScore - minScore)) * 100);
       s.riskLevel = s.riskScore >= 70 ? 'High' : s.riskScore >= 35 ? 'Medium' : 'Low';
-      // Demand score: popularity per competitor (how much demand vs supply)
       s.demandScore = Math.min(10, parseFloat((s.popularityScore / (s.count || 1) * 2).toFixed(1)));
     });
 
@@ -1449,10 +1448,11 @@ app.post('/api/analyze-location', async (req, res) => {
       .map(([category, stats]) => ({ category, ...stats }))
       .sort((a, b) => b.competitorScore - a.competitorScore);
 
-    // AI runs async — don't block the response
+    const usingEstimated = businesses.some(b => b.isMock);
     const result = {
       location: { displayName, latitude, longitude },
       partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
+      estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses,
       categoryStats: sortedStats,
       aiSuggestions: 'Generating AI recommendations...',

@@ -469,20 +469,25 @@ app.get('/api/suggestions', authMiddleware, async (req, res) => {
 // 1. Location Analysis
 app.post('/api/analyze-location', async (req, res) => {
   try {
-    const { location } = req.body;
-    const cacheKey = location.toLowerCase().trim();
+    const { location, nocache } = req.body;
+    const sanitizedLocation = sanitizeLocationInput(location || '');
+    if (!sanitizedLocation || !isSafeLocation(sanitizedLocation)) return res.status(400).json({ error: 'Valid location required' });
 
-    // Return cached result instantly
-    const cached = getCached(cacheKey);
-    if (cached) {
-      console.log('Cache hit:', cacheKey);
-      return res.json(cached);
-    }
-
-    // Geocode first
-    const geo = await geocodeLocation(location);
+    // Geocode first so cache key includes coordinates and avoids cross-city reuse
+    const geo = await geocodeLocation(sanitizedLocation);
     if (!geo) return res.status(400).json({ error: 'Location not found' });
     const { latitude, longitude, displayName } = geo;
+    const cacheKey = `${sanitizedLocation.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
+
+    if (!nocache) {
+      const cached = getCached(cacheKey);
+      if (cached) {
+        console.log('Cache hit:', cacheKey);
+        return res.json(cached);
+      }
+    } else {
+      cache.delete(cacheKey);
+    }
 
     // Fetch OSM businesses + manual businesses in parallel
     const [osmBusinesses, manualBusinesses] = await Promise.all([

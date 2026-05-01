@@ -152,6 +152,21 @@ export default function Dashboard() {
         {/* ── Main Content ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
+        {/* Estimated data warning */}
+        {data.estimatedData && (
+          <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '12px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <div>
+              <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '13px' }}>Estimated Data</span>
+              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{data.estimatedData}</div>
+            </div>
+            <button onClick={() => { sessionStorage.removeItem('analysisData'); router.push('/'); }}
+              style={{ marginLeft: 'auto', padding: '6px 14px', borderRadius: '8px', border: '1px solid #f59e0b40', background: 'transparent', color: '#fbbf24', cursor: 'pointer', fontSize: '12px', fontWeight: '600', flexShrink: 0 }}>
+              🔄 Retry
+            </button>
+          </div>
+        )}
+
         {/* Partial match warning */}
         {data.partialMatch && (
           <div style={{ background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '12px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>

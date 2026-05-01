@@ -161,6 +161,7 @@ export default function Competitors() {
   };
 
   const filtered = (data.businesses || [])
+    .filter(b => !b.isMock) // never show estimated/mock businesses in competitor list
     .filter(b => (filter === 'All' || b.category === filter) && b.name.toLowerCase().includes(search.toLowerCase()) && withinDist(b))
     .sort((a, b) => sort === 'rating' ? b.rating - a.rating : b.reviewCount - a.reviewCount);
 
@@ -173,7 +174,7 @@ export default function Competitors() {
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>🏪 Competitor Directory</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>{data.businesses?.length} businesses found within 5km of your location</p>
+          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>{(data.businesses || []).filter(b => !b.isMock).length} businesses found within 5km of your location</p>
         </div>
 
         {(data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics) && (
