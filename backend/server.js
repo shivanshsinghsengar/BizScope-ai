@@ -119,153 +119,311 @@ app.use('/api/analyze-location', analysisLimiter);
 app.use('/api/auth', authLimiter);
 
 // ── Quick strategy route (registered early to avoid any issues) ──
-// Fallback strategy generator (used when AI quota is exceeded)
+// Fallback strategy generator — idea-specific, not generic
 function generateFallbackStrategy(idea, city, budget, background, timeline) {
   const cityName = city || 'India';
+  const ideaL = idea.toLowerCase();
   const budgetNum = budget?.includes('2L') ? 200000 : budget?.includes('50k') ? 50000 : budget?.includes('10k') ? 10000 : 5000;
+
+  // Detect idea type for specific content
+  const isFood = /tiffin|food|restaurant|cafe|catering|cook|meal|snack|bakery|chai|dhaba/.test(ideaL);
+  const isTech = /app|software|saas|platform|tool|ai|bot|website|tech|digital|online/.test(ideaL);
+  const isService = /service|consult|tutor|teach|coach|clean|repair|salon|beauty|fitness|gym/.test(ideaL);
+  const isRetail = /shop|store|sell|product|ecommerce|resell|wholesale|kirana|grocery/.test(ideaL);
+  const isEducation = /tutor|coaching|course|teach|learn|student|education|training/.test(ideaL);
+
+  // Idea-specific data
+  const ideaData = {
+    buyer: isFood ? `Working professionals aged 22–35 in PGs and hostels near ${cityName}` :
+           isTech ? `Tech-savvy professionals and students aged 20–30 in ${cityName}` :
+           isService ? `Busy urban households and professionals in ${cityName}` :
+           isRetail ? `Price-conscious shoppers in ${cityName} looking for convenience` :
+           `Urban residents aged 25–40 in ${cityName} with disposable income`,
+
+    income: isFood ? '₹15,000–₹40,000/month, spend ₹3,000–₹8,000 on food' :
+            isTech ? '₹30,000–₹1,00,000/month, willing to pay for productivity tools' :
+            isService ? '₹25,000–₹80,000/month, outsource tasks they hate' :
+            '₹20,000–₹60,000/month, value-conscious buyers',
+
+    pain: isFood ? 'Eating out daily is expensive and unhealthy; cooking is not possible in PG' :
+          isTech ? 'Current tools are too complex, expensive, or not built for Indian workflows' :
+          isService ? 'No time for non-core tasks; existing options are unreliable or overpriced' :
+          isRetail ? 'Inconvenient access, high prices, or poor quality from existing options' :
+          'Existing solutions are too expensive, unreliable, or not localized for India',
+
+    platform: isFood ? 'WhatsApp groups in PG colonies, Instagram food pages, Swiggy listing' :
+              isTech ? 'LinkedIn, Twitter/X, Product Hunt, developer communities' :
+              isService ? 'WhatsApp, Instagram, local Facebook groups, JustDial' :
+              isRetail ? 'Instagram, WhatsApp Business, Meesho, local markets' :
+              'WhatsApp, Instagram, LinkedIn, local community groups',
+
+    tam: isFood ? '₹1,50,000 crore — India food delivery market' :
+         isTech ? '₹80,000 crore — India SaaS and digital tools market' :
+         isService ? '₹50,000 crore — India home and professional services market' :
+         isRetail ? '₹70,000 crore — India e-commerce and retail market' :
+         '₹40,000 crore — India urban services market',
+
+    sam: `₹800–3,000 crore in ${cityName} and nearby Tier 1/2 cities`,
+    som: `₹5–30 lakh realistically in Year 1 with focused execution`,
+
+    whyNow: isFood ? 'PG population in Indian cities grew 40% post-pandemic; food inflation makes home-cooked meals more valuable' :
+            isTech ? 'India added 15M new internet users in 2025; SMBs are digitizing rapidly' :
+            isService ? 'Dual-income households rising; time poverty is real in urban India' :
+            isRetail ? 'Quick commerce normalized instant delivery expectations; local players can compete' :
+            'India\'s middle class grew by 8% in 2025; spending on convenience is at all-time high',
+
+    launchWhere: isFood ? `Start with 2-3 PG colonies within 1km of each other in ${cityName} — walk-in distance for delivery` :
+                 isTech ? `Launch on Product Hunt + LinkedIn; target one specific industry vertical first` :
+                 isService ? `Start with one residential society or office complex in ${cityName}` :
+                 isRetail ? `Start with one WhatsApp group of 200+ people in ${cityName}` :
+                 `Start with one tight-knit community — college, office park, or housing society in ${cityName}`,
+
+    competitors: isFood ? [
+      'Zomato/Swiggy | Food delivery | 30% commission, impersonal | Your gap: personal relationship, no commission',
+      'Local dabbawala | Traditional tiffin | No digital presence, cash only | Your gap: WhatsApp ordering, UPI payment',
+      'Rebel Foods/Faasos | Cloud kitchen | Expensive, no customization | Your gap: home-cooked feel, dietary preferences',
+    ] : isTech ? [
+      'Zoho | Indian SaaS suite | Complex, enterprise-focused | Your gap: simple, mobile-first for SMBs',
+      'International tools (Notion/Slack) | Feature-rich | Expensive in ₹, no Hindi support | Your gap: localized, affordable',
+      'Freelancers on Upwork | Custom solutions | Inconsistent, no product | Your gap: productized, repeatable',
+    ] : isService ? [
+      'Urban Company | Home services | Premium pricing, slow response | Your gap: faster, cheaper, personal',
+      'Local unorganized workers | Cheap | Unreliable, no accountability | Your gap: verified, rated, digital',
+      'Sulekha/JustDial | Lead gen | No quality control | Your gap: curated, guaranteed service',
+    ] : [
+      'Amazon/Flipkart | Everything | Impersonal, slow delivery | Your gap: hyperlocal, same-day',
+      'Local shops | Familiar | No digital presence | Your gap: WhatsApp ordering, delivery',
+      'Meesho | Social commerce | Low quality perception | Your gap: curated, quality-focused',
+    ],
+
+    mvp: isFood ? 'WhatsApp number + Google Form for orders + home kitchen. No app needed.' :
+         isTech ? 'Landing page + manual service delivery. Automate only after 10 paying customers.' :
+         isService ? 'WhatsApp Business profile + manual booking. No website needed in Month 1.' :
+         isRetail ? 'WhatsApp catalog + UPI payment. No website or app needed.' :
+         'WhatsApp Business + manual fulfillment. Build only what customers pay for.',
+
+    pricing: isFood ? `Free trial (3 days) → ₹${Math.round(budgetNum * 0.15)}/month (lunch only) → ₹${Math.round(budgetNum * 0.25)}/month (lunch + dinner)` :
+             isTech ? `Free (limited) → ₹${Math.round(budgetNum * 0.1)}/month (basic) → ₹${Math.round(budgetNum * 0.3)}/month (pro)` :
+             isService ? `First session free → ₹${Math.round(budgetNum * 0.08)}/session → ₹${Math.round(budgetNum * 0.2)}/month subscription` :
+             `Free sample → ₹${Math.round(budgetNum * 0.05)} (starter pack) → ₹${Math.round(budgetNum * 0.15)} (monthly bundle)`,
+
+    guerrilla: isFood ? `Leave a free tiffin sample at the most popular PG in ${cityName} with a QR code to WhatsApp` :
+               isTech ? `Post a free tool or template on LinkedIn that solves one specific problem — collect emails` :
+               isService ? `Offer free service to 3 influencers in ${cityName} in exchange for an Instagram story` :
+               isRetail ? `Set up a free sample stall outside a busy metro station or college gate in ${cityName}` :
+               `Give away your service free to 5 well-connected people in ${cityName} and ask for referrals`,
+
+    risk1: isFood ? 'Food quality drops when you scale beyond 20 customers' :
+           isTech ? 'Building features nobody asked for wastes 3 months' :
+           isService ? 'One bad service experience goes viral on WhatsApp' :
+           'Supplier reliability breaks down at scale',
+
+    risk2: isFood ? 'FSSAI license and food safety compliance' :
+           isTech ? 'Larger funded competitor launches same product' :
+           isService ? 'Key service provider leaves and takes customers' :
+           'Cash flow crunch from inventory before revenue arrives',
+
+    founderTalk1: isFood ? `The one thing that will make or break "${idea}" is consistency. Not taste, not price — consistency. If your tiffin is great on Monday and terrible on Thursday, you will lose customers faster than you gained them. Your first 30 days must be about perfecting one meal, not expanding the menu.` :
+                  isTech ? `The one thing that will make or break "${idea}" is whether you talk to 20 real users before writing a single line of code. Most tech founders build what they think users want. The ones who win build what users are already paying for in a worse form.` :
+                  isService ? `The one thing that will make or break "${idea}" is your first 5 service deliveries. Word of mouth in Indian cities travels fast — one exceptional experience gets you 3 referrals. One bad one gets you 10 negative reviews on WhatsApp groups.` :
+                  `The one thing that will make or break "${idea}" is your first 10 customers. Not your product, not your branding. If you can get 10 people to pay you before you have built anything polished, you have a real business.`,
+
+    founderTalk2: isFood ? `The mistake 90% of tiffin founders make is starting with too many menu options. They offer 10 dishes to please everyone and end up with inconsistent quality. Start with 2 dishes done perfectly. Add variety only after you have 50 consistent customers.` :
+                  isTech ? `The mistake 90% of tech founders make is spending 3 months building before getting a single paying customer. They confuse building with progress. Real progress is a customer paying you money. Everything else is just activity.` :
+                  isService ? `The mistake 90% of service founders make is underpricing to get customers. Low prices attract the worst customers — the ones who complain most and refer least. Price fairly from Day 1 and attract customers who value quality.` :
+                  `The mistake 90% of first-time founders make is building before selling. Sell first. Build only what customers are already paying for.`,
+  };
+
   return `## 🎯 IDEA VERDICT
-This idea has real potential in the Indian market — execution and timing will determine success.
-Market Demand: 7/10 | Strong demand exists in urban India for this type of service
-Competition Level: 6/10 | Moderate competition but room for differentiated players
-Execution Difficulty: 6/10 | Requires consistent effort and local network building
-Profit Potential: 7/10 | Solid unit economics if customer acquisition is managed well
+${idea} in ${cityName} — ${isFood ? 'solid demand, execution-heavy, margins depend on scale' : isTech ? 'high potential if you nail the niche, crowded space requires sharp differentiation' : isService ? 'proven model, success depends entirely on service quality and trust' : 'viable if you find the right distribution channel fast'}.
+Market Demand: ${isFood ? 8 : isTech ? 7 : isService ? 7 : 6}/10 | ${ideaData.pain.split(';')[0]}
+Competition Level: ${isFood ? 7 : isTech ? 8 : isService ? 6 : 7}/10 | ${isFood ? 'Zomato/Swiggy dominate but hyperlocal is wide open' : isTech ? 'Many players but most ignore Indian SMB needs' : isService ? 'Fragmented market — no dominant local player' : 'Established players but hyperlocal gap exists'}
+Execution Difficulty: ${isFood ? 7 : isTech ? 6 : isService ? 5 : 6}/10 | ${isFood ? 'Daily operations, food safety, and consistency are hard to maintain' : isTech ? 'Building is easy; finding paying customers is the hard part' : isService ? 'Finding reliable service providers is the main challenge' : 'Inventory and supplier management require discipline'}
+Profit Potential: ${isFood ? 7 : isTech ? 9 : isService ? 7 : 6}/10 | ${isFood ? '₹8,000–₹25,000/month per 30 customers at good margins' : isTech ? 'SaaS margins are 70%+ once product is built' : isService ? '₹30,000–₹80,000/month with 20 regular clients' : 'Thin margins but high volume potential'}
 
 ---
 ## 🌍 MARKET REALITY CHECK
 1. WHO will pay?
-- Age 22–35, urban professionals or students in ${cityName}
-- Monthly income ₹15,000–₹60,000, willing to pay for convenience
-- Pain point: lack of time, poor alternatives, or high existing costs
-- Where online: Instagram, WhatsApp groups, LinkedIn, local Facebook groups
+- ${ideaData.buyer}
+- ${ideaData.income}
+- Pain point: ${ideaData.pain}
+- Where online: ${ideaData.platform}
 
 2. HOW BIG?
-- TAM: ₹50,000+ crore addressable market across urban India
-- SAM: ₹500–2,000 crore in ${cityName} and nearby areas
-- SOM: ₹10–50 lakh realistically capturable in Year 1
+- TAM: ${ideaData.tam}
+- SAM: ${ideaData.sam}
+- SOM: ${ideaData.som}
 
 3. WHY NOW?
-- Post-pandemic shift to local, trusted services
-- UPI and digital payments make transactions frictionless
-- Gen Z and millennials prefer convenience over cost
+- ${ideaData.whyNow}
+- UPI adoption means frictionless payments for any business model
+- ${background === 'Student' ? 'Student founders have unfair access to their own target market' : 'Post-COVID trust in local, known providers over large platforms'}
 
 4. WHERE to launch first?
-- Start in one specific neighborhood or college/office cluster in ${cityName}
-- Dense areas with high target customer concentration = faster word of mouth
+- ${ideaData.launchWhere}
 
 5. WHAT do they really want?
-- Not just the service — they want reliability, trust, and time saved
-- The job-to-be-done: eliminate a recurring daily friction point
+- Not "${idea}" — they want ${isFood ? 'reliable, healthy food without thinking about it daily' : isTech ? 'to save time and look more professional without learning new tools' : isService ? 'peace of mind that the job will be done right, on time, every time' : 'convenience and trust — the product is secondary'}
+- Job-to-be-done: eliminate one recurring daily friction point completely
 
 ---
 ## ⚔️ COMPETITOR MAP
-Local unorganized players | Serve same need | Inconsistent quality | Your gap: reliability + digital presence
-Zomato/Swiggy | Convenience | Expensive, impersonal | Your gap: personal touch + lower price
-Existing apps in category | Tech-first | Poor local knowledge | Your gap: hyperlocal expertise
+${ideaData.competitors.join('\n')}
 
-Your unfair advantage window: You can move faster than large players, build personal relationships, and serve a specific micro-market better than anyone else. The first 3 months are your window before others notice.
+Your unfair advantage window: As a ${background?.toLowerCase() || 'founder'} in ${cityName}, you have direct access to your target customer. You can iterate in days, not months. Large players cannot match your personal touch, local knowledge, or speed. Your window is the first 6 months before anyone notices you are growing.
 
 ---
 ## 🚀 GO-TO-MARKET STRATEGY
 PHASE 1 — VALIDATE (Week 1-4, zero budget):
-- Create a WhatsApp group and add 50 potential customers from your network
-- Offer the service free or at cost to 5 people in exchange for honest feedback
-- Post in 3 local Facebook/WhatsApp groups with a specific offer
-- Success metric: 10 people willing to pay before you build anything
+- Identify 50 potential customers in your immediate network — friends, classmates, colleagues
+- Offer the service free or at cost to 5 people and ask for brutal honest feedback
+- ${isFood ? 'Post in 3 PG/hostel WhatsApp groups with a photo of your food and a specific offer' : isTech ? 'Post your idea on LinkedIn and ask "would you pay ₹X for this?" — count serious replies' : isService ? 'Offer free first session to 5 people in your target area' : 'Create a WhatsApp catalog and share with 50 contacts'}
+- Success metric: 10 people say "I will pay you money for this" before you build anything
 
 PHASE 2 — LAUNCH (Month 2-3):
-- Build the simplest possible version — WhatsApp ordering, manual fulfillment
-- Growth channels: WhatsApp referrals (highest ROI), Instagram local hashtags, offline flyers
-- Pricing: Free trial → ₹${Math.round(budgetNum * 0.1)}/month basic → ₹${Math.round(budgetNum * 0.2)}/month premium
-- Guerrilla tactic: Partner with one popular local spot in ${cityName} for cross-promotion
+- MVP: ${ideaData.mvp}
+- Growth channels: ${ideaData.platform.split(',')[0]} (highest ROI) → Instagram content → offline word of mouth
+- Pricing: ${ideaData.pricing}
+- Guerrilla tactic: ${ideaData.guerrilla}
 
 PHASE 3 — SCALE (Month 4-12):
-- Hire first person when you have 50+ paying customers (operations/delivery role)
-- Revenue milestone: ₹50,000/month before scaling to new areas
-- Partner with complementary local businesses for distribution
-- Big bet: Build a referral program — every customer who refers 3 gets 1 month free
+- Hire first person at 50+ paying customers — ${isFood ? 'delivery/kitchen helper' : isTech ? 'customer support/onboarding' : isService ? 'second service provider' : 'operations/packing'}
+- Revenue milestone: ₹${Math.round(budgetNum * 3).toLocaleString('en-IN')}/month before expanding to new areas
+- Partnership: ${isFood ? 'Partner with PG owners for bulk deals — they refer all residents' : isTech ? 'Partner with CA firms or business associations for bulk licenses' : isService ? 'Partner with housing societies for exclusive service contracts' : 'Partner with local influencers for affiliate commissions'}
+- Big bet: ${isFood ? 'Corporate tiffin contracts — one office = 50 customers at once' : isTech ? 'White-label your tool to agencies who resell to their clients' : isService ? 'Annual maintenance contracts — predictable recurring revenue' : 'Launch a subscription box — monthly recurring revenue'}
 
 ---
 ## 💰 FINANCIAL BLUEPRINT
-Month 1: Target ₹${Math.round(budgetNum * 0.3)} revenue — get 10 paying customers
-Month 3: Break-even — cover direct costs with 25-30 customers
-Month 6: ₹${Math.round(budgetNum * 2)} monthly profit with 50+ customers
-Key cost to eliminate: Don't spend on paid ads in Month 1 — organic and referral only
-CAC: ₹200-500 via referral | LTV: ₹3,000-8,000 over 6 months | Healthy ratio
+Month 1: Target ₹${Math.round(budgetNum * 0.4).toLocaleString('en-IN')} — ${isFood ? '15 customers × ₹' + Math.round(budgetNum * 0.025) + '/month' : '10 customers × ₹' + Math.round(budgetNum * 0.04) + '/month'}
+Month 3: Break-even at ${isFood ? '25–30 customers' : '20–25 customers'} — cover all direct costs
+Month 6: ₹${Math.round(budgetNum * 2.5).toLocaleString('en-IN')}/month profit with ${isFood ? '60–80 customers' : '40–60 customers'}
+Key cost to eliminate: ${isFood ? 'Packaging — use reusable containers, charge ₹200 deposit' : isTech ? 'Paid ads — organic content and referrals only in first 6 months' : isService ? 'Paid lead generation — referrals cost zero and convert better' : 'Inventory before orders — take pre-orders, buy only what is sold'}
+CAC: ₹${isFood ? '150–300' : isTech ? '300–800' : isService ? '200–500' : '100–400'} via referral | LTV: ₹${isFood ? '4,000–12,000' : isTech ? '6,000–24,000' : isService ? '5,000–15,000' : '2,000–8,000'} over 12 months | ${isFood ? '13:1' : isTech ? '20:1' : isService ? '15:1' : '10:1'} LTV:CAC ratio — healthy
 
 ---
 ## 🆕 MARKET EXPANSION IDEAS
-SUBSCRIPTION BUNDLES — offer weekly/monthly packages at a discount
-Why it works: Predictable revenue, customer lock-in, lower churn
-How to test: Offer 3 customers a monthly deal at 20% discount
+${isFood ? `CORPORATE TIFFIN CONTRACTS — sell to offices, not individuals
+Why it works: One B2B deal = 20-50 customers; predictable monthly revenue
+How to test: Email 5 offices near you offering a free 3-day trial for their team
 Revenue potential: High
 
-CORPORATE PARTNERSHIPS — sell to offices/companies in ${cityName} in bulk
-Why it works: B2B deals are larger and stickier than B2C
-How to test: Cold call 5 offices near your area this week
+DIET-SPECIFIC MENUS — keto, diabetic, Jain, vegan tiffin
+Why it works: Underserved niche willing to pay 40% premium for specialized food
+How to test: Post "Would you pay ₹200/day for a diabetic-friendly tiffin?" in health groups
 Revenue potential: High
 
-WHATSAPP COMMUNITY MODEL — build a paid community around your niche
-Why it works: Indians trust WhatsApp communities for recommendations
-How to test: Create a free group, provide value for 2 weeks, then offer paid tier
+TIFFIN SUBSCRIPTION APP — build a simple app for ordering and tracking
+Why it works: Reduces WhatsApp chaos; enables auto-renewal and loyalty points
+How to test: Use a free tool like Glide to build a no-code app in 1 day
 Revenue potential: Medium
 
-TRAIN-THE-TRAINER — teach others to replicate your model in other cities
-Why it works: Franchise-lite model with zero capital from you
-How to test: Document your process and offer it to 1 person in another city
+COOKING CLASSES — teach your recipes to others on weekends
+Why it works: Zero additional cost; monetizes your skill in a second way
+How to test: Offer one paid class to 5 people at ₹500 each
+Revenue potential: Medium
+
+FRANCHISE MODEL — license your tiffin brand to home cooks in other cities
+Why it works: Asset-light expansion; you earn royalty without cooking
+How to test: Document your process and offer it to 1 person in another city for ₹5,000
+Revenue potential: Moonshot` :
+
+isTech ? `VERTICAL SAAS — build the same tool for one specific industry (CA firms, clinics, schools)
+Why it works: Vertical SaaS commands 3x higher prices and lower churn
+How to test: Call 10 CA firms in ${cityName} and ask if they would pay ₹2,000/month for your tool
+Revenue potential: High
+
+WHATSAPP INTEGRATION — make your tool work inside WhatsApp
+Why it works: 500M Indians use WhatsApp daily; zero learning curve for users
+How to test: Build a WhatsApp bot version of your core feature in 1 week
+Revenue potential: High
+
+GOVERNMENT TENDER — sell to municipal corporations or government schools
+Why it works: Large contracts, slow competition, sticky customers
+How to test: Register on GeM portal and list your product this week
 Revenue potential: Moonshot
 
-CONTENT + SERVICE COMBO — create helpful content on Instagram about your niche
+RESELLER PROGRAM — let freelancers and agencies resell your tool
+Why it works: Zero CAC; resellers bring their own customers
+How to test: Offer 30% commission to 5 freelancers in your network
+Revenue potential: High
+
+API ACCESS — charge developers to integrate your tool into their products
+Why it works: B2B2C model multiplies your reach without marketing spend
+How to test: Document your API and post it in 3 developer communities
+Revenue potential: Medium` :
+
+`SUBSCRIPTION MODEL — monthly retainer instead of per-session pricing
+Why it works: Predictable revenue; customers commit longer and churn less
+How to test: Offer 3 existing customers a monthly deal at 15% discount
+Revenue potential: High
+
+CORPORATE WELLNESS CONTRACTS — sell to HR departments for employee benefits
+Why it works: B2B deals are 10x larger and stickier than individual customers
+How to test: Email 5 HR managers in ${cityName} offering a free pilot for their team
+Revenue potential: High
+
+TRAIN-THE-TRAINER — certify others to deliver your service in other cities
+Why it works: Franchise-lite model; you earn without doing the work
+How to test: Document your process and offer certification to 1 person for ₹10,000
+Revenue potential: Moonshot
+
+CONTENT MONETIZATION — create YouTube/Instagram content about your niche
 Why it works: Content builds trust and drives inbound customers for free
-How to test: Post 10 helpful reels and track which drives inquiries
+How to test: Post 5 helpful videos and track which drives the most inquiries
 Revenue potential: Medium
+
+COMMUNITY MODEL — build a paid WhatsApp/Telegram community around your niche
+Why it works: Indians pay for trusted communities; low cost to run
+How to test: Create a free group, provide value for 2 weeks, then offer paid tier at ₹299/month
+Revenue potential: Medium`}
 
 ---
 ## ⚠️ RISK RADAR
-Risk: First 10 customers don't convert to paying
-Probability: Medium
-Kill move: Pre-sell before building — collect payment upfront for Month 1
-
-Risk: Quality inconsistency kills word-of-mouth
+Risk: ${ideaData.risk1}
 Probability: High
-Kill move: Serve only 5 customers perfectly before scaling to 20
+Kill move: ${isFood ? 'Limit to 20 customers in Month 1 — quality over quantity always' : isTech ? 'Talk to 5 paying customers before building any new feature' : isService ? 'Create a service checklist and quality review after every delivery' : 'Vet every supplier with a small test order before committing'}
 
-Risk: A competitor copies your model in ${cityName}
+Risk: ${ideaData.risk2}
 Probability: Medium
-Kill move: Build personal relationships that can't be copied — your network IS the moat
+Kill move: ${isFood ? 'Register FSSAI in Month 1 — ₹100/year, takes 7 days online' : isTech ? 'Build relationships with 3 potential customers before competitor launches' : isService ? 'Have 2 backup providers for every service category' : 'Maintain 30-day cash reserve before placing large orders'}
 
-Risk: Running out of money before reaching break-even
+Risk: First 10 customers don't convert to paying after free trial
 Probability: Medium
-Kill move: Keep fixed costs at zero for Month 1 — use only variable costs tied to revenue
+Kill move: Pre-sell before delivering — collect 50% payment upfront, balance on delivery
 
-Risk: Founder burnout from doing everything alone
+Risk: Negative word-of-mouth from one bad experience
+Probability: Medium
+Kill move: Over-deliver for first 20 customers — give more than promised, respond in under 1 hour
+
+Risk: Founder burnout from doing everything alone in Month 1-3
 Probability: High
-Kill move: Automate or delegate one task per week — start with WhatsApp auto-replies
+Kill move: Automate one task per week — start with WhatsApp auto-replies and Google Form orders
 
 ---
 ## 📅 90-DAY ACTION PLAN
-Week 1 | Research | Talk to 20 potential customers, ask 3 questions each | 5 people say "I'd pay for this"
-Week 2 | Validate | Offer free trial to 5 people | Get 3 honest reviews
-Week 3 | First sale | Convert 3 trial users to paying | First ₹ collected
-Week 4 | Referrals | Ask each customer for 2 referrals | 6 new leads
-Week 5 | Systems | Set up WhatsApp Business, basic tracking sheet | Orders processed in under 2 hours
-Week 6 | Content | Post 3 pieces of content on Instagram | 100 new followers
-Week 7 | Partnerships | Approach 3 local businesses for cross-promotion | 1 partnership confirmed
-Week 8 | Pricing | Test premium tier with 2 customers | 1 upgrade
-Week 9 | Feedback | Survey all customers, fix top 2 complaints | NPS improves
-Week 10 | Scale prep | Document your process completely | Ready to onboard help
-Week 11 | Hire/delegate | Bring in 1 part-time helper for operations | Free up 10 hours/week
-Week 12 | Review | Measure revenue, customers, CAC, NPS | Hit monthly revenue target
+Week 1 | Research | Talk to 20 potential customers, ask: "What is your biggest problem with [current solution]?" | 5 people say "I would pay for this"
+Week 2 | Validate | Deliver service free to 5 people, ask for honest feedback | 3 people say "When can I pay you?"
+Week 3 | First sale | Convert 3 trial users to paying customers | First ₹ collected — screenshot it
+Week 4 | Referrals | Ask each paying customer for 2 referrals with a specific ask | 6 new warm leads
+Week 5 | Systems | Set up WhatsApp Business, UPI QR code, basic order tracking sheet | Process orders in under 30 minutes
+Week 6 | Content | Post 3 pieces of content showing your work/results on Instagram | 100 new followers
+Week 7 | Partnerships | Approach 3 complementary businesses for cross-promotion | 1 partnership confirmed
+Week 8 | Pricing | Introduce premium tier to 3 existing customers | 1 upgrade to premium
+Week 9 | Feedback | Survey all customers: "What would make you refer us to 3 friends?" | Fix top 2 complaints
+Week 10 | Scale prep | Document every process so someone else can do it | Operations manual complete
+Week 11 | Hire/delegate | Bring in 1 part-time helper for the most time-consuming task | Free up 15 hours/week
+Week 12 | Review | Measure: revenue, customers, CAC, NPS, churn | Hit ₹${Math.round(budgetNum * 1.5).toLocaleString('en-IN')}/month revenue
 
 ---
 ## 💬 FOUNDER'S HONEST TALK
-The one thing that will make or break this idea is your first 10 customers. Not your product, not your branding, not your app. If you can get 10 people to pay you money before you have built anything polished, you have a real business. If you cannot, no amount of features or marketing will save it. Spend your entire first month obsessing over those 10 people.
+${ideaData.founderTalk1}
 
-The mistake 90% of first-time founders make with this type of business is building before selling. They spend 2 months creating a website, designing a logo, and setting up payment systems — then launch to silence because they never validated demand. Sell first. Build only what customers are already paying for.
+${ideaData.founderTalk2}
 
-The one question you must answer before spending a single rupee: "Will someone pay me money for this TODAY — not someday, not maybe, but today?" If you cannot get a yes from at least 3 people in your network within 48 hours of asking, the idea needs to change, not the execution.
+The one question you must answer before spending a single rupee on "${idea}": "Can I get 3 people to pay me money for this within the next 48 hours — not someday, not after I build the app, but right now?" If yes, you have a business. If no, the idea needs to change, not the execution. Go ask 3 people today.
 
 ---
-*Note: This is a data-driven strategy template. For a fully personalized AI analysis specific to "${idea}" in ${cityName}, the AI service will generate a custom strategy when quota is available.*`;
+*Strategy generated for: "${idea}" | ${cityName} | ${budget} | ${timeline}*`;
 }
 
 app.post('/api/strategy', async (req, res) => {
