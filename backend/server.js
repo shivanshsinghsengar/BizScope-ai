@@ -1702,6 +1702,100 @@ app.post('/api/business-plan', authMiddleware, async (req, res) => {
 // Test route
 app.get('/api/strategy-test', (req, res) => res.json({ ok: true }));
 
+// Quick Strategy — 5-part, under 400 words, Business Name + Industry only
+app.post('/api/quick-strategy', async (req, res) => {
+  try {
+    const { businessName, industry } = req.body;
+    if (!businessName || !industry) return res.status(400).json({ error: 'Business name and industry are required' });
+
+    const prompt = `Act as a Senior Business Consultant and SEO Expert.
+
+Business Name: ${businessName}
+Industry: ${industry}
+
+Generate a comprehensive, actionable 5-part Business Strategy in this EXACT format:
+
+## 1. Executive Summary
+A 2-line vision for ${businessName} in the ${industry} industry.
+
+## 2. Market Analysis
+Target audience: [specific description]
+Competitor 1: [Name] — [what they do and their weakness]
+Competitor 2: [Name] — [what they do and their weakness]
+
+## 3. SEO & Keywords
+5 high-intent keywords ${businessName} should rank for:
+1. [keyword]
+2. [keyword]
+3. [keyword]
+4. [keyword]
+5. [keyword]
+
+## 4. Actionable Steps
+3 immediate steps to get the first customer:
+1. [specific action]
+2. [specific action]
+3. [specific action]
+
+## 5. Scaling Strategy
+How to double revenue in 6 months using AI tools: [2-3 sentences with specific AI tools]
+
+Tone: Professional, encouraging, and data-driven.
+Keep the entire response under 400 words. Be specific to the ${industry} industry in India.`;
+
+    let result = null;
+
+    if (genAI) {
+      for (const m of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: m });
+          const r = await model.generateContent(prompt);
+          result = r.response.text();
+          break;
+        } catch (e) { console.log(`quick-strategy ${m}:`, e.message.slice(0, 50)); }
+      }
+    }
+
+    if (!result && openai) {
+      try {
+        const r = await openai.chat.completions.create({ model: 'gpt-3.5-turbo', messages: [{ role: 'user', content: prompt }], max_tokens: 600 });
+        result = r.choices[0].message.content;
+      } catch (e) { console.log('quick-strategy openai:', e.message.slice(0, 50)); }
+    }
+
+    // Fallback
+    if (!result) {
+      result = `## 1. Executive Summary
+${businessName} aims to become the most trusted ${industry} brand in India by delivering consistent quality and building a loyal customer base through digital-first growth.
+
+## 2. Market Analysis
+Target audience: Urban professionals and students aged 22–40 seeking reliable ${industry} solutions
+Competitor 1: Established local players — strong offline presence but weak digital marketing
+Competitor 2: Large national brands — high awareness but poor personalization and high prices
+
+## 3. SEO & Keywords
+1. best ${industry.toLowerCase()} in [city]
+2. affordable ${industry.toLowerCase()} near me
+3. ${businessName.toLowerCase()} ${industry.toLowerCase()} reviews
+4. top ${industry.toLowerCase()} service India 2026
+5. ${industry.toLowerCase()} for professionals India
+
+## 4. Actionable Steps
+1. Create a Google Business Profile today — add photos, hours, and ask 5 customers for reviews this week
+2. Post 3 pieces of content on Instagram showing your work/product with local hashtags
+3. Offer a limited-time 20% discount to first 10 customers who book via WhatsApp
+
+## 5. Scaling Strategy
+Use ChatGPT to write weekly content and respond to customer queries 24/7. Deploy a WhatsApp chatbot via Wati or Interakt to automate bookings and follow-ups. Use Google Analytics + Meta Ads to identify your best-converting audience and double ad spend on that segment — this alone can 2x revenue in 90 days.`;
+    }
+
+    res.json({ strategy: result, businessName, industry });
+  } catch (e) {
+    console.error('Quick strategy error:', e.message);
+    res.status(500).json({ error: 'Strategy generation failed.' });
+  }
+});
+
 app.post('/api/strategy', async (req, res) => {
   try {
     const { idea, city, budget, background, timeline } = req.body;

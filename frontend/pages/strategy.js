@@ -208,10 +208,33 @@ function CollapsibleCard({ section, index }) {
 export default function StrategyPage() {
   const router = useRouter();
   const [form, setForm] = useState({ idea: '', city: '', budget: 'Bootstrap (< ₹10k)', background: 'Student', timeline: '3 months' });
+  const [quickForm, setQuickForm] = useState({ businessName: '', industry: '' });
+  const [mode, setMode] = useState('quick'); // 'quick' | 'full'
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [sections, setSections] = useState([]);
+
+  const handleQuickSubmit = async (e) => {
+    e.preventDefault();
+    if (!quickForm.businessName || !quickForm.industry) return;
+    setLoading(true); setError(''); setResult(null); setSections([]);
+    try {
+      const res = await fetch(`${API_URL}/api/quick-strategy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quickForm),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult({ ...data, isQuick: true });
+      setSections(parseSections(data.strategy));
+    } catch (err) {
+      setError(err.message || 'Failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -265,8 +288,60 @@ export default function StrategyPage() {
           </p>
         </div>
 
-        {/* Input Form */}
+        {/* Mode toggle */}
         {!result && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '6px' }}>
+            {[
+              { id: 'quick', label: '⚡ Quick Strategy', sub: '2 inputs · 30 sec' },
+              { id: 'full', label: '🎯 Full Strategy', sub: '5 inputs · 60 sec' },
+            ].map(m => (
+              <button key={m.id} onClick={() => setMode(m.id)}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: mode === m.id ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'transparent', color: mode === m.id ? 'white' : 'var(--muted)', transition: 'all 0.15s' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700' }}>{m.label}</div>
+                <div style={{ fontSize: '11px', opacity: 0.8 }}>{m.sub}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Quick Strategy Form */}
+        {!result && mode === 'quick' && (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', marginBottom: '24px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '4px' }}>Get a 5-part business strategy in under 30 seconds</div>
+            </div>
+            <form onSubmit={handleQuickSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Business Name *</label>
+                  <input value={quickForm.businessName} onChange={e => setQuickForm(f => ({ ...f, businessName: e.target.value }))}
+                    placeholder="e.g. SpiceBox Tiffins" required className="input-field" style={{ fontSize: '14px' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Industry *</label>
+                  <input value={quickForm.industry} onChange={e => setQuickForm(f => ({ ...f, industry: e.target.value }))}
+                    placeholder="e.g. Food Delivery, EdTech, SaaS" required className="input-field" style={{ fontSize: '14px' }} />
+                </div>
+              </div>
+              {/* Quick examples */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {[['SpiceBox', 'Food Delivery'], ['CodeMentor', 'EdTech'], ['CleanPro', 'Home Services'], ['ShopLocal', 'E-commerce']].map(([name, ind]) => (
+                  <button key={name} type="button" onClick={() => setQuickForm({ businessName: name, industry: ind })}
+                    style={{ padding: '3px 10px', borderRadius: '100px', border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '11px', cursor: 'pointer' }}>
+                    {name} · {ind}
+                  </button>
+                ))}
+              </div>
+              {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
+              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px' }}>
+                {loading ? '⏳ Generating...' : '⚡ Generate Quick Strategy'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Input Form */}
+        {!result && mode === 'full' && (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', marginBottom: '24px' }}>
             <form onSubmit={handleSubmit}>
               {/* Idea input */}
@@ -344,9 +419,13 @@ export default function StrategyPage() {
             {/* Result header */}
             <div style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(239,68,68,0.06))', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '16px', padding: '20px 24px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Strategy Generated</div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>{result.idea}</div>
-                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{result.city} · {result.budget} · {result.timeline}</div>
+                <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+                  {result?.isQuick ? '⚡ Quick Strategy' : '🎯 Full Strategy'} Generated
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>
+                  {result?.isQuick ? `${result.businessName} · ${result.industry}` : result?.idea}
+                </div>
+                {!result?.isQuick && <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{result?.city} · {result?.budget} · {result?.timeline}</div>}
               </div>
               <button onClick={() => { setResult(null); setSections([]); }}
                 style={{ padding: '8px 16px', borderRadius: '10px', border: '1px solid var(--border2)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px' }}>
