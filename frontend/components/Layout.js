@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import SuggestBusiness from './SuggestBusiness';
+import Logo from './Logo';
 
 const navItems = [
   { href: '/analysis', icon: '📊', label: 'Dashboard' },
@@ -40,8 +41,7 @@ export default function Layout({ children }) {
 
         {/* Logo */}
         <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
-          <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #c8f03a, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+          <Logo size={34} textSize={17} />
         </div>
 
         {/* Desktop nav links */}
