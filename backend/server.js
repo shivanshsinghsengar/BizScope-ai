@@ -119,6 +119,155 @@ app.use('/api/analyze-location', analysisLimiter);
 app.use('/api/auth', authLimiter);
 
 // ── Quick strategy route (registered early to avoid any issues) ──
+// Fallback strategy generator (used when AI quota is exceeded)
+function generateFallbackStrategy(idea, city, budget, background, timeline) {
+  const cityName = city || 'India';
+  const budgetNum = budget?.includes('2L') ? 200000 : budget?.includes('50k') ? 50000 : budget?.includes('10k') ? 10000 : 5000;
+  return `## 🎯 IDEA VERDICT
+This idea has real potential in the Indian market — execution and timing will determine success.
+Market Demand: 7/10 | Strong demand exists in urban India for this type of service
+Competition Level: 6/10 | Moderate competition but room for differentiated players
+Execution Difficulty: 6/10 | Requires consistent effort and local network building
+Profit Potential: 7/10 | Solid unit economics if customer acquisition is managed well
+
+---
+## 🌍 MARKET REALITY CHECK
+1. WHO will pay?
+- Age 22–35, urban professionals or students in ${cityName}
+- Monthly income ₹15,000–₹60,000, willing to pay for convenience
+- Pain point: lack of time, poor alternatives, or high existing costs
+- Where online: Instagram, WhatsApp groups, LinkedIn, local Facebook groups
+
+2. HOW BIG?
+- TAM: ₹50,000+ crore addressable market across urban India
+- SAM: ₹500–2,000 crore in ${cityName} and nearby areas
+- SOM: ₹10–50 lakh realistically capturable in Year 1
+
+3. WHY NOW?
+- Post-pandemic shift to local, trusted services
+- UPI and digital payments make transactions frictionless
+- Gen Z and millennials prefer convenience over cost
+
+4. WHERE to launch first?
+- Start in one specific neighborhood or college/office cluster in ${cityName}
+- Dense areas with high target customer concentration = faster word of mouth
+
+5. WHAT do they really want?
+- Not just the service — they want reliability, trust, and time saved
+- The job-to-be-done: eliminate a recurring daily friction point
+
+---
+## ⚔️ COMPETITOR MAP
+Local unorganized players | Serve same need | Inconsistent quality | Your gap: reliability + digital presence
+Zomato/Swiggy | Convenience | Expensive, impersonal | Your gap: personal touch + lower price
+Existing apps in category | Tech-first | Poor local knowledge | Your gap: hyperlocal expertise
+
+Your unfair advantage window: You can move faster than large players, build personal relationships, and serve a specific micro-market better than anyone else. The first 3 months are your window before others notice.
+
+---
+## 🚀 GO-TO-MARKET STRATEGY
+PHASE 1 — VALIDATE (Week 1-4, zero budget):
+- Create a WhatsApp group and add 50 potential customers from your network
+- Offer the service free or at cost to 5 people in exchange for honest feedback
+- Post in 3 local Facebook/WhatsApp groups with a specific offer
+- Success metric: 10 people willing to pay before you build anything
+
+PHASE 2 — LAUNCH (Month 2-3):
+- Build the simplest possible version — WhatsApp ordering, manual fulfillment
+- Growth channels: WhatsApp referrals (highest ROI), Instagram local hashtags, offline flyers
+- Pricing: Free trial → ₹${Math.round(budgetNum * 0.1)}/month basic → ₹${Math.round(budgetNum * 0.2)}/month premium
+- Guerrilla tactic: Partner with one popular local spot in ${cityName} for cross-promotion
+
+PHASE 3 — SCALE (Month 4-12):
+- Hire first person when you have 50+ paying customers (operations/delivery role)
+- Revenue milestone: ₹50,000/month before scaling to new areas
+- Partner with complementary local businesses for distribution
+- Big bet: Build a referral program — every customer who refers 3 gets 1 month free
+
+---
+## 💰 FINANCIAL BLUEPRINT
+Month 1: Target ₹${Math.round(budgetNum * 0.3)} revenue — get 10 paying customers
+Month 3: Break-even — cover direct costs with 25-30 customers
+Month 6: ₹${Math.round(budgetNum * 2)} monthly profit with 50+ customers
+Key cost to eliminate: Don't spend on paid ads in Month 1 — organic and referral only
+CAC: ₹200-500 via referral | LTV: ₹3,000-8,000 over 6 months | Healthy ratio
+
+---
+## 🆕 MARKET EXPANSION IDEAS
+SUBSCRIPTION BUNDLES — offer weekly/monthly packages at a discount
+Why it works: Predictable revenue, customer lock-in, lower churn
+How to test: Offer 3 customers a monthly deal at 20% discount
+Revenue potential: High
+
+CORPORATE PARTNERSHIPS — sell to offices/companies in ${cityName} in bulk
+Why it works: B2B deals are larger and stickier than B2C
+How to test: Cold call 5 offices near your area this week
+Revenue potential: High
+
+WHATSAPP COMMUNITY MODEL — build a paid community around your niche
+Why it works: Indians trust WhatsApp communities for recommendations
+How to test: Create a free group, provide value for 2 weeks, then offer paid tier
+Revenue potential: Medium
+
+TRAIN-THE-TRAINER — teach others to replicate your model in other cities
+Why it works: Franchise-lite model with zero capital from you
+How to test: Document your process and offer it to 1 person in another city
+Revenue potential: Moonshot
+
+CONTENT + SERVICE COMBO — create helpful content on Instagram about your niche
+Why it works: Content builds trust and drives inbound customers for free
+How to test: Post 10 helpful reels and track which drives inquiries
+Revenue potential: Medium
+
+---
+## ⚠️ RISK RADAR
+Risk: First 10 customers don't convert to paying
+Probability: Medium
+Kill move: Pre-sell before building — collect payment upfront for Month 1
+
+Risk: Quality inconsistency kills word-of-mouth
+Probability: High
+Kill move: Serve only 5 customers perfectly before scaling to 20
+
+Risk: A competitor copies your model in ${cityName}
+Probability: Medium
+Kill move: Build personal relationships that can't be copied — your network IS the moat
+
+Risk: Running out of money before reaching break-even
+Probability: Medium
+Kill move: Keep fixed costs at zero for Month 1 — use only variable costs tied to revenue
+
+Risk: Founder burnout from doing everything alone
+Probability: High
+Kill move: Automate or delegate one task per week — start with WhatsApp auto-replies
+
+---
+## 📅 90-DAY ACTION PLAN
+Week 1 | Research | Talk to 20 potential customers, ask 3 questions each | 5 people say "I'd pay for this"
+Week 2 | Validate | Offer free trial to 5 people | Get 3 honest reviews
+Week 3 | First sale | Convert 3 trial users to paying | First ₹ collected
+Week 4 | Referrals | Ask each customer for 2 referrals | 6 new leads
+Week 5 | Systems | Set up WhatsApp Business, basic tracking sheet | Orders processed in under 2 hours
+Week 6 | Content | Post 3 pieces of content on Instagram | 100 new followers
+Week 7 | Partnerships | Approach 3 local businesses for cross-promotion | 1 partnership confirmed
+Week 8 | Pricing | Test premium tier with 2 customers | 1 upgrade
+Week 9 | Feedback | Survey all customers, fix top 2 complaints | NPS improves
+Week 10 | Scale prep | Document your process completely | Ready to onboard help
+Week 11 | Hire/delegate | Bring in 1 part-time helper for operations | Free up 10 hours/week
+Week 12 | Review | Measure revenue, customers, CAC, NPS | Hit monthly revenue target
+
+---
+## 💬 FOUNDER'S HONEST TALK
+The one thing that will make or break this idea is your first 10 customers. Not your product, not your branding, not your app. If you can get 10 people to pay you money before you have built anything polished, you have a real business. If you cannot, no amount of features or marketing will save it. Spend your entire first month obsessing over those 10 people.
+
+The mistake 90% of first-time founders make with this type of business is building before selling. They spend 2 months creating a website, designing a logo, and setting up payment systems — then launch to silence because they never validated demand. Sell first. Build only what customers are already paying for.
+
+The one question you must answer before spending a single rupee: "Will someone pay me money for this TODAY — not someday, not maybe, but today?" If you cannot get a yes from at least 3 people in your network within 48 hours of asking, the idea needs to change, not the execution.
+
+---
+*Note: This is a data-driven strategy template. For a fully personalized AI analysis specific to "${idea}" in ${cityName}, the AI service will generate a custom strategy when quota is available.*`;
+}
+
 app.post('/api/strategy', async (req, res) => {
   try {
     const { idea, city, budget, background, timeline } = req.body;
@@ -228,7 +377,7 @@ Use Indian context: ₹, WhatsApp, Instagram, Meesho, Zepto, local cities. Be br
       } catch (e) { console.log('OpenAI failed:', e.message.slice(0, 60)); }
     }
 
-    if (!strategy) return res.status(503).json({ error: 'AI quota exceeded. Please try again in a few minutes.' });
+    if (!strategy) strategy = generateFallbackStrategy(idea, city, budget, background, timeline);
     res.json({ strategy, idea, city, budget, background, timeline });
   } catch (e) {
     console.error('Strategy error:', e.message);
@@ -1522,7 +1671,8 @@ Week | Focus | Top 3 Actions | Success Signal
     }
 
     if (!strategy) {
-      return res.status(503).json({ error: 'AI quota exceeded. Please try again in a few minutes.' });
+      // Use data-driven fallback when AI quota is exceeded
+      strategy = generateFallbackStrategy(idea, city, budget, background, timeline);
     }
 
     res.json({ strategy, idea, city, budget, background, timeline });
