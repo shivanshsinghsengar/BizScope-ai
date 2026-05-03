@@ -113,6 +113,9 @@ export default function Home() {
   const [news, setNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [cityInsights, setCityInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const insightsTimer = useRef(null);
   const router = useRouter();
   const { dark, toggle } = useTheme();
 
@@ -150,7 +153,28 @@ export default function Home() {
     if (loc) setForm(f => ({ ...f, city: loc }));
   }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    // Fetch AI insights when city has 3+ chars
+    if (e.target.name === 'city' && e.target.value.trim().length >= 3) {
+      clearTimeout(insightsTimer.current);
+      insightsTimer.current = setTimeout(() => {
+        fetchCityInsights(e.target.value.trim());
+      }, 800);
+    } else if (e.target.name === 'city' && e.target.value.trim().length < 3) {
+      setCityInsights(null);
+    }
+  };
+
+  const fetchCityInsights = async (city) => {
+    setInsightsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/city-insights?city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+      if (data.insights) setCityInsights({ city, ...data });
+    } catch (_) {}
+    setInsightsLoading(false);
+  };
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
@@ -426,6 +450,37 @@ export default function Home() {
                     <div key={f.name}>
                       <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{f.label}</label>
                       <input name={f.name} value={form[f.name]} onChange={handleChange} placeholder={f.placeholder} required={f.name === 'city'} className="input-field" />
+                      {/* AI insights below city field */}
+                      {f.name === 'city' && (insightsLoading || cityInsights) && (
+                        <div style={{ marginTop: '8px', background: 'var(--surface2)', border: '1px solid #3b82f630', borderRadius: '12px', padding: '12px 14px', animation: 'fadeInUp 0.3s ease' }}>
+                          {insightsLoading ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--muted)' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+                              Getting AI insights for {form.city}...
+                            </div>
+                          ) : cityInsights && (
+                            <>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '14px' }}>🤖</span>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>AI Insights for {cityInsights.city}</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {cityInsights.insights?.map((insight, i) => (
+                                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'var(--text2)', lineHeight: '1.5' }}>
+                                    <span style={{ color: '#3b82f6', flexShrink: 0, marginTop: '1px' }}>→</span>
+                                    <span>{insight}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {cityInsights.topOpportunity && (
+                                <div style={{ marginTop: '8px', padding: '6px 10px', background: '#3b82f615', borderRadius: '8px', fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>
+                                  🎯 Top opportunity: {cityInsights.topOpportunity}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

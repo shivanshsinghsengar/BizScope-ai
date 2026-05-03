@@ -11,6 +11,7 @@ const navItems = [
   { href: '/insights', icon: '🤖', label: 'AI Insights' },
   { href: '/trends', icon: '📈', label: 'Trends' },
   { href: '/strategy', icon: '🎯', label: 'Strategy' },
+  { href: '/interior', icon: '🏠', label: 'Interior' },
   { href: '/sparks', icon: '⚡', label: 'SparkLab' },
   { href: '/business-plan', icon: '📋', label: 'Business Plan' },
   { href: '/list-business', icon: '➕', label: 'List Business' },

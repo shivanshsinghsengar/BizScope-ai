@@ -1702,6 +1702,175 @@ app.post('/api/business-plan', authMiddleware, async (req, res) => {
 // Test route
 app.get('/api/strategy-test', (req, res) => res.json({ ok: true }));
 
+// ── Interior Design Planner ──────────────────────────────────────────────────
+app.post('/api/interior-design', async (req, res) => {
+  try {
+    const { businessName, industry, style } = req.body;
+    if (!businessName || !industry) return res.status(400).json({ error: 'Business name and industry required' });
+
+    const designStyle = style || 'Industrial Minimalism';
+
+    const prompt = `Act as a budget-conscious interior designer for Indian small businesses.
+
+Business Name: ${businessName}
+Industry: ${industry}
+Design Style: ${designStyle}
+
+Create a practical, low-cost interior design strategy. Format in clean Markdown with bold headers:
+
+## **Interior Design Strategy for ${businessName}**
+
+### **Style: ${designStyle}**
+2-line description of how this style applies to a ${industry} business in India.
+
+### **3 Low-Cost Materials**
+For each material: name, estimated cost in ₹, and how to use it specifically for ${businessName}.
+1. **[Material]** — ₹[cost range] — [specific use]
+2. **[Material]** — ₹[cost range] — [specific use]
+3. **[Material]** — ₹[cost range] — [specific use]
+
+### **DIY Lighting Hack**
+One specific, cheap lighting idea using materials available at any hardware store in India. Include estimated cost.
+
+### **Minimum Budget Checklist**
+- [ ] [Item] — ₹[amount]
+- [ ] [Item] — ₹[amount]
+- [ ] [Item] — ₹[amount]
+- [ ] [Item] — ₹[amount]
+- [ ] [Item] — ₹[amount]
+**Total Estimated Budget: ₹[X,XXX] – ₹[X,XXX]**
+
+### **One Power Move**
+The single highest-impact, lowest-cost change that will make ${businessName} look professional immediately.
+
+Keep all prices realistic for India (2025). No luxury materials. Focus on what a first-time entrepreneur can actually afford and do themselves.`;
+
+    let design = null;
+
+    if (genAI) {
+      for (const m of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: m });
+          const r = await model.generateContent(prompt);
+          design = r.response.text();
+          break;
+        } catch (e) { console.log(`interior ${m}:`, e.message.slice(0, 50)); }
+      }
+    }
+
+    if (!design) {
+      design = `## **Interior Design Strategy for ${businessName}**
+
+### **Style: ${designStyle}**
+${designStyle === 'Industrial Minimalism' ? 'Raw, functional, and clean — exposed materials with purposeful furniture. Perfect for a modern ' + industry + ' business that wants to look professional without overspending.' : 'Warm, eclectic, and inviting — layered textures and natural materials. Creates a memorable, Instagram-worthy space for ' + industry + ' customers.'}
+
+### **3 Low-Cost Materials**
+1. **Plywood** — ₹800–1,200/sheet — Use for counters, shelving, and wall panels. Sand and varnish for a premium finish at 10% of the cost of solid wood.
+2. **PVC Pipes** — ₹50–150/meter — Create clothing racks, display stands, or partition frames. Paint matte black for an industrial look.
+3. **Cement/Concrete** — ₹300–500 for DIY mix — Apply as a feature wall texture or countertop finish. Cheap, durable, and looks high-end.
+
+### **DIY Lighting Hack**
+String Edison bulbs (₹15–25 each, available at any electrical shop) along exposed wire across the ceiling. Use a dimmer switch (₹200) for ambiance control. Total cost: ₹800–1,500 for a full room — looks like a ₹15,000 installation.
+
+### **Minimum Budget Checklist**
+- [ ] Plywood shelving and counter — ₹3,000–5,000
+- [ ] PVC pipe display/rack system — ₹1,000–2,000
+- [ ] Edison bulb string lights — ₹800–1,500
+- [ ] 1 feature wall (paint or texture) — ₹500–1,500
+- [ ] Second-hand furniture (OLX/Facebook Marketplace) — ₹2,000–5,000
+**Total Estimated Budget: ₹7,300 – ₹15,000**
+
+### **One Power Move**
+Paint one wall in a bold, brand-consistent color and add your logo as a vinyl sticker (₹500–800 from any print shop). This single change makes any space look intentional and professional — customers will photograph it and share it.`;
+    }
+
+    // Generate Pollinations image URL (free, no API key)
+    const imagePrompt = encodeURIComponent(
+      `Realistic commercial interior design for a ${industry} business called ${businessName}, ${designStyle.toLowerCase()} style, using reclaimed wood and exposed brick, cinematic lighting, minimalist furniture, practical layout, highly detailed, photorealistic, 8k resolution, shot on 35mm lens`
+    );
+    const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=800&height=500&nologo=true`;
+
+    res.json({ design, imageUrl, businessName, industry, style: designStyle });
+  } catch (e) {
+    console.error('Interior design error:', e.message);
+    res.status(500).json({ error: 'Design generation failed.' });
+  }
+});
+
+// City Insights — AI-powered quick insights for a city (shown below search)
+const cityInsightsCache = new Map();
+app.get('/api/city-insights', async (req, res) => {
+  const city = (req.query.city || '').trim();
+  if (!city || city.length < 2) return res.status(400).json({ error: 'City required' });
+
+  // Cache for 1 hour
+  if (cityInsightsCache.has(city.toLowerCase())) {
+    return res.json(cityInsightsCache.get(city.toLowerCase()));
+  }
+
+  // Static insights for top cities (instant, no AI needed)
+  const staticInsights = {
+    mumbai: { insights: ['Financial hub — fintech and B2B services have high demand', 'Food delivery market is saturated but premium/healthy food gaps exist', 'Co-working and professional services growing in suburbs like Thane, Navi Mumbai'], topOpportunity: 'Premium healthy tiffin for corporate professionals' },
+    delhi: { insights: ['Massive student population — EdTech and coaching have strong demand', 'Wedding and events industry is ₹10,000 crore+ market', 'Hyperlocal delivery in colonies like Dwarka, Rohini is underserved'], topOpportunity: 'Hyperlocal grocery delivery in residential colonies' },
+    bangalore: { insights: ['IT workforce drives demand for productivity tools and SaaS', 'PG accommodation services are in high demand near tech parks', 'Health and fitness market growing 30% YoY in Koramangala, Indiranagar'], topOpportunity: 'SaaS tools for small IT teams and freelancers' },
+    bengaluru: { insights: ['IT workforce drives demand for productivity tools and SaaS', 'PG accommodation services are in high demand near tech parks', 'Health and fitness market growing 30% YoY'], topOpportunity: 'SaaS tools for small IT teams and freelancers' },
+    hyderabad: { insights: ['Pharma and biotech hub — B2B services for life sciences growing', 'Real estate boom in Gachibowli and Kondapur creates property service demand', 'Food tech startups thriving — cloud kitchens have low competition in suburbs'], topOpportunity: 'Cloud kitchen targeting IT corridor workers' },
+    pune: { insights: ['Large student and young professional population', 'Manufacturing sector needs digital tools and B2B services', 'Fitness and wellness market growing rapidly in Kothrud, Baner'], topOpportunity: 'Affordable fitness and wellness services for students' },
+    jaipur: { insights: ['Tourism drives demand for hospitality and local experience services', 'Handicraft and textile export market is underdigitized', 'Growing IT sector creating demand for professional services'], topOpportunity: 'Digital marketing for local handicraft businesses' },
+    mathura: { insights: ['Religious tourism creates year-round demand for hospitality', 'Dairy and food processing is a strong local industry', 'Limited digital services — huge gap for local business digitization'], topOpportunity: 'Online booking platform for dharamshalas and local guides' },
+    noida: { insights: ['Large corporate workforce — B2B and professional services in demand', 'Residential colonies need hyperlocal delivery and home services', 'EdTech and coaching centers have strong demand near schools'], topOpportunity: 'Home services and maintenance for residential societies' },
+    lucknow: { insights: ['Growing IT and startup ecosystem with government support', 'Chikankari and traditional crafts need digital marketplace', 'Food culture is strong — premium restaurant and catering opportunities'], topOpportunity: 'Online marketplace for traditional Lucknowi crafts' },
+    surat: { insights: ['Diamond and textile industry needs B2B digital tools', 'Young entrepreneur culture — startup services in demand', 'Food delivery market growing rapidly in new residential areas'], topOpportunity: 'B2B procurement tools for textile traders' },
+    ahmedabad: { insights: ['Strong MSME ecosystem — business services have high demand', 'Pharma and chemical industry needs compliance and digital tools', 'Real estate market growing — property services opportunity'], topOpportunity: 'Compliance and documentation services for MSMEs' },
+    chennai: { insights: ['Auto and manufacturing hub — B2B industrial services growing', 'Strong IT sector in OMR corridor driving professional services demand', 'Healthcare and wellness market expanding rapidly'], topOpportunity: 'Recruitment and staffing for manufacturing sector' },
+    kolkata: { insights: ['Strong retail and wholesale market — e-commerce enablement needed', 'Cultural events and tourism create hospitality opportunities', 'Affordable city — price-sensitive market rewards value-for-money offerings'], topOpportunity: 'E-commerce enablement for traditional retail shops' },
+  };
+
+  const cityKey = city.toLowerCase().replace(/\s+/g, '');
+  const matched = Object.keys(staticInsights).find(k => cityKey.includes(k) || k.includes(cityKey));
+
+  if (matched) {
+    const result = staticInsights[matched];
+    cityInsightsCache.set(city.toLowerCase(), result);
+    return res.json(result);
+  }
+
+  // For unknown cities, use AI
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const prompt = `You are a business analyst. Give 3 short, specific business insights for entrepreneurs looking to start a business in ${city}, India. Also suggest the single best business opportunity.
+
+Format your response as JSON only:
+{
+  "insights": ["insight 1", "insight 2", "insight 3"],
+  "topOpportunity": "one specific business opportunity"
+}
+
+Keep each insight under 15 words. Be specific to ${city}.`;
+      const r = await model.generateContent(prompt);
+      const text = r.response.text().replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(text);
+      cityInsightsCache.set(city.toLowerCase(), parsed);
+      return res.json(parsed);
+    } catch (e) {
+      console.log('City insights AI failed:', e.message.slice(0, 50));
+    }
+  }
+
+  // Generic fallback
+  const fallback = {
+    insights: [
+      `${city} has growing demand for local digital services and delivery`,
+      'Hyperlocal businesses with WhatsApp ordering outperform large platforms',
+      'First-mover advantage available in most service categories',
+    ],
+    topOpportunity: 'Hyperlocal service business with WhatsApp-first approach',
+  };
+  cityInsightsCache.set(city.toLowerCase(), fallback);
+  res.json(fallback);
+});
+
 // Quick Strategy — 5-part, under 400 words, Business Name + Industry only
 app.post('/api/quick-strategy', async (req, res) => {
   try {
