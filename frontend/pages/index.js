@@ -7,62 +7,6 @@ import SuggestBusiness from '../components/SuggestBusiness';
 import ReviewWidget from '../components/ReviewWidget';
 import { useTheme } from '../context/ThemeContext';
 
-// Static startup news headlines — no API key needed
-const STARTUP_NEWS = [
-  '🚀 Zepto raises $350M at $5B valuation — quick commerce boom continues',
-  '💡 OpenAI launches GPT-5 with reasoning capabilities',
-  '🏪 Meesho hits 150M users — social commerce dominates Tier 2 India',
-  '📈 Indian startup ecosystem raises $8.9B in 2025',
-  '🤖 Google Gemini 2.0 now free for developers',
-  '🏦 RBI approves 12 new fintech licenses in Q1 2026',
-  '🛒 Blinkit expands to 50 new cities — dark store model wins',
-  '💰 Y Combinator W26 batch — 40% Indian founders',
-  '🌍 India becomes 3rd largest startup ecosystem globally',
-  '📱 PhonePe crosses 500M registered users',
-  '🏥 HealthTech funding up 120% — telemedicine leads',
-  '🎓 EdTech revival — Byju\'s restructures, new players emerge',
-  '🚗 Ola Electric IPO oversubscribed 4x',
-  '🏠 PropTech startups raise $2B — housing demand surges',
-  '⚡ Renewable energy startups get $1.5B in green funding',
-];
-
-function NewsTicker() {
-  const doubled = [...STARTUP_NEWS, ...STARTUP_NEWS];
-  return (
-    <div style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(200,240,58,0.2)', padding: '8px 0', overflow: 'hidden', position: 'relative', zIndex: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-        <div style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0, zIndex: 2 }}>
-          LIVE
-        </div>
-        <div style={{ overflow: 'hidden', flex: 1 }}>
-          <div className="ticker-track" style={{ gap: '48px' }}>
-            {doubled.map((item, i) => (
-              <span key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', paddingRight: '48px' }}>
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NewsBackground() {
-  const allNews = [...STARTUP_NEWS, ...STARTUP_NEWS, ...STARTUP_NEWS];
-  return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none', opacity: 0.04 }}>
-      <div className="news-bg-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
-        {allNews.map((item, i) => (
-          <div key={i} style={{ fontSize: '13px', color: 'white', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-            {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -72,6 +16,28 @@ function FAQItem({ q, a }) {
         <span style={{ fontSize: '20px', color: '#c8f03a', flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none' }}>+</span>
       </div>
       {open && <p style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.8', marginTop: '12px', paddingRight: '24px' }}>{a}</p>}
+    </div>
+  );
+}
+
+function NewsTicker({ headlines }) {
+  if (!headlines || headlines.length === 0) return null;
+  const items = [...headlines, ...headlines];
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(200,240,58,0.2)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0 }}>LIVE</div>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
+          <div className="ticker-track">
+            {items.map((h, i) => (
+              <a key={i} href={h.url} target="_blank" rel="noreferrer"
+                style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', paddingRight: '60px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                🔵 {h.title}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -144,12 +110,20 @@ export default function Home() {
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
   const [reviews, setReviews] = useState({ reviews: [], avg: 0, total: 0 });
+  const [news, setNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('All');
   const router = useRouter();
   const { dark, toggle } = useTheme();
 
   useEffect(() => {
     fetch(`${API_URL}/api/reviews`).then(r => r.json()).then(d => setReviews(d)).catch(() => {});
     trackEvent('home_viewed');
+    // Fetch real news
+    fetch(`${API_URL}/api/news`).then(r => r.json()).then(d => {
+      setNews(d.articles || []);
+      setNewsLoading(false);
+    }).catch(() => setNewsLoading(false));
   }, []);
 
   // Load search history from localStorage
@@ -244,14 +218,11 @@ export default function Home() {
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', position: 'relative' }}>
 
-        {/* Scrolling news background */}
-        <NewsBackground />
-
         {/* Analysis loader overlay */}
         {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
 
-        {/* Live news ticker */}
-        <NewsTicker />
+        {/* Live news ticker with real headlines */}
+        <NewsTicker headlines={news.slice(0, 10)} />
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
@@ -467,6 +438,67 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Live News Grid — Google News Style */}
+            <div style={{ marginBottom: '64px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: '800', color: 'var(--text)', marginBottom: '4px' }}>🌍 World Innovation News</h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups · Tech · Hackathons · Innovation</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['All', 'Startup', 'Tech', 'AI', 'Funding'].map(cat => (
+                    <button key={cat} onClick={() => setActiveCategory(cat)}
+                      style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: activeCategory === cat ? 'linear-gradient(135deg,#c8f03a,#a8d420)' : 'var(--surface2)', color: activeCategory === cat ? '#0a0f0a' : 'var(--muted)', transition: 'all 0.2s' }}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {newsLoading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
+                  {[1,2,3,4,5,6].map(i => (
+                    <div key={i} className="shimmer" style={{ height: '180px', borderRadius: '16px' }} />
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
+                  {news.filter(a => {
+                    if (activeCategory === 'All') return true;
+                    const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                    if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                    if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('app');
+                    if (activeCategory === 'AI') return t.includes('ai') || t.includes('artificial') || t.includes('machine learning') || t.includes('gemini') || t.includes('openai');
+                    if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('invest') || t.includes('million') || t.includes('billion');
+                    return true;
+                  }).slice(0, 12).map((article, i) => (
+                    <a key={i} href={article.url} target="_blank" rel="noreferrer"
+                      style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(200,240,58,0.1)'; e.currentTarget.style.borderColor = '#c8f03a40'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                      {article.urlToImage && (
+                        <div style={{ height: '140px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                          <img src={article.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                        </div>
+                      )}
+                      <div style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#c8f03a', background: '#c8f03a15', padding: '2px 8px', borderRadius: '100px' }}>{article.source}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--muted)' }}>
+                            {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
+                          </span>
+                        </div>
+                        <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {article.title}
+                        </h3>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Resource Hub */}
