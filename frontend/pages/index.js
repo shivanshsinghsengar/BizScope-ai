@@ -235,6 +235,7 @@ export default function Home() {
               {[
                 { label: 'Features', action: () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) },
                 { label: 'How it Works', action: () => router.push('/how-it-works') },
+                { label: '📰 News', action: () => router.push('/news') },
                 { label: 'Pricing', action: () => router.push('/pricing') },
                 { label: 'Docs', action: () => router.push('/docs') },
               ].map(item => (
@@ -370,6 +371,35 @@ export default function Home() {
                 </div>
               ))}
             </div>
+
+            {/* News preview strip */}
+            {news.length > 0 && (
+              <div className="anim-fade-up delay-4" style={{ marginBottom: '48px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🌍 Latest Innovation News</div>
+                  <button onClick={() => router.push('/news')}
+                    style={{ fontSize: '12px', color: '#c8f03a', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
+                    View all →
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {news.slice(0, 4).map((a, i) => (
+                    <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                      style={{ flexShrink: 0, width: '220px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '14px', textDecoration: 'none', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8f03a40'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#c8f03a', marginBottom: '6px' }}>{a.source}</div>
+                      <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
+                    </a>
+                  ))}
+                  <div onClick={() => router.push('/news')}
+                    style={{ flexShrink: 0, width: '120px', background: 'linear-gradient(135deg,rgba(200,240,58,0.1),rgba(239,68,68,0.05))', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '24px' }}>📰</span>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#c8f03a', textAlign: 'center' }}>More News →</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Feature cards */}
             <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '64px' }}>
