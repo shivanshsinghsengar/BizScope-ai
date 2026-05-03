@@ -259,7 +259,119 @@ export default function Home() {
 
         {/* Hero */}
         <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px 40px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px 40px' }}>
+
+            {/* ── WORLD INNOVATION NEWS — TOP SECTION ── */}
+            <div style={{ marginBottom: '56px' }}>
+              {/* Section header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
+                    🌍 World Innovation News
+                  </h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups · AI · Tech · Hackathons — updated every 30 min</p>
+                </div>
+                <button onClick={() => router.push('/news')}
+                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #c8f03a40', background: '#c8f03a10', color: '#c8f03a', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  Full News Feed →
+                </button>
+              </div>
+
+              {/* Category filter */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)}
+                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#c8f03a,#a8d420)' : 'var(--surface2)', color: activeCategory === cat ? '#0a0f0a' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {newsLoading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '14px' }}>
+                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: '160px', borderRadius: '14px' }} />)}
+                </div>
+              ) : (
+                <>
+                  {/* Featured + grid layout */}
+                  {(() => {
+                    const filtered = news.filter(a => {
+                      if (activeCategory === 'All') return true;
+                      const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                      if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                      if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
+                      if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
+                      if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
+                      if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
+                      if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
+                      return true;
+                    });
+                    const featured = filtered[0];
+                    const rest = filtered.slice(1, 7);
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
+                        {/* Featured */}
+                        {featured && (
+                          <a href={featured.url} target="_blank" rel="noreferrer"
+                            style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#c8f03a50'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(200,240,58,0.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            {featured.urlToImage ? (
+                              <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                                <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                              </div>
+                            ) : (
+                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(200,240,58,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🚀</div>
+                            )}
+                            <div style={{ padding: '20px' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#c8f03a', background: '#c8f03a15', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
+                                <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
+                              </div>
+                              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
+                              {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
+                            </div>
+                          </a>
+                        )}
+                        {/* Right column — list */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {rest.map((a, i) => (
+                            <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                              style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8f03a40'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
+                              {a.urlToImage ? (
+                                <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                              ) : (
+                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>📰</div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#c8f03a', marginBottom: '4px' }}>{a.source}</div>
+                                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
+                              </div>
+                            </a>
+                          ))}
+                          <button onClick={() => router.push('/news')}
+                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(200,240,58,0.3)', background: 'rgba(200,240,58,0.06)', color: '#c8f03a', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
+                            📰 View All Innovation News →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+
+            {/* ── DIVIDER ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#c8f03a15,#ef444410)', border: '1px solid #c8f03a30' }}>
+                <span style={{ fontSize: '16px' }}>🚀</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI — Market Analysis</span>
+              </div>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            </div>
 
             {/* Badge */}
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
@@ -371,35 +483,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-
-            {/* News preview strip */}
-            {news.length > 0 && (
-              <div className="anim-fade-up delay-4" style={{ marginBottom: '48px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>🌍 Latest Innovation News</div>
-                  <button onClick={() => router.push('/news')}
-                    style={{ fontSize: '12px', color: '#c8f03a', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
-                    View all →
-                  </button>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
-                  {news.slice(0, 4).map((a, i) => (
-                    <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                      style={{ flexShrink: 0, width: '220px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '14px', textDecoration: 'none', transition: 'all 0.15s' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#c8f03a40'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: '#c8f03a', marginBottom: '6px' }}>{a.source}</div>
-                      <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
-                    </a>
-                  ))}
-                  <div onClick={() => router.push('/news')}
-                    style={{ flexShrink: 0, width: '120px', background: 'linear-gradient(135deg,rgba(200,240,58,0.1),rgba(239,68,68,0.05))', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '24px' }}>📰</span>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#c8f03a', textAlign: 'center' }}>More News →</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Feature cards */}
             <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '64px' }}>
