@@ -295,7 +295,7 @@ export default function Properties() {
                         {cfg.label}
                       </span>
                       {p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98120', color: '#34d399', border: '1px solid #10b98130' }}>✅ Community Listed</span>}
-                      {p.priceSource === 'govt_circle_rate' && !p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#c8f03a15', color: '#a8d420', border: '1px solid #c8f03a30' }}>🏛️ Govt Rate</span>}
+                      {p.priceSource === 'govt_circle_rate' && !p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98115', color: '#059669', border: '1px solid #10b98130' }}>🏛️ Govt Rate</span>}
                     </div>
                   </div>
 

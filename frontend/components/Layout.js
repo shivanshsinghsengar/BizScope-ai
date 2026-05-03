@@ -39,7 +39,7 @@ export default function Layout({ children }) {
 
         {/* Logo */}
         <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
+          <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
           <span style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #c8f03a, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
         </div>
 
@@ -47,7 +47,7 @@ export default function Layout({ children }) {
         <div className="nav-links" style={{ display: 'flex', gap: '2px', overflowX: 'auto' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => router.push(n.href)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', transition: 'all 0.2s', background: router.pathname === n.href ? 'linear-gradient(135deg, #c8f03a, #a8d420)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--muted)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', transition: 'all 0.2s', background: router.pathname === n.href ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--muted)' }}
               onMouseEnter={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; } }}
               onMouseLeave={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; } }}>
               <span>{n.icon}</span><span>{n.label}</span>
@@ -78,7 +78,7 @@ export default function Layout({ children }) {
                 Sign In
               </button>
               <button onClick={() => router.push('/pricing')} className="hide-mobile"
-                style={{ background: 'linear-gradient(135deg, #c8f03a, #a8d420)', color: '#0a0f0a', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 14px rgba(200,240,58,0.3)' }}>
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 14px rgba(200,240,58,0.3)' }}>
                 ⚡ Upgrade
               </button>
             </>
@@ -97,7 +97,7 @@ export default function Layout({ children }) {
         <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 99, background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => { router.push(n.href); setMenuOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'linear-gradient(135deg, #c8f03a, #a8d420)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--text)' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent', color: router.pathname === n.href ? '#0a0f0a' : 'var(--text)' }}>
               <span>{n.icon}</span><span>{n.label}</span>
             </button>
           ))}
@@ -133,7 +133,7 @@ export default function Layout({ children }) {
       <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', background: 'var(--bg2)', padding: '20px 24px' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
+            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
             <span style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI · Built by Shivansh Singh Sengar</span>
           </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>

@@ -58,7 +58,7 @@ function SectionContent({ title, content }) {
     const verdict = content.split('\n')[0];
     return (
       <div>
-        <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '20px', padding: '14px', background: 'var(--surface2)', borderRadius: '12px', borderLeft: '3px solid #c8f03a' }}>
+        <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '20px', padding: '14px', background: 'var(--surface2)', borderRadius: '12px', borderLeft: '3px solid #10b981' }}>
           {verdict}
         </div>
         {scores.length > 0 ? scores.map((s, i) => <ScoreBar key={i} {...s} />) : (
@@ -129,7 +129,7 @@ function SectionContent({ title, content }) {
     <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: '1.9', whiteSpace: 'pre-line' }}>
       {content.split('\n').map((line, i) => {
         if (line.startsWith('### ') || line.startsWith('PHASE ') || line.startsWith('BOOTSTRAP') || line.startsWith('FUNDED')) {
-          return <div key={i} style={{ fontWeight: '700', color: '#c8f03a', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '16px', marginBottom: '6px' }}>{line.replace(/^###\s*/, '')}</div>;
+          return <div key={i} style={{ fontWeight: '700', color: '#10b981', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '16px', marginBottom: '6px' }}>{line.replace(/^###\s*/, '')}</div>;
         }
         if (line.startsWith('- ') || line.startsWith('• ')) {
           return <div key={i} style={{ paddingLeft: '16px', marginBottom: '4px', color: 'var(--text2)' }}>• {line.slice(2)}</div>;
@@ -150,7 +150,7 @@ function SectionContent({ title, content }) {
 
 function CollapsibleCard({ section, index }) {
   const [open, setOpen] = useState(index < 2);
-  const icons = { '🎯': '#c8f03a', '🌍': '#60a5fa', '⚔️': '#ef4444', '🚀': '#10b981', '💰': '#f59e0b', '🆕': '#a78bfa', '⚠️': '#f87171', '📅': '#06b6d4', '💬': '#c8f03a' };
+  const icons = { '🎯': '#10b981', '🌍': '#60a5fa', '⚔️': '#ef4444', '🚀': '#10b981', '💰': '#f59e0b', '🆕': '#a78bfa', '⚠️': '#f87171', '📅': '#06b6d4', '💬': '#10b981' };
   const sectionImages = {
     'IDEA VERDICT':     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
     'MARKET REALITY':   'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
@@ -163,7 +163,7 @@ function CollapsibleCard({ section, index }) {
     'FOUNDER':          'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&q=80',
   };
   const emoji = section.title.match(/[\u{1F300}-\u{1FFFF}]|[\u{2600}-\u{26FF}]/u)?.[0] || '📌';
-  const accentColor = icons[emoji] || '#c8f03a';
+  const accentColor = icons[emoji] || '#10b981';
   const imgKey = Object.keys(sectionImages).find(k => section.title.toUpperCase().includes(k));
   const imgUrl = sectionImages[imgKey] || null;
 
@@ -254,7 +254,7 @@ export default function StrategyPage() {
 
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(200,240,58,0.1)', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#c8f03a', marginBottom: '14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#10b981', marginBottom: '14px' }}>
             ⚡ Powered by Gemini AI
           </div>
           <h1 style={{ fontSize: 'clamp(24px,4vw,36px)', fontWeight: '900', color: 'var(--text)', marginBottom: '10px', letterSpacing: '-0.5px' }}>
@@ -276,7 +276,7 @@ export default function StrategyPage() {
                   placeholder="e.g. Tiffin delivery service for working professionals in PG accommodations..."
                   rows={3} required
                   style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'border-color 0.2s' }}
-                  onFocus={e => e.target.style.borderColor = '#c8f03a'}
+                  onFocus={e => e.target.style.borderColor = '#10b981'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'} />
                 {/* Example ideas */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
@@ -342,9 +342,9 @@ export default function StrategyPage() {
         {result && sections.length > 0 && (
           <div>
             {/* Result header */}
-            <div style={{ background: 'linear-gradient(135deg,rgba(200,240,58,0.1),rgba(239,68,68,0.06))', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '16px', padding: '20px 24px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(239,68,68,0.06))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '16px', padding: '20px 24px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <div style={{ fontSize: '11px', color: '#c8f03a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Strategy Generated</div>
+                <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Strategy Generated</div>
                 <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>{result.idea}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{result.city} · {result.budget} · {result.timeline}</div>
               </div>

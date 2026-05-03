@@ -47,7 +47,7 @@ export default function Dashboard() {
       )
     : 0;
   const viabilityLabel = viabilityScore >= 70 ? 'Excellent' : viabilityScore >= 50 ? 'Good' : viabilityScore >= 30 ? 'Fair' : 'Tough';
-  const viabilityColor = viabilityScore >= 70 ? '#c8f03a' : viabilityScore >= 50 ? '#a8d420' : viabilityScore >= 30 ? '#f59e0b' : '#ef4444';
+  const viabilityColor = viabilityScore >= 70 ? '#10b981' : viabilityScore >= 50 ? '#059669' : viabilityScore >= 30 ? '#f59e0b' : '#ef4444';
 
   const handleShare = () => {
     const loc = data.location?.displayName?.split(',').slice(0, 2).join(',') || '';
@@ -93,7 +93,7 @@ export default function Dashboard() {
         <div className="hide-mobile" style={{ width: '200px', flexShrink: 0, position: 'sticky', top: '84px' }}>
           {/* City illustration card */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #c8f03a, #ef4444)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #10b981, #ef4444)' }} />
             {/* unDraw city illustration */}
             <img
               src="https://undraw.co/api/illustrations/undraw_city_life_gnpr.svg"
@@ -179,11 +179,11 @@ export default function Dashboard() {
         )}
 
         {/* Location banner */}
-        <div style={{ background: 'linear-gradient(135deg, #c8f03a15, #ef444410)', border: '1px solid #c8f03a30', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #10b98115, #ef444410)', border: '1px solid #10b98130', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ fontSize: '40px', lineHeight: 1 }}>📍</div>
             <div>
-              <div style={{ fontSize: '11px', color: '#c8f03a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Analyzing</div>
+              <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Analyzing</div>
               <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: '700' }}>{data.location?.displayName?.split(',').slice(0, 3).join(', ')}</div>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function Dashboard() {
             <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>✅ Live OSM Data</span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #c8f03a40', background: copied ? '#c8f03a15' : 'transparent', color: copied ? '#c8f03a' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #10b98140', background: copied ? '#10b98115' : 'transparent', color: copied ? '#10b981' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
               {copied ? '✅ Copied!' : '🔗 Share'}
             </button>
             {user && (
@@ -222,7 +222,7 @@ export default function Dashboard() {
         )}
 
         {/* Next Steps card */}
-        <div style={{ background: 'linear-gradient(135deg, #c8f03a12, #ef444408)', border: '1px solid #c8f03a25', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ background: 'linear-gradient(135deg, #10b98112, #ef444408)', border: '1px solid #10b98125', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '36px' }}>🎯</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What to do next</div>
@@ -235,9 +235,9 @@ export default function Dashboard() {
               ].map(s => (
                 <div key={s.step} onClick={() => s.href && router.push(s.href)}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--text2)', cursor: s.href ? 'pointer' : 'default', fontWeight: '500', transition: 'all 0.15s' }}
-                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#c8f03a60')}
+                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#10b98160')}
                   onMouseLeave={e => s.href && (e.currentTarget.style.borderColor = 'var(--border2)')}>
-                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#c8f03a', color: '#0a0f0a', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
+                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#10b981', color: '#ffffff', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
                   <span>{s.icon} {s.text}</span>
                 </div>
               ))}

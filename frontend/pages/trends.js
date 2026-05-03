@@ -226,10 +226,10 @@ export default function Trends() {
 
         {/* Government Property Rate Panel */}
         {circleRate && (
-          <div style={{ marginTop: '28px', background: 'var(--surface)', border: '1px solid #c8f03a30', borderRadius: '24px', padding: '28px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #c8f03a, #a8d420)' }} />
+          <div style={{ marginTop: '28px', background: 'var(--surface)', border: '1px solid #10b98130', borderRadius: '24px', padding: '28px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #10b981, #059669)' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#c8f03a15', border: '1px solid #c8f03a30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏛️</div>
+              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#10b98115', border: '1px solid #10b98130', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏛️</div>
               <div>
                 <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>Government Circle Rates</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
@@ -244,15 +244,15 @@ export default function Trends() {
                 { label: 'Typical 300 sqft Shop Rent', value: `₹${(circleRate.rent * 300).toLocaleString('en-IN')}/mo`, icon: '🏪', desc: 'Estimated monthly rent for a small shop' },
                 { label: 'Typical 300 sqft Shop Sale', value: `₹${(circleRate.sale * 300).toLocaleString('en-IN')}`, icon: '💰', desc: 'Estimated purchase price for a small shop' },
               ].map(item => (
-                <div key={item.label} style={{ background: 'var(--surface2)', borderRadius: '16px', padding: '18px', border: '1px solid #c8f03a15' }}>
+                <div key={item.label} style={{ background: 'var(--surface2)', borderRadius: '16px', padding: '18px', border: '1px solid #10b98115' }}>
                   <div style={{ fontSize: '22px', marginBottom: '8px' }}>{item.icon}</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#a8d420', marginBottom: '4px' }}>{item.value}</div>
+                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#059669', marginBottom: '4px' }}>{item.value}</div>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>{item.label}</div>
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{item.desc}</div>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '16px', padding: '12px 16px', background: '#c8f03a08', borderRadius: '12px', border: '1px solid #c8f03a20', fontSize: '12px', color: 'var(--muted)' }}>
+            <div style={{ marginTop: '16px', padding: '12px 16px', background: '#10b98108', borderRadius: '12px', border: '1px solid #10b98120', fontSize: '12px', color: 'var(--muted)' }}>
               ℹ️ Circle rates are government-set minimum property values used for stamp duty calculation. Actual market prices are typically 20–150% higher depending on location and demand.
             </div>
           </div>
