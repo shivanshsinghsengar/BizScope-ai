@@ -28,31 +28,50 @@ const CAT_COLORS = {
 
 function ConceptCard({ concept, onClick }) {
   const color = CAT_COLORS[concept.category] || '#3b82f6';
+  const [imgLoaded, setImgLoaded] = useState(false);
   return (
     <div onClick={() => onClick(concept)}
-      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s' }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = color + '60'; e.currentTarget.style.boxShadow = `0 12px 30px ${color}20`; }}
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s' }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = color + '60'; e.currentTarget.style.boxShadow = `0 16px 40px ${color}20`; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
-      {/* Image */}
-      <div style={{ height: '140px', background: 'var(--surface2)', position: 'relative', overflow: 'hidden' }}>
+      {/* Image — tall for visual impact */}
+      <div style={{ height: '220px', background: 'var(--surface2)', position: 'relative', overflow: 'hidden' }}>
+        {!imgLoaded && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: `linear-gradient(135deg, ${color}15, var(--surface2))` }}>
+            <div style={{ fontSize: '36px' }}>{concept.emoji}</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Loading...</div>
+          </div>
+        )}
         <img src={concept.imageUrl} alt={concept.themeName}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={e => { e.target.parentElement.style.background = `linear-gradient(135deg, ${color}20, var(--surface2))`; e.target.style.display = 'none'; }} />
-        <div style={{ position: 'absolute', top: '8px', left: '8px', background: color + 'dd', color: 'white', padding: '3px 8px', borderRadius: '100px', fontSize: '10px', fontWeight: '700' }}>
+          loading="eager"
+          decoding="async"
+          onLoad={() => setImgLoaded(true)}
+          onError={e => { e.target.style.display = 'none'; }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }} />
+        {/* Gradient overlay */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
+        {/* Badges */}
+        <div style={{ position: 'absolute', top: '10px', left: '10px', background: color + 'ee', color: 'white', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700' }}>
           {concept.emoji} {concept.category}
         </div>
-        <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '3px 8px', borderRadius: '100px', fontSize: '10px', fontWeight: '600' }}>
+        <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700' }}>
           {concept.estimatedCost}
+        </div>
+        {/* Theme name over image */}
+        <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px' }}>
+          <div style={{ fontSize: '15px', fontWeight: '800', color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.8)', lineHeight: '1.3' }}>{concept.themeName}</div>
+          <div style={{ fontSize: '11px', color: color, fontWeight: '700', marginTop: '2px' }}>{concept.vibe}</div>
         </div>
       </div>
       {/* Content */}
-      <div style={{ padding: '14px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px', lineHeight: '1.3' }}>{concept.themeName}</div>
-        <div style={{ fontSize: '11px', color: color, fontWeight: '600', marginBottom: '8px' }}>{concept.vibe}</div>
-        <div style={{ fontSize: '11px', color: 'var(--muted)', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      <div style={{ padding: '16px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: '1.6', marginBottom: '12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           💡 {concept.budgetHack}
         </div>
-        <div style={{ marginTop: '10px', fontSize: '11px', color: color, fontWeight: '600' }}>View full concept →</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>✨ {concept.heroFeature?.split('(')[0]?.trim()}</div>
+          <div style={{ fontSize: '12px', color, fontWeight: '700' }}>Details →</div>
+        </div>
       </div>
     </div>
   );
@@ -249,6 +268,11 @@ export default function InteriorPage() {
           </div>
         )}
 
+        {/* Preload all images for faster display */}
+        {result && result.concepts.map(c => (
+          <link key={c.id} rel="preload" as="image" href={c.imageUrl} />
+        ))}
+
         {/* Results */}
         {result && (
           <div>
@@ -274,8 +298,8 @@ export default function InteriorPage() {
               ))}
             </div>
 
-            {/* 10 concept cards grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            {/* 10 concept cards — 2 column grid for large cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '20px', marginBottom: '24px' }}>
               {filtered.map(concept => (
                 <ConceptCard key={concept.id} concept={concept} onClick={setSelected} />
               ))}

@@ -1776,12 +1776,12 @@ Ensure designs are specific to a ${scale} ${industry} in India. All costs in ₹
       ];
     }
 
-    // Add Pollinations image URL to each concept
+    // Add Pollinations image URL to each concept — smaller size for faster loading
     const conceptsWithImages = concepts.map(c => ({
       ...c,
       imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        `${c.imageKeywords}, ${industry} interior design, ${scale} space, photorealistic, cinematic lighting, 8k, no luxury, no marble`
-      )}?width=600&height=400&nologo=true&seed=${c.id * 42}`,
+        `${c.imageKeywords}, ${industry} interior, photorealistic, cinematic`
+      )}?width=400&height=260&nologo=true&seed=${c.id * 7}&model=flux`,
     }));
 
     res.json({ concepts: conceptsWithImages, businessName, industry, spaceScale: scale });
