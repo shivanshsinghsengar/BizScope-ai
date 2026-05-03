@@ -7,6 +7,62 @@ import SuggestBusiness from '../components/SuggestBusiness';
 import ReviewWidget from '../components/ReviewWidget';
 import { useTheme } from '../context/ThemeContext';
 
+// Static startup news headlines — no API key needed
+const STARTUP_NEWS = [
+  '🚀 Zepto raises $350M at $5B valuation — quick commerce boom continues',
+  '💡 OpenAI launches GPT-5 with reasoning capabilities',
+  '🏪 Meesho hits 150M users — social commerce dominates Tier 2 India',
+  '📈 Indian startup ecosystem raises $8.9B in 2025',
+  '🤖 Google Gemini 2.0 now free for developers',
+  '🏦 RBI approves 12 new fintech licenses in Q1 2026',
+  '🛒 Blinkit expands to 50 new cities — dark store model wins',
+  '💰 Y Combinator W26 batch — 40% Indian founders',
+  '🌍 India becomes 3rd largest startup ecosystem globally',
+  '📱 PhonePe crosses 500M registered users',
+  '🏥 HealthTech funding up 120% — telemedicine leads',
+  '🎓 EdTech revival — Byju\'s restructures, new players emerge',
+  '🚗 Ola Electric IPO oversubscribed 4x',
+  '🏠 PropTech startups raise $2B — housing demand surges',
+  '⚡ Renewable energy startups get $1.5B in green funding',
+];
+
+function NewsTicker() {
+  const doubled = [...STARTUP_NEWS, ...STARTUP_NEWS];
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(200,240,58,0.2)', padding: '8px 0', overflow: 'hidden', position: 'relative', zIndex: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+        <div style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0, zIndex: 2 }}>
+          LIVE
+        </div>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
+          <div className="ticker-track" style={{ gap: '48px' }}>
+            {doubled.map((item, i) => (
+              <span key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', paddingRight: '48px' }}>
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewsBackground() {
+  const allNews = [...STARTUP_NEWS, ...STARTUP_NEWS, ...STARTUP_NEWS];
+  return (
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none', opacity: 0.04 }}>
+      <div className="news-bg-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
+        {allNews.map((item, i) => (
+          <div key={i} style={{ fontSize: '13px', color: 'white', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -186,12 +242,16 @@ export default function Home() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', position: 'relative' }}>
 
-        {/* Background handled by global canvas */}
+        {/* Scrolling news background */}
+        <NewsBackground />
 
         {/* Analysis loader overlay */}
         {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
+
+        {/* Live news ticker */}
+        <NewsTicker />
 
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
@@ -403,6 +463,65 @@ export default function Home() {
                         <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{t.name}</div>
                         <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} · {t.city}</div>
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Resource Hub */}
+            <div style={{ marginBottom: '64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(200,240,58,0.1)', border: '1px solid rgba(200,240,58,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#c8f03a', marginBottom: '14px' }}>
+                  🌐 Entrepreneur Resource Hub
+                </div>
+                <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Stay Ahead of the Market</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Curated resources for Indian entrepreneurs</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: '20px' }}>
+                {[
+                  {
+                    icon: '💡', title: 'New Ideas', color: '#c8f03a',
+                    desc: 'Discover trending business ideas and emerging markets in India',
+                    links: [
+                      { label: '🚀 Product Hunt — Today\'s Launches', url: 'https://www.producthunt.com' },
+                      { label: '📊 Tracxn — India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
+                      { label: '🌱 YC Startup Ideas', url: 'https://www.ycombinator.com/rfs' },
+                    ]
+                  },
+                  {
+                    icon: '🏆', title: 'Hackathons', color: '#ef4444',
+                    desc: 'Upcoming competitions to validate your idea and win funding',
+                    links: [
+                      { label: '⚡ Devpost — Active Hackathons', url: 'https://devpost.com/hackathons' },
+                      { label: '🇮🇳 Unstop — India Competitions', url: 'https://unstop.com/hackathons' },
+                      { label: '💰 HackerEarth Challenges', url: 'https://www.hackerearth.com/challenges' },
+                    ]
+                  },
+                  {
+                    icon: '📖', title: 'Startup Lessons', color: '#a8d420',
+                    desc: 'Learn from failures and successes of real entrepreneurs',
+                    links: [
+                      { label: '💀 Failory — Startup Post-Mortems', url: 'https://www.failory.com' },
+                      { label: '📰 Inc42 — India Startup News', url: 'https://inc42.com' },
+                      { label: '🎙️ The Ken — Deep Dives', url: 'https://the-ken.com' },
+                    ]
+                  },
+                ].map((hub, i) => (
+                  <div key={i} className="glass-card" style={{ padding: '28px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${hub.color}, transparent)` }} />
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>{hub.icon}</div>
+                    <h3 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>{hub.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '18px', lineHeight: '1.6' }}>{hub.desc}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {hub.links.map((link, j) => (
+                        <a key={j} href={link.url} target="_blank" rel="noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 14px', borderRadius: '10px', background: 'var(--surface2)', border: `1px solid ${hub.color}20`, color: 'var(--text2)', fontSize: '13px', textDecoration: 'none', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = hub.color + '60'; e.currentTarget.style.background = hub.color + '10'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = hub.color + '20'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                          {link.label}
+                        </a>
+                      ))}
                     </div>
                   </div>
                 ))}
