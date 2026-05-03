@@ -63,8 +63,9 @@ export default function Sparks() {
   const [saved, setSaved] = useState(new Set());
   const [wordIdx, setWordIdx] = useState(0);
   const [activeNav, setActiveNav] = useState('home');
-  const [ideasToday] = useState(Math.floor(Math.random() * 2000) + 3000);
+  const [ideasToday, setIdeasToday] = useState(4217);
   const [animKey, setAnimKey] = useState(0);
+  const [todayRank, setTodayRank] = useState(142);
 
   const reshuffle = () => {
     const pool = ALL_IDEAS.filter(i => activeFilters.includes(i.cat));
@@ -73,7 +74,15 @@ export default function Sparks() {
     setAnimKey(k => k + 1);
   };
 
-  useEffect(() => { reshuffle(); }, [activeFilters]);
+  useEffect(() => {
+    setIdeasToday(Math.floor(Math.random() * 2000) + 3000);
+    setTodayRank(Math.floor(Math.random() * 500) + 1);
+    reshuffle();
+  }, []);
+
+  useEffect(() => {
+    if (displayed.length > 0) reshuffle();
+  }, [activeFilters]);
 
   const toggleFilter = (cat) => {
     setActiveFilters(prev => {
@@ -221,7 +230,7 @@ export default function Sparks() {
               { label: 'Ideas saved', value: saved.size },
               { label: 'Categories', value: activeFilters.length },
               { label: 'Ideas tried', value: 3 },
-              { label: "Today's rank", value: '#' + Math.floor(Math.random() * 500 + 1) },
+              { label: "Today's rank", value: '#' + todayRank },
             ].map(s => (
               <div key={s.label} style={{ background: '#0d1020', borderRadius: '14px', padding: '16px', textAlign: 'center' }}>
                 <div style={{ fontSize: '22px', fontWeight: '700', color: '#a78bfa', marginBottom: '4px' }}>{s.value}</div>
