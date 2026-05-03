@@ -4,25 +4,25 @@
 
 /* ── Theme Variables ── */
 :root, [data-theme="dark"] {
-  --bg:        #09090b;
-  --bg2:       #0d0d10;
-  --surface:   #18181b;
-  --surface2:  #1f1f23;
-  --border:    #27272a;
-  --border2:   #3f3f46;
-  --text:      #fafafa;
-  --text2:     #e4e4e7;
-  --muted:     #71717a;
-  --muted2:    #52525b;
-  --muted3:    #3f3f46;
-  --accent:    #10b981;
-  --accent2:   #059669;
+  --bg:        #0b0e14;
+  --bg2:       #0e1118;
+  --surface:   #151921;
+  --surface2:  #1c2130;
+  --border:    #1e2535;
+  --border2:   #2d3748;
+  --text:      #f3f4f6;
+  --text2:     #e5e7eb;
+  --muted:     #9ca3af;
+  --muted2:    #6b7280;
+  --muted3:    #374151;
+  --accent:    #3b82f6;
+  --accent2:   #2563eb;
   --accent-red: #ef4444;
   --accent-red2: #dc2626;
-  --scrollbar-track: #18181b;
-  --scrollbar-thumb: #3f3f46;
-  --input-bg:  #18181b;
-  --nav-bg:    rgba(9,9,11,0.95);
+  --scrollbar-track: #151921;
+  --scrollbar-thumb: #2d3748;
+  --input-bg:  #151921;
+  --nav-bg:    rgba(11,14,20,0.96);
 }
 
 [data-theme="light"] {
@@ -103,10 +103,10 @@ body {
   outline: none;
 }
 .input-field::placeholder { color: var(--muted2); }
-.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
 .btn-primary {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #ffffff;
   font-weight: 700;
   padding: 14px 24px;
@@ -114,7 +114,7 @@ body {
   border: none;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
-  box-shadow: 0 4px 20px rgba(16,185,129,0.35);
+  box-shadow: 0 4px 20px rgba(59,130,246,0.4);
 }
 .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -133,7 +133,7 @@ body {
 .btn-danger:hover { opacity: 0.9; transform: translateY(-1px); }
 
 .gradient-text {
-  background: linear-gradient(135deg, #10b981, #ffffff, #ef4444);
+  background: linear-gradient(135deg, #3b82f6, #f3f4f6, #ef4444);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -255,7 +255,7 @@ body {
   100% { background-position: 0% 50%; }
 }
 .gradient-text-animated {
-  background: linear-gradient(135deg, #10b981, #ffffff, #ef4444, #10b981);
+  background: linear-gradient(135deg, #3b82f6, #f3f4f6, #ef4444, #3b82f6);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -263,10 +263,9 @@ body {
   animation: gradientShift 4s ease infinite;
 }
 
-/* ── Glow pulse on accent elements ── */
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-  50%       { box-shadow: 0 0 20px 4px rgba(16,185,129,0.3); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  50%       { box-shadow: 0 0 20px 4px rgba(59,130,246,0.3); }
 }
 .glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
 
@@ -282,23 +281,15 @@ body {
 
 /* ── Floating dots background ── */
 .bg-dots {
-  background-image: radial-gradient(circle, rgba(16,185,129,0.12) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(59,130,246,0.12) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
-/* ── Animated gradient mesh background ── */
-@keyframes meshMove {
-  0%   { background-position: 0% 0%; }
-  25%  { background-position: 100% 0%; }
-  50%  { background-position: 100% 100%; }
-  75%  { background-position: 0% 100%; }
-  100% { background-position: 0% 0%; }
-}
 .bg-mesh {
-  background: radial-gradient(ellipse at 20% 20%, rgba(16,185,129,0.1) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 80%, rgba(239,68,68,0.08) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 50%),
-              radial-gradient(ellipse at 20% 80%, rgba(5,150,105,0.07) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.1) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(239,68,68,0.07) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 20% 80%, rgba(37,99,235,0.07) 0%, transparent 50%);
   background-size: 200% 200%;
   animation: meshMove 20s ease infinite;
 }

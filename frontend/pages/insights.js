@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { PageSkeleton } from '../components/Skeleton';
 
 const categoryColors = {
-  Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#10b981', Gym: '#3b82f6',
+  Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#3b82f6', Gym: '#3b82f6',
   Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1',
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
@@ -235,10 +235,10 @@ export default function Insights() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>{categoryIcons[s.category] || '🏪'} {s.category}</span>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ padding: '3px 10px', borderRadius: '100px', background: '#10b98120', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '100px', background: '#3b82f620', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>
                         Demand: {Math.min(10, parseFloat(s.demandScore || 5)).toFixed(1)}/10
                       </span>
-                      <span style={{ padding: '3px 10px', borderRadius: '100px', background: s.riskLevel === 'Low' ? '#10b98120' : s.riskLevel === 'Medium' ? '#f59e0b20' : '#ef444420', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '100px', background: s.riskLevel === 'Low' ? '#3b82f620' : s.riskLevel === 'Medium' ? '#f59e0b20' : '#ef444420', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
                         {s.riskLevel} Competition
                       </span>
                     </div>
@@ -291,23 +291,23 @@ export default function Insights() {
         {/* Best/Worst panels */}
         <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
           {/* Best opportunities */}
-          <div style={{ background: 'var(--surface)', border: '1px solid #10b98125', borderRadius: '20px', padding: '24px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid #3b82f625', borderRadius: '20px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#10b98120', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✅</div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#3b82f620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✅</div>
               <div>
                 <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>Best Opportunities</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Lowest competition categories</div>
               </div>
             </div>
             {best.map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'var(--surface2)', borderRadius: '14px', marginBottom: '10px', border: '1px solid #10b98115' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'var(--surface2)', borderRadius: '14px', marginBottom: '10px', border: '1px solid #3b82f615' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${categoryColors[s.category] || '#6366f1'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '14px' }}>{s.category}</div>
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Only {s.count} competitors nearby</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#10b98120', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>Low Risk</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#3b82f620', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>Low Risk</span>
                   <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Score: {s.competitorScore?.toFixed(1)}</div>
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function Insights() {
               <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '6px' }}>{s.category}</div>
               <div style={{ fontSize: '28px', fontWeight: '800', color: categoryColors[s.category] || '#6366f1', marginBottom: '4px' }}>{s.count}</div>
               <div style={{ fontSize: '11px', color: 'var(--muted)' }}>competitors</div>
-              <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#10b98115' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
+              <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#3b82f615' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
                 {s.riskLevel === 'Low' ? '🟢 Low Risk' : s.riskLevel === 'Medium' ? '🟡 Medium Risk' : '🔴 High Risk'}
               </div>
               <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '6px', fontWeight: '600' }}>📦 View suppliers</div>

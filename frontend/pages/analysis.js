@@ -13,7 +13,7 @@ import { trackEvent } from '../utils/analytics';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const categoryColors = {
-  Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#10b981', Gym: '#3b82f6',
+  Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#3b82f6', Gym: '#3b82f6',
   Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1',
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
@@ -47,7 +47,7 @@ export default function Dashboard() {
       )
     : 0;
   const viabilityLabel = viabilityScore >= 70 ? 'Excellent' : viabilityScore >= 50 ? 'Good' : viabilityScore >= 30 ? 'Fair' : 'Tough';
-  const viabilityColor = viabilityScore >= 70 ? '#10b981' : viabilityScore >= 50 ? '#059669' : viabilityScore >= 30 ? '#f59e0b' : '#ef4444';
+  const viabilityColor = viabilityScore >= 70 ? '#3b82f6' : viabilityScore >= 50 ? '#2563eb' : viabilityScore >= 30 ? '#f59e0b' : '#ef4444';
 
   const handleShare = () => {
     const loc = data.location?.displayName?.split(',').slice(0, 2).join(',') || '';
@@ -93,7 +93,7 @@ export default function Dashboard() {
         <div className="hide-mobile" style={{ width: '200px', flexShrink: 0, position: 'sticky', top: '84px' }}>
           {/* City illustration card */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #10b981, #ef4444)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #3b82f6, #ef4444)' }} />
             {/* unDraw city illustration */}
             <img
               src="https://undraw.co/api/illustrations/undraw_city_life_gnpr.svg"
@@ -134,7 +134,7 @@ export default function Dashboard() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Risk Legend</div>
             {[
-              { color: '#10b981', emoji: '🟢', label: 'Low Risk',    desc: '0–34 score' },
+              { color: '#3b82f6', emoji: '🟢', label: 'Low Risk',    desc: '0–34 score' },
               { color: '#f59e0b', emoji: '🟡', label: 'Medium Risk', desc: '35–69 score' },
               { color: '#ef4444', emoji: '🔴', label: 'High Risk',   desc: '70–100 score' },
             ].map(r => (
@@ -179,26 +179,26 @@ export default function Dashboard() {
         )}
 
         {/* Location banner */}
-        <div style={{ background: 'linear-gradient(135deg, #10b98115, #ef444410)', border: '1px solid #10b98130', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #3b82f615, #ef444410)', border: '1px solid #3b82f630', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ fontSize: '40px', lineHeight: 1 }}>📍</div>
             <div>
-              <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Analyzing</div>
+              <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Analyzing</div>
               <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: '700' }}>{data.location?.displayName?.split(',').slice(0, 3).join(', ')}</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> {data.businesses?.length} businesses</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} /> {data.businesses?.length} businesses</span>
             <span>📂 {data.categoryStats?.length} categories</span>
-            <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>✅ Live OSM Data</span>
+            <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>✅ Live OSM Data</span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #10b98140', background: copied ? '#10b98115' : 'transparent', color: copied ? '#10b981' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #3b82f640', background: copied ? '#3b82f615' : 'transparent', color: copied ? '#3b82f6' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
               {copied ? '✅ Copied!' : '🔗 Share'}
             </button>
             {user && (
               <button onClick={saveSearch} disabled={saved}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #10b98140', background: saved ? '#10b98115' : 'transparent', color: saved ? '#34d399' : '#64748b', cursor: saved ? 'default' : 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #3b82f640', background: saved ? '#3b82f615' : 'transparent', color: saved ? '#34d399' : '#64748b', cursor: saved ? 'default' : 'pointer', fontSize: '13px', fontWeight: '600' }}>
                 {saved ? '✅ Saved' : '🔖 Save Search'}
               </button>
             )}
@@ -222,7 +222,7 @@ export default function Dashboard() {
         )}
 
         {/* Next Steps card */}
-        <div style={{ background: 'linear-gradient(135deg, #10b98112, #ef444408)', border: '1px solid #10b98125', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ background: 'linear-gradient(135deg, #3b82f612, #ef444408)', border: '1px solid #3b82f625', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '36px' }}>🎯</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What to do next</div>
@@ -235,9 +235,9 @@ export default function Dashboard() {
               ].map(s => (
                 <div key={s.step} onClick={() => s.href && router.push(s.href)}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--text2)', cursor: s.href ? 'pointer' : 'default', fontWeight: '500', transition: 'all 0.15s' }}
-                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#10b98160')}
+                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#3b82f660')}
                   onMouseLeave={e => s.href && (e.currentTarget.style.borderColor = 'var(--border2)')}>
-                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#10b981', color: '#ffffff', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
+                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
                   <span>{s.icon} {s.text}</span>
                 </div>
               ))}
@@ -251,7 +251,7 @@ export default function Dashboard() {
             { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#6366f1', href: '/competitors' },
             { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
             { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
-            { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#10b981', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
+            { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#3b82f6', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
             { icon: '🎯', label: `Viability: ${viabilityLabel}`, value: `${viabilityScore}/100`, color: viabilityColor, href: '/insights' },
           ].map((s, i) => (
             <div key={i} onClick={() => router.push(s.href)}
@@ -336,7 +336,7 @@ export default function Dashboard() {
           </div>
 
           {/* Illustration — business opportunity */}
-          <div style={{ background: 'var(--surface)', border: '1px solid #10b98125', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid #3b82f625', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
             <img
               src="https://undraw.co/api/illustrations/undraw_business_deal_cpi9.svg"
               alt="Opportunity"
@@ -344,7 +344,7 @@ export default function Dashboard() {
               style={{ width: '100%', height: '80px', objectFit: 'contain', marginBottom: '10px' }}
             />
             <div style={{ display: 'none', textAlign: 'center', fontSize: '40px', marginBottom: '8px' }}>💼</div>
-            <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
+            <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
             {[...data.categoryStats].reverse().slice(0, 4).map((s, i) => (
               <div key={i} onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
@@ -353,7 +353,7 @@ export default function Dashboard() {
                   <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
                   <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.count} competitors</div>
                 </div>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '100px', background: '#10b98115', color: '#34d399', fontWeight: '700', flexShrink: 0 }}>Low</span>
+                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '100px', background: '#3b82f615', color: '#34d399', fontWeight: '700', flexShrink: 0 }}>Low</span>
               </div>
             ))}
           </div>

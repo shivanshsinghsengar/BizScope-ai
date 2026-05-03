@@ -120,7 +120,7 @@ export default function About() {
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>Get in Touch</h2>
             <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' }}>Questions, feedback, or partnership enquiries</p>
             <a href="mailto:shivanshsinghsengar8@gmail.com"
-              style={{ display: 'inline-block', padding: '12px 28px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', color: '#0a0f0a', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>
+              style={{ display: 'inline-block', padding: '12px 28px', borderRadius: '12px', background: 'linear-gradient(135deg, #c8f03a, #a8d420)', color: '#ffffff', fontWeight: '700', fontSize: '14px', textDecoration: 'none' }}>
               shivanshsinghsengar8@gmail.com
             </a>
           </div>

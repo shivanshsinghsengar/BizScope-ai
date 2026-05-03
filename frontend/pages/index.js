@@ -13,7 +13,7 @@ function FAQItem({ q, a }) {
     <div style={{ borderBottom: '1px solid var(--border)', padding: '18px 0', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)' }}>{q}</span>
-        <span style={{ fontSize: '20px', color: '#10b981', flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none' }}>+</span>
+        <span style={{ fontSize: '20px', color: '#3b82f6', flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none' }}>+</span>
       </div>
       {open && <p style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.8', marginTop: '12px', paddingRight: '24px' }}>{a}</p>}
     </div>
@@ -24,9 +24,9 @@ function NewsTicker({ headlines }) {
   if (!headlines || headlines.length === 0) return null;
   const items = [...headlines, ...headlines];
   return (
-    <div style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(16,185,129,0.2)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
+    <div style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(59,130,246,0.2)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#ffffff', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0 }}>LIVE</div>
+        <div style={{ background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#ffffff', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0 }}>LIVE</div>
         <div style={{ overflow: 'hidden', flex: 1 }}>
           <div className="ticker-track">
             {items.map((h, i) => (
@@ -65,13 +65,13 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,15,10,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
-      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
         <div style={{ fontSize: '72px', marginBottom: '24px', animation: 'fadeInUp 0.4s ease' }}>{meta.icon}</div>
 
-        <div style={{ fontSize: '13px', color: '#10b981', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
           Analyzing {city}
         </div>
 
@@ -82,20 +82,20 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
         <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>{sub || ''}</div>
 
         {/* Real progress bar */}
-        <div style={{ width: '100%', height: '6px', background: '#1a2a1a', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #10b981, #ffffff, #ef4444)', width: `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: '0 0 12px rgba(16,185,129,0.6)' }} />
+        <div style={{ width: '100%', height: '6px', background: '#1c2130', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #3b82f6, #ffffff, #ef4444)', width: `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: '0 0 12px rgba(59,130,246,0.6)' }} />
         </div>
 
-        <div style={{ fontSize: '13px', color: '#10b981', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
+        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
 
         {/* Step indicators */}
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
           {Object.keys(STEP_META).filter(k => k !== 'cache').map((k, i) => (
-            <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#10b981' : '#1a2a1a', transition: 'all 0.3s ease' }} />
+            <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#3b82f6' : '#1c2130', transition: 'all 0.3s ease' }} />
           ))}
         </div>
 
-        <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+        <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
           💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope analyzes real businesses from OpenStreetMap — the same data used by Apple Maps and Wikipedia.
         </div>
       </div>
@@ -228,8 +228,8 @@ export default function Home() {
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #10b981, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #3b82f6, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
             </div>
             <div className="nav-links" style={{ display: 'flex', gap: '24px', fontSize: '14px', color: 'var(--muted)' }}>
               {[
@@ -250,7 +250,7 @@ export default function Home() {
                 {dark ? '☀️' : '🌙'}
               </button>
               <button onClick={() => router.push('/analysis')}
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
                 Get Started →
               </button>
             </div>
@@ -272,7 +272,7 @@ export default function Home() {
                   <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups · AI · Tech · Hackathons — updated every 30 min</p>
                 </div>
                 <button onClick={() => router.push('/news')}
-                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #10b98140', background: '#10b98110', color: '#10b981', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
                   Full News Feed →
                 </button>
               </div>
@@ -281,7 +281,7 @@ export default function Home() {
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
                 {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
                   <button key={cat} onClick={() => setActiveCategory(cat)}
-                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#10b981,#059669)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
+                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
                     {cat}
                   </button>
                 ))}
@@ -314,18 +314,18 @@ export default function Home() {
                         {featured && (
                           <a href={featured.url} target="_blank" rel="noreferrer"
                             style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#10b98150'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(16,185,129,0.1)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             {featured.urlToImage ? (
                               <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
                                 <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
                               </div>
                             ) : (
-                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🚀</div>
+                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🚀</div>
                             )}
                             <div style={{ padding: '20px' }}>
                               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#10b981', background: '#10b98115', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
+                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
                                 <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
                               </div>
                               <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
@@ -338,7 +338,7 @@ export default function Home() {
                           {rest.map((a, i) => (
                             <a key={i} href={a.url} target="_blank" rel="noreferrer"
                               style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b98140'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
                               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
                               {a.urlToImage ? (
                                 <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
@@ -346,13 +346,13 @@ export default function Home() {
                                 <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>📰</div>
                               )}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#10b981', marginBottom: '4px' }}>{a.source}</div>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
                                 <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
                               </div>
                             </a>
                           ))}
                           <button onClick={() => router.push('/news')}
-                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.06)', color: '#10b981', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
+                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
                             📰 View All Innovation News →
                           </button>
                         </div>
@@ -366,7 +366,7 @@ export default function Home() {
             {/* ── DIVIDER ── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#10b98115,#ef444410)', border: '1px solid #10b98130' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#3b82f615,#ef444410)', border: '1px solid #3b82f630' }}>
                 <span style={{ fontSize: '16px' }}>🚀</span>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI — Market Analysis</span>
               </div>
@@ -375,8 +375,8 @@ export default function Home() {
 
             {/* Badge */}
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#10b981' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#3b82f6' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                 🇮🇳 #1 Free Business Intelligence Tool for India
               </div>
             </div>
@@ -413,7 +413,7 @@ export default function Home() {
             {/* Form Card */}
             <div className="anim-scale delay-3" style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
                 <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text2)' }}>Analyze a Location</span>
               </div>
               <form onSubmit={handleAnalyze}>
@@ -451,7 +451,7 @@ export default function Home() {
 
             {/* Try it live CTA */}
             <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
-              <div style={{ background: 'var(--surface)', border: '1px solid #10b98130', borderRadius: '24px', padding: '36px' }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '36px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
                 <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed — just try it</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>
@@ -460,7 +460,7 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   {['Mumbai', 'Delhi', 'Mathura', 'Jaipur', 'Bangalore'].map(city => (
                     <button key={city} onClick={() => { setForm(f => ({ ...f, city })); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #10b98140', background: '#10b98110', color: '#059669', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                      style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#2563eb', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
                       📍 {city}
                     </button>
                   ))}
@@ -487,12 +487,12 @@ export default function Home() {
             {/* Feature cards */}
             <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '64px' }}>
               {[
-                { icon: '🏪', title: 'Competitor Analysis', desc: 'Real businesses from OpenStreetMap within 3km radius.', color: '#10b981' },
+                { icon: '🏪', title: 'Competitor Analysis', desc: 'Real businesses from OpenStreetMap within 3km radius.', color: '#3b82f6' },
                 { icon: '📊', title: 'Market Scoring', desc: 'See how crowded each business type is and find opportunities.', color: '#ef4444' },
                 { icon: '🏠', title: 'Property Finder', desc: 'Available commercial spaces for rent or sale near your location.', color: '#ffffff' },
-                { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#059669' },
+                { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#2563eb' },
                 { icon: '🗺️', title: 'Interactive Map', desc: 'Visualize competitors and properties on a live map.', color: '#dc2626' },
-                { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#10b981' },
+                { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#3b82f6' },
               ].map((f, i) => (
                 <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '22px' }}>
                   <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${f.color}20`, border: `1px solid ${f.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '14px' }}>{f.icon}</div>
@@ -513,8 +513,8 @@ export default function Home() {
                   { step: '03', icon: '🎯', title: 'Get Insights', desc: 'View competitors, properties & AI tips' },
                 ].map((s) => (
                   <div key={s.step} style={{ flex: '1', minWidth: '200px', maxWidth: '260px', padding: '28px 20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 14px' }}>{s.icon}</div>
-                    <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '8px' }}>STEP {s.step}</div>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 14px' }}>{s.icon}</div>
+                    <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '8px' }}>STEP {s.step}</div>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>{s.title}</h3>
                     <p style={{ fontSize: '13px', color: 'var(--muted)' }}>{s.desc}</p>
                   </div>
@@ -542,7 +542,7 @@ export default function Home() {
                     </div>
                     <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '18px', fontStyle: 'italic' }}>"{t.text}"</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b98120, #ef444420)', border: '1px solid #10b98130', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{t.avatar}</div>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f620, #ef444420)', border: '1px solid #3b82f630', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{t.avatar}</div>
                       <div>
                         <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{t.name}</div>
                         <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} · {t.city}</div>
@@ -563,7 +563,7 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {['All', 'Startup', 'Tech', 'AI', 'Funding'].map(cat => (
                     <button key={cat} onClick={() => setActiveCategory(cat)}
-                      style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: activeCategory === cat ? 'linear-gradient(135deg,#10b981,#059669)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s' }}>
+                      style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s' }}>
                       {cat}
                     </button>
                   ))}
@@ -589,7 +589,7 @@ export default function Home() {
                   }).slice(0, 12).map((article, i) => (
                     <a key={i} href={article.url} target="_blank" rel="noreferrer"
                       style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(16,185,129,0.1)'; e.currentTarget.style.borderColor = '#10b98140'; }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(59,130,246,0.1)'; e.currentTarget.style.borderColor = '#3b82f640'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
                       {article.urlToImage && (
                         <div style={{ height: '140px', overflow: 'hidden', background: 'var(--surface2)' }}>
@@ -599,7 +599,7 @@ export default function Home() {
                       )}
                       <div style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#10b981', background: '#10b98115', padding: '2px 8px', borderRadius: '100px' }}>{article.source}</span>
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{article.source}</span>
                           <span style={{ fontSize: '10px', color: 'var(--muted)' }}>
                             {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
                           </span>
@@ -617,7 +617,7 @@ export default function Home() {
             {/* Resource Hub */}
             <div style={{ marginBottom: '64px' }}>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#10b981', marginBottom: '14px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#3b82f6', marginBottom: '14px' }}>
                   🌐 Entrepreneur Resource Hub
                 </div>
                 <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Stay Ahead of the Market</h2>
@@ -626,7 +626,7 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: '20px' }}>
                 {[
                   {
-                    icon: '💡', title: 'New Ideas', color: '#10b981',
+                    icon: '💡', title: 'New Ideas', color: '#3b82f6',
                     desc: 'Discover trending business ideas and emerging markets in India',
                     links: [
                       { label: '🚀 Product Hunt — Today\'s Launches', url: 'https://www.producthunt.com' },
@@ -644,7 +644,7 @@ export default function Home() {
                     ]
                   },
                   {
-                    icon: '📖', title: 'Startup Lessons', color: '#059669',
+                    icon: '📖', title: 'Startup Lessons', color: '#2563eb',
                     desc: 'Learn from failures and successes of real entrepreneurs',
                     links: [
                       { label: '💀 Failory — Startup Post-Mortems', url: 'https://www.failory.com' },
@@ -698,7 +698,7 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '32px', marginBottom: '32px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🚀</div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🚀</div>
                   <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
                 </div>
                 <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>AI-powered business intelligence for entrepreneurs.</p>
@@ -739,7 +739,7 @@ export default function Home() {
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <p style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI. All rights reserved.</p>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6' }} />
                 <span onClick={() => router.push('/status')} style={{ fontSize: '12px', color: 'var(--muted)', cursor: 'pointer' }}>All systems operational</span>
               </div>
             </div>

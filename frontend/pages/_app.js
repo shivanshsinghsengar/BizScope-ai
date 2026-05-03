@@ -41,9 +41,9 @@ function RouteProgressBar() {
     <div style={{
       position: 'fixed', top: 0, left: 0, zIndex: 9999,
       height: '3px', width: `${width}%`,
-      background: 'linear-gradient(90deg, #10b981, #ffffff, #ef4444)',
+      background: 'linear-gradient(90deg, #3b82f6, #ffffff, #ef4444)',
       transition: width === 100 ? 'width 0.15s ease' : 'width 0.2s ease',
-      boxShadow: '0 0 10px rgba(16,185,129,0.7)',
+      boxShadow: '0 0 10px rgba(59,130,246,0.7)',
       borderRadius: '0 2px 2px 0',
     }} />
   );

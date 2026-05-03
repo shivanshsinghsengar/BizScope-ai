@@ -7,7 +7,7 @@ import { PageSkeleton } from '../components/Skeleton';
 
 const typeConfig = {
   rent: { label: '\uD83D\uDD11 FOR RENT', color: '#3b82f6', light: '#3b82f615', border: '#3b82f630', btn: 'linear-gradient(135deg,#3b82f6,#2563eb)', suffix: '/month' },
-  sale: { label: '\uD83C\uDFF7\uFE0F FOR SALE', color: '#10b981', light: '#10b98115', border: '#10b98130', btn: 'linear-gradient(135deg,#10b981,#059669)', suffix: ' total' },
+  sale: { label: '\uD83C\uDFF7\uFE0F FOR SALE', color: '#3b82f6', light: '#3b82f615', border: '#3b82f630', btn: 'linear-gradient(135deg,#3b82f6,#2563eb)', suffix: ' total' },
 };
 
 function EnquiryModal({ property, onClose }) {
@@ -229,7 +229,7 @@ export default function Properties() {
           {[
             { icon: '🏪', label: 'Total Listings', value: properties.length, color: '#6366f1' },
             { icon: '🔑', label: 'For Rent', value: rentCount, color: '#3b82f6' },
-            { icon: '🏷️', label: 'For Sale', value: saleCount, color: '#10b981' },
+            { icon: '🏷️', label: 'For Sale', value: saleCount, color: '#3b82f6' },
           ].map(s => (
             <div key={s.label} style={{ background: 'var(--surface)', border: `1px solid ${s.color}25`, borderRadius: '14px', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '22px' }}>{s.icon}</span>
@@ -294,8 +294,8 @@ export default function Properties() {
                       <span style={{ padding: '5px 14px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', background: cfg.light, color: cfg.color, border: `1px solid ${cfg.border}` }}>
                         {cfg.label}
                       </span>
-                      {p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98120', color: '#34d399', border: '1px solid #10b98130' }}>✅ Community Listed</span>}
-                      {p.priceSource === 'govt_circle_rate' && !p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#10b98115', color: '#059669', border: '1px solid #10b98130' }}>🏛️ Govt Rate</span>}
+                      {p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#3b82f620', color: '#34d399', border: '1px solid #3b82f630' }}>✅ Community Listed</span>}
+                      {p.priceSource === 'govt_circle_rate' && !p.isListed && <span style={{ padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontWeight: '700', background: '#3b82f615', color: '#2563eb', border: '1px solid #3b82f630' }}>🏛️ Govt Rate</span>}
                     </div>
                   </div>
 

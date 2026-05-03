@@ -95,7 +95,7 @@ export default function NewsPage() {
             </button>
             {/* CTA */}
             <button onClick={() => router.push('/')}
-              style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', border: 'none', padding: '9px 18px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '800', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(200,240,58,0.35)' }}>
+              style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '800', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(200,240,58,0.35)' }}>
               🔍 Analyze Market
             </button>
           </div>
@@ -228,7 +228,7 @@ export default function NewsPage() {
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => router.push('/')}
-                style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', border: 'none', padding: '14px 32px', borderRadius: '14px', cursor: 'pointer', fontSize: '15px', fontWeight: '800', boxShadow: '0 8px 24px rgba(200,240,58,0.4)', transition: 'transform 0.15s' }}
+                style={{ background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#ffffff', border: 'none', padding: '14px 32px', borderRadius: '14px', cursor: 'pointer', fontSize: '15px', fontWeight: '800', boxShadow: '0 8px 24px rgba(200,240,58,0.4)', transition: 'transform 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 🔍 Analyze a Market Now — Free

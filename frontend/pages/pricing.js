@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const plans = [
   {
-    name: 'Free', price: '₹0', period: 'forever', color: '#10b981',
+    name: 'Free', price: '₹0', period: 'forever', color: '#3b82f6',
     features: ['5 market analyses/day', 'Competitor directory', 'Basic charts', 'Public business listing', 'Dark/Light theme'],
     missing: ['PDF export', 'Saved searches', 'AI recommendations', 'Priority support'],
     cta: 'Get Started Free', href: '/',
@@ -67,7 +67,7 @@ export default function Pricing() {
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                 {p.popular && (
-                  <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#0a0f0a', padding: '4px 18px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#c8f03a,#a8d420)', color: '#ffffff', padding: '4px 18px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap' }}>
                     Most Popular
                   </div>
                 )}
@@ -80,7 +80,7 @@ export default function Pricing() {
                 <div style={{ marginBottom: '20px' }}>
                   {p.features.map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', fontSize: '14px', color: 'var(--text2)' }}>
-                      <span style={{ color: '#10b981', fontSize: '16px' }}>✓</span> {f}
+                      <span style={{ color: '#3b82f6', fontSize: '16px' }}>✓</span> {f}
                     </div>
                   ))}
                   {p.missing.map(f => (
@@ -90,7 +90,7 @@ export default function Pricing() {
                   ))}
                 </div>
                 <a href={p.href}
-                  style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '12px', background: p.popular ? 'linear-gradient(135deg,#c8f03a,#a8d420)' : 'var(--surface2)', color: p.popular ? '#0a0f0a' : 'var(--text)', fontWeight: '700', fontSize: '14px', textDecoration: 'none', border: p.popular ? 'none' : '1px solid var(--border2)', cursor: 'pointer' }}>
+                  style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '12px', background: p.popular ? 'linear-gradient(135deg,#c8f03a,#a8d420)' : 'var(--surface2)', color: p.popular ? '#ffffff' : 'var(--text)', fontWeight: '700', fontSize: '14px', textDecoration: 'none', border: p.popular ? 'none' : '1px solid var(--border2)', cursor: 'pointer' }}>
                   {p.cta}
                 </a>
               </div>
