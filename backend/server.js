@@ -1702,95 +1702,89 @@ app.post('/api/business-plan', authMiddleware, async (req, res) => {
 // Test route
 app.get('/api/strategy-test', (req, res) => res.json({ ok: true }));
 
-// ── Interior Design Planner ──────────────────────────────────────────────────
+// ── Interior Design Planner — 10 Concepts ────────────────────────────────────
 app.post('/api/interior-design', async (req, res) => {
   try {
-    const { businessName, industry, style } = req.body;
+    const { businessName, industry, spaceScale } = req.body;
     if (!businessName || !industry) return res.status(400).json({ error: 'Business name and industry required' });
+    const scale = spaceScale || 'Small';
 
-    const designStyle = style || 'Industrial Minimalism';
+    const prompt = `Act as a Senior Commercial Interior Designer and Budget Strategist for startup businesses in India.
 
-    const prompt = `Act as a budget-conscious interior designer for Indian small businesses.
+Business Type: ${industry} (${businessName})
+Space Scale: ${scale}
 
-Business Name: ${businessName}
-Industry: ${industry}
-Design Style: ${designStyle}
+Generate exactly 10 distinct interior design concepts. Each must be low-budget with high visual impact. Include 2026 trends: Warm Minimalism, Color Drenching, Biophilic DIY, Soft Industrial, Zoning.
 
-Create a practical, low-cost interior design strategy. Format in clean Markdown with bold headers:
+For each concept, respond in this EXACT JSON format (return only valid JSON array, no markdown):
+[
+  {
+    "id": 1,
+    "emoji": "🌿",
+    "themeName": "Theme Name Here",
+    "category": "Biophilic",
+    "budgetHack": "One specific low-cost material or DIY trick",
+    "heroFeature": "One focal point that makes the space look expensive",
+    "spaceOptimization": "How to arrange for ${scale} space specifically",
+    "imageKeywords": "comma,separated,visual,keywords,for,image,generator",
+    "estimatedCost": "₹X,XXX – ₹XX,XXX",
+    "vibe": "2-word vibe description"
+  }
+]
 
-## **Interior Design Strategy for ${businessName}**
+Make the 10 themes vary across these categories (use these emojis):
+🌿 Biophilic (plant-based, natural)
+🏗️ Industrial (raw, metal, concrete)
+🎨 Dopamine Decor (colorful, bright)
+☕ Warm Minimalist (cozy, neutral)
+🌙 Dark Moody (dramatic, deep colors)
+🪵 Rustic Indian (terracotta, jute, brass)
+⚡ Tech Modern (LED, glass, clean lines)
+🎭 Vintage Retro (nostalgia, warm wood)
+🏔️ Scandinavian (white, pine, functional)
+🌈 Color Drenching (one bold color everywhere)
 
-### **Style: ${designStyle}**
-2-line description of how this style applies to a ${industry} business in India.
+Ensure designs are specific to a ${scale} ${industry} in India. All costs in ₹. Keep imageKeywords under 15 words.`;
 
-### **3 Low-Cost Materials**
-For each material: name, estimated cost in ₹, and how to use it specifically for ${businessName}.
-1. **[Material]** — ₹[cost range] — [specific use]
-2. **[Material]** — ₹[cost range] — [specific use]
-3. **[Material]** — ₹[cost range] — [specific use]
-
-### **DIY Lighting Hack**
-One specific, cheap lighting idea using materials available at any hardware store in India. Include estimated cost.
-
-### **Minimum Budget Checklist**
-- [ ] [Item] — ₹[amount]
-- [ ] [Item] — ₹[amount]
-- [ ] [Item] — ₹[amount]
-- [ ] [Item] — ₹[amount]
-- [ ] [Item] — ₹[amount]
-**Total Estimated Budget: ₹[X,XXX] – ₹[X,XXX]**
-
-### **One Power Move**
-The single highest-impact, lowest-cost change that will make ${businessName} look professional immediately.
-
-Keep all prices realistic for India (2025). No luxury materials. Focus on what a first-time entrepreneur can actually afford and do themselves.`;
-
-    let design = null;
+    let concepts = null;
 
     if (genAI) {
       for (const m of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
         try {
           const model = genAI.getGenerativeModel({ model: m });
           const r = await model.generateContent(prompt);
-          design = r.response.text();
+          const text = r.response.text().replace(/```json|```/g, '').trim();
+          concepts = JSON.parse(text);
           break;
-        } catch (e) { console.log(`interior ${m}:`, e.message.slice(0, 50)); }
+        } catch (e) { console.log(`interior ${m}:`, e.message.slice(0, 60)); }
       }
     }
 
-    if (!design) {
-      design = `## **Interior Design Strategy for ${businessName}**
-
-### **Style: ${designStyle}**
-${designStyle === 'Industrial Minimalism' ? 'Raw, functional, and clean — exposed materials with purposeful furniture. Perfect for a modern ' + industry + ' business that wants to look professional without overspending.' : 'Warm, eclectic, and inviting — layered textures and natural materials. Creates a memorable, Instagram-worthy space for ' + industry + ' customers.'}
-
-### **3 Low-Cost Materials**
-1. **Plywood** — ₹800–1,200/sheet — Use for counters, shelving, and wall panels. Sand and varnish for a premium finish at 10% of the cost of solid wood.
-2. **PVC Pipes** — ₹50–150/meter — Create clothing racks, display stands, or partition frames. Paint matte black for an industrial look.
-3. **Cement/Concrete** — ₹300–500 for DIY mix — Apply as a feature wall texture or countertop finish. Cheap, durable, and looks high-end.
-
-### **DIY Lighting Hack**
-String Edison bulbs (₹15–25 each, available at any electrical shop) along exposed wire across the ceiling. Use a dimmer switch (₹200) for ambiance control. Total cost: ₹800–1,500 for a full room — looks like a ₹15,000 installation.
-
-### **Minimum Budget Checklist**
-- [ ] Plywood shelving and counter — ₹3,000–5,000
-- [ ] PVC pipe display/rack system — ₹1,000–2,000
-- [ ] Edison bulb string lights — ₹800–1,500
-- [ ] 1 feature wall (paint or texture) — ₹500–1,500
-- [ ] Second-hand furniture (OLX/Facebook Marketplace) — ₹2,000–5,000
-**Total Estimated Budget: ₹7,300 – ₹15,000**
-
-### **One Power Move**
-Paint one wall in a bold, brand-consistent color and add your logo as a vinyl sticker (₹500–800 from any print shop). This single change makes any space look intentional and professional — customers will photograph it and share it.`;
+    // Fallback static concepts
+    if (!concepts) {
+      concepts = [
+        { id:1, emoji:'🌿', themeName:'The Biophilic Jungle Corner', category:'Biophilic', budgetHack:'Use pothos and money plants in recycled tin cans as planters — ₹50 each', heroFeature:'A living moss wall panel (DIY with preserved moss from nursery, ₹800)', spaceOptimization:`For ${scale} space: cluster plants in one corner to create depth without taking floor space`, imageKeywords:'biophilic cafe, indoor plants, moss wall, warm lighting, natural wood', estimatedCost:'₹8,000 – ₹15,000', vibe:'Fresh Calm' },
+        { id:2, emoji:'🏗️', themeName:'The Soft Industrial Loft', category:'Industrial', budgetHack:'Leave concrete walls bare, add warm 3000K LED strips along ceiling edges', heroFeature:'Exposed black iron pipe shelving with Edison bulbs (₹1,200 total)', spaceOptimization:`For ${scale} space: use vertical pipe shelving to maximize wall space`, imageKeywords:'industrial loft, exposed concrete, Edison bulbs, iron pipes, warm amber lighting', estimatedCost:'₹10,000 – ₹20,000', vibe:'Raw Warm' },
+        { id:3, emoji:'🎨', themeName:'The Dopamine Burst', category:'Dopamine Decor', budgetHack:'Color drenching — paint walls, ceiling, and pipes one bold color (Terracotta or Cobalt)', heroFeature:'One oversized hand-painted mural on the main wall (hire local art student, ₹2,000)', spaceOptimization:`For ${scale} space: bold color makes small spaces feel intentional, not cramped`, imageKeywords:'dopamine decor, terracotta walls, colorful interior, bold paint, vibrant cafe', estimatedCost:'₹6,000 – ₹12,000', vibe:'Bold Joyful' },
+        { id:4, emoji:'☕', themeName:'The Warm Minimalist Den', category:'Warm Minimalist', budgetHack:'Plywood furniture with natural oil finish — looks premium at 20% of solid wood cost', heroFeature:'Japandi-style low seating with floor cushions (₹300 each from wholesale market)', spaceOptimization:`For ${scale} space: low furniture creates illusion of height and openness`, imageKeywords:'warm minimalist, plywood furniture, japandi style, neutral tones, cozy lighting', estimatedCost:'₹12,000 – ₹22,000', vibe:'Quiet Cozy' },
+        { id:5, emoji:'🌙', themeName:'The Dark Moody Speakeasy', category:'Dark Moody', budgetHack:'Paint everything dark (charcoal or forest green) — cheap paint transforms any space', heroFeature:'Backlit bar shelf with fairy lights behind bottles (₹500 total)', spaceOptimization:`For ${scale} space: dark walls recede visually, making space feel larger and more intimate`, imageKeywords:'dark moody interior, deep green walls, candlelight, intimate lighting, speakeasy', estimatedCost:'₹7,000 – ₹14,000', vibe:'Mysterious Intimate' },
+        { id:6, emoji:'🪵', themeName:'The Terracotta Zen', category:'Rustic Indian', budgetHack:'Terracotta pots, jute rope, and brass fixtures from local hardware — all under ₹200 each', heroFeature:'Handmade terracotta tile feature wall (local potter, ₹1,500 for accent wall)', spaceOptimization:`For ${scale} space: use jute curtains as soft dividers instead of walls`, imageKeywords:'terracotta interior, jute decor, brass fixtures, Indian rustic, warm earthy tones', estimatedCost:'₹9,000 – ₹18,000', vibe:'Earthy Grounded' },
+        { id:7, emoji:'⚡', themeName:'The Neon Tech Hub', category:'Tech Modern', budgetHack:'RGB LED strips (₹200/meter) behind furniture and under counters for ambient glow', heroFeature:'Custom neon sign with business name (₹2,500–4,000 from local sign maker)', spaceOptimization:`For ${scale} space: use mirrors with LED frames to double perceived space`, imageKeywords:'neon tech interior, RGB lighting, modern minimalist, glass surfaces, futuristic cafe', estimatedCost:'₹15,000 – ₹28,000', vibe:'Electric Modern' },
+        { id:8, emoji:'🎭', themeName:'The Vintage Nostalgia Corner', category:'Vintage Retro', budgetHack:'Source old furniture from OLX/Facebook Marketplace — refurbish with chalk paint (₹400)', heroFeature:'Vintage clock collection wall or old film poster gallery (₹100–300 per poster)', spaceOptimization:`For ${scale} space: eclectic mix of vintage pieces works better in smaller spaces`, imageKeywords:'vintage retro interior, warm wood, old posters, antique furniture, nostalgic cafe', estimatedCost:'₹8,000 – ₹16,000', vibe:'Nostalgic Warm' },
+        { id:9, emoji:'🏔️', themeName:'The Scandinavian Light Box', category:'Scandinavian', budgetHack:'White walls + pine wood accents + black metal frames — all from IKEA or local alternatives', heroFeature:'Oversized pendant light in woven rattan (₹800 from home decor store)', spaceOptimization:`For ${scale} space: Scandinavian works best — white maximizes light in small spaces`, imageKeywords:'scandinavian interior, white walls, pine wood, rattan pendant, clean minimal', estimatedCost:'₹11,000 – ₹20,000', vibe:'Clean Airy' },
+        { id:10, emoji:'🌈', themeName:'The Color Drench Statement', category:'Color Drenching', budgetHack:'Buy 10L of one bold color paint (₹1,200) and paint EVERYTHING — walls, ceiling, furniture', heroFeature:'Monochromatic space with one contrasting texture (velvet cushions or brass handles)', spaceOptimization:`For ${scale} space: color drenching is the cheapest way to make any size look architectural`, imageKeywords:'color drenching, monochromatic interior, bold single color, architectural space, 2026 trend', estimatedCost:'₹5,000 – ₹10,000', vibe:'Architectural Bold' },
+      ];
     }
 
-    // Generate Pollinations image URL (free, no API key)
-    const imagePrompt = encodeURIComponent(
-      `Realistic commercial interior design for a ${industry} business called ${businessName}, ${designStyle.toLowerCase()} style, using reclaimed wood and exposed brick, cinematic lighting, minimalist furniture, practical layout, highly detailed, photorealistic, 8k resolution, shot on 35mm lens`
-    );
-    const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?width=800&height=500&nologo=true`;
+    // Add Pollinations image URL to each concept
+    const conceptsWithImages = concepts.map(c => ({
+      ...c,
+      imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(
+        `${c.imageKeywords}, ${industry} interior design, ${scale} space, photorealistic, cinematic lighting, 8k, no luxury, no marble`
+      )}?width=600&height=400&nologo=true&seed=${c.id * 42}`,
+    }));
 
-    res.json({ design, imageUrl, businessName, industry, style: designStyle });
+    res.json({ concepts: conceptsWithImages, businessName, industry, spaceScale: scale });
   } catch (e) {
     console.error('Interior design error:', e.message);
     res.status(500).json({ error: 'Design generation failed.' });
