@@ -5,33 +5,33 @@ import { useRouter } from 'next/router';
 // ── Data ──────────────────────────────────────────────────────────────────────
 const ALL_IDEAS = [
   // STARTUP
-  { id:1, cat:'Startup', color:'#a78bfa', title:'Hyperlocal Skill Swap App', hook:'Trade skills with people in your colony — no money needed.', diff:'Medium' },
-  { id:2, cat:'Startup', color:'#a78bfa', title:'Failure Museum — India Edition', hook:'Celebrate failed startups. Learn what went wrong. Inspire resilience.', diff:'Hard' },
-  { id:3, cat:'Startup', color:'#a78bfa', title:'Rent-a-Professional for 1 Hour', hook:'Book a CA, lawyer, or designer for exactly 60 minutes.', diff:'Medium' },
-  { id:4, cat:'Startup', color:'#a78bfa', title:'AI Tools for Kirana Shops', hook:'Inventory, billing, and reorder suggestions — in Hindi.', diff:'Hard' },
-  { id:5, cat:'Startup', color:'#a78bfa', title:'Solo Founder Dashboard', hook:'Track MRR, tasks, mood, and energy — all in one place.', diff:'Easy' },
+  { id:1, cat:'Startup', color:'#a78bfa', title:'Hyperlocal Skill Swap App', hook:'Trade skills with people in your colony — no money needed.', diff:'Medium', img:'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=400&q=80' },
+  { id:2, cat:'Startup', color:'#a78bfa', title:'Failure Museum — India Edition', hook:'Celebrate failed startups. Learn what went wrong. Inspire resilience.', diff:'Hard', img:'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' },
+  { id:3, cat:'Startup', color:'#a78bfa', title:'Rent-a-Professional for 1 Hour', hook:'Book a CA, lawyer, or designer for exactly 60 minutes.', diff:'Medium', img:'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&q=80' },
+  { id:4, cat:'Startup', color:'#a78bfa', title:'AI Tools for Kirana Shops', hook:'Inventory, billing, and reorder suggestions — in Hindi.', diff:'Hard', img:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80' },
+  { id:5, cat:'Startup', color:'#a78bfa', title:'Solo Founder Dashboard', hook:'Track MRR, tasks, mood, and energy — all in one place.', diff:'Easy', img:'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80' },
   // STUDENT
-  { id:6, cat:'Student', color:'#60a5fa', title:'Study-with-Strangers Rooms', hook:'Join a silent Pomodoro room with random students worldwide.', diff:'Easy' },
-  { id:7, cat:'Student', color:'#60a5fa', title:'Mock Interview with AI Judge', hook:'Practice HR and technical rounds. Get brutal honest feedback.', diff:'Medium' },
-  { id:8, cat:'Student', color:'#60a5fa', title:'Notes-to-Flashcard AI Converter', hook:'Paste your notes. Get 20 spaced-repetition cards instantly.', diff:'Easy' },
-  { id:9, cat:'Student', color:'#60a5fa', title:'Peer Accountability Bot', hook:'Daily check-ins with a study partner. Miss = lose streak.', diff:'Easy' },
-  { id:10, cat:'Student', color:'#60a5fa', title:'Campus Gig Marketplace', hook:'Students hire students for design, coding, tutoring, and more.', diff:'Medium' },
+  { id:6, cat:'Student', color:'#60a5fa', title:'Study-with-Strangers Rooms', hook:'Join a silent Pomodoro room with random students worldwide.', diff:'Easy', img:'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80' },
+  { id:7, cat:'Student', color:'#60a5fa', title:'Mock Interview with AI Judge', hook:'Practice HR and technical rounds. Get brutal honest feedback.', diff:'Medium', img:'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80' },
+  { id:8, cat:'Student', color:'#60a5fa', title:'Notes-to-Flashcard AI Converter', hook:'Paste your notes. Get 20 spaced-repetition cards instantly.', diff:'Easy', img:'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80' },
+  { id:9, cat:'Student', color:'#60a5fa', title:'Peer Accountability Bot', hook:'Daily check-ins with a study partner. Miss = lose streak.', diff:'Easy', img:'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80' },
+  { id:10, cat:'Student', color:'#60a5fa', title:'Campus Gig Marketplace', hook:'Students hire students for design, coding, tutoring, and more.', diff:'Medium', img:'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&q=80' },
   // CAREER
-  { id:11, cat:'Career', color:'#34d399', title:'1-Minute Weekly Win Tracker', hook:'Log one win every Friday. Review quarterly. Feel unstoppable.', diff:'Easy' },
-  { id:12, cat:'Career', color:'#34d399', title:'Meeting Cost Calculator Overlay', hook:'Browser extension that shows ₹ cost of every meeting in real time.', diff:'Medium' },
-  { id:13, cat:'Career', color:'#34d399', title:'Skill Gap Radar for Your Role', hook:'Compare your skills to top performers in your job title.', diff:'Hard' },
-  { id:14, cat:'Career', color:'#34d399', title:'Public Work Journal', hook:'Build in public. Share daily progress. Attract opportunities.', diff:'Easy' },
-  { id:15, cat:'Career', color:'#34d399', title:'30-Day Career Experiment Tracker', hook:'Try one new career habit per day. Track what sticks.', diff:'Easy' },
+  { id:11, cat:'Career', color:'#34d399', title:'1-Minute Weekly Win Tracker', hook:'Log one win every Friday. Review quarterly. Feel unstoppable.', diff:'Easy', img:'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&q=80' },
+  { id:12, cat:'Career', color:'#34d399', title:'Meeting Cost Calculator Overlay', hook:'Browser extension that shows ₹ cost of every meeting in real time.', diff:'Medium', img:'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400&q=80' },
+  { id:13, cat:'Career', color:'#34d399', title:'Skill Gap Radar for Your Role', hook:'Compare your skills to top performers in your job title.', diff:'Hard', img:'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80' },
+  { id:14, cat:'Career', color:'#34d399', title:'Public Work Journal', hook:'Build in public. Share daily progress. Attract opportunities.', diff:'Easy', img:'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400&q=80' },
+  { id:15, cat:'Career', color:'#34d399', title:'30-Day Career Experiment Tracker', hook:'Try one new career habit per day. Track what sticks.', diff:'Easy', img:'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80' },
   // CREATIVE
-  { id:16, cat:'Creative', color:'#f472b6', title:'AI Comic of Your Day', hook:'Describe your day in 3 sentences. Get a 4-panel comic strip.', diff:'Easy' },
-  { id:17, cat:'Creative', color:'#f472b6', title:'30-Day Micro-Creativity Challenge', hook:'One tiny creative act per day. Sketch, write, hum, build.', diff:'Easy' },
-  { id:18, cat:'Creative', color:'#f472b6', title:'One-Sentence Daily Story App', hook:'Write one sentence. Others continue it. Collaborative fiction.', diff:'Easy' },
-  { id:19, cat:'Creative', color:'#f472b6', title:'Sound Branding Generator', hook:'Upload your logo. Get a 3-second audio identity for your brand.', diff:'Hard' },
+  { id:16, cat:'Creative', color:'#f472b6', title:'AI Comic of Your Day', hook:'Describe your day in 3 sentences. Get a 4-panel comic strip.', diff:'Easy', img:'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80' },
+  { id:17, cat:'Creative', color:'#f472b6', title:'30-Day Micro-Creativity Challenge', hook:'One tiny creative act per day. Sketch, write, hum, build.', diff:'Easy', img:'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400&q=80' },
+  { id:18, cat:'Creative', color:'#f472b6', title:'One-Sentence Daily Story App', hook:'Write one sentence. Others continue it. Collaborative fiction.', diff:'Easy', img:'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80' },
+  { id:19, cat:'Creative', color:'#f472b6', title:'Sound Branding Generator', hook:'Upload your logo. Get a 3-second audio identity for your brand.', diff:'Hard', img:'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=400&q=80' },
   // TECH
-  { id:20, cat:'Tech', color:'#a3e635', title:'Browser Extension: Idea Catcher', hook:'Highlight any text online. Save it as a spark. Review weekly.', diff:'Medium' },
-  { id:21, cat:'Tech', color:'#a3e635', title:'Mood-Based Playlist Builder', hook:'Rate your mood 1–10. Get a Spotify playlist that matches it.', diff:'Medium' },
-  { id:22, cat:'Tech', color:'#a3e635', title:'CLI Tool for Daily Journaling', hook:'Type `journal` in terminal. Answer 3 prompts. Done in 2 min.', diff:'Easy' },
-  { id:23, cat:'Tech', color:'#a3e635', title:'Offline-First Note Sync Tool', hook:'Notes work without internet. Sync when connected. No cloud lock-in.', diff:'Hard' },
+  { id:20, cat:'Tech', color:'#a3e635', title:'Browser Extension: Idea Catcher', hook:'Highlight any text online. Save it as a spark. Review weekly.', diff:'Medium', img:'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80' },
+  { id:21, cat:'Tech', color:'#a3e635', title:'Mood-Based Playlist Builder', hook:'Rate your mood 1–10. Get a Spotify playlist that matches it.', diff:'Medium', img:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80' },
+  { id:22, cat:'Tech', color:'#a3e635', title:'CLI Tool for Daily Journaling', hook:'Type `journal` in terminal. Answer 3 prompts. Done in 2 min.', diff:'Easy', img:'https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=400&q=80' },
+  { id:23, cat:'Tech', color:'#a3e635', title:'Offline-First Note Sync Tool', hook:'Notes work without internet. Sync when connected. No cloud lock-in.', diff:'Hard', img:'https://images.unsplash.com/photo-1512314889357-e157c22f938d?w=400&q=80' },
 ];
 
 const WORDS = [
@@ -243,20 +243,33 @@ export default function Sparks() {
           <div className="cards-grid" key={animKey} style={{ marginBottom: '32px' }}>
             {displayed.map((idea, i) => (
               <div key={idea.id} className="spark-card anim-card"
-                style={{ '--cat-color': idea.color, animationDelay: `${i * 0.07}s` }}>
-                {/* Category pill */}
-                <div className="pill" style={{ background: idea.color + '20', color: idea.color, marginBottom: '10px' }}>{idea.cat}</div>
-                {/* Title */}
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#d4dde8', marginBottom: '6px', lineHeight: '1.4' }}>{idea.title}</div>
-                {/* Hook */}
-                <div style={{ fontSize: '11px', color: '#475569', lineHeight: '1.6', marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{idea.hook}</div>
-                {/* Footer */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="pill" style={{ background: DIFF_COLORS[idea.diff] + '20', color: DIFF_COLORS[idea.diff] }}>{idea.diff}</span>
-                  <button className="star-btn" onClick={e => { e.stopPropagation(); toggleSave(idea.id); }}
-                    style={{ color: saved.has(idea.id) ? '#fbbf24' : '#334155' }}>
-                    {saved.has(idea.id) ? '★' : '☆'}
-                  </button>
+                style={{ '--cat-color': idea.color, animationDelay: `${i * 0.07}s`, padding: 0, overflow: 'hidden' }}>
+                {/* Image */}
+                {idea.img && (
+                  <div style={{ height: '110px', overflow: 'hidden', position: 'relative' }}>
+                    <img src={idea.img} alt={idea.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                    {/* Category pill over image */}
+                    <div style={{ position: 'absolute', top: '8px', left: '8px' }}>
+                      <div className="pill" style={{ background: idea.color + 'dd', color: '#07080f', backdropFilter: 'blur(4px)' }}>{idea.cat}</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ padding: '14px' }}>
+                  {!idea.img && <div className="pill" style={{ background: idea.color + '20', color: idea.color, marginBottom: '10px' }}>{idea.cat}</div>}
+                  {/* Title */}
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#d4dde8', marginBottom: '6px', lineHeight: '1.4' }}>{idea.title}</div>
+                  {/* Hook */}
+                  <div style={{ fontSize: '11px', color: '#475569', lineHeight: '1.6', marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{idea.hook}</div>
+                  {/* Footer */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="pill" style={{ background: DIFF_COLORS[idea.diff] + '20', color: DIFF_COLORS[idea.diff] }}>{idea.diff}</span>
+                    <button className="star-btn" onClick={e => { e.stopPropagation(); toggleSave(idea.id); }}
+                      style={{ color: saved.has(idea.id) ? '#fbbf24' : '#334155' }}>
+                      {saved.has(idea.id) ? '★' : '☆'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

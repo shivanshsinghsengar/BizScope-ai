@@ -151,19 +151,47 @@ function SectionContent({ title, content }) {
 function CollapsibleCard({ section, index }) {
   const [open, setOpen] = useState(index < 2);
   const icons = { '🎯': '#c8f03a', '🌍': '#60a5fa', '⚔️': '#ef4444', '🚀': '#10b981', '💰': '#f59e0b', '🆕': '#a78bfa', '⚠️': '#f87171', '📅': '#06b6d4', '💬': '#c8f03a' };
+  const sectionImages = {
+    'IDEA VERDICT':     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+    'MARKET REALITY':   'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+    'COMPETITOR':       'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
+    'GO-TO-MARKET':     'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=800&q=80',
+    'FINANCIAL':        'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
+    'EXPANSION':        'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80',
+    'RISK':             'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80',
+    '90-DAY':           'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80',
+    'FOUNDER':          'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&q=80',
+  };
   const emoji = section.title.match(/[\u{1F300}-\u{1FFFF}]|[\u{2600}-\u{26FF}]/u)?.[0] || '📌';
   const accentColor = icons[emoji] || '#c8f03a';
+  const imgKey = Object.keys(sectionImages).find(k => section.title.toUpperCase().includes(k));
+  const imgUrl = sectionImages[imgKey] || null;
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '12px', transition: 'border-color 0.2s' }}
       onMouseEnter={e => e.currentTarget.style.borderColor = accentColor + '60'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+      {/* Section image */}
+      {imgUrl && open && (
+        <div style={{ height: '140px', overflow: 'hidden', position: 'relative' }}>
+          <img src={imgUrl} alt={section.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.5)' }}
+            onError={e => { e.target.parentElement.style.display = 'none'; }} />
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to right, ${accentColor}30, transparent)` }} />
+          <div style={{ position: 'absolute', bottom: '12px', left: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: accentColor + '30', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{emoji}</div>
+            <span style={{ fontSize: '15px', fontWeight: '800', color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{section.title.replace(/^[^\w]*/, '').trim()}</span>
+          </div>
+        </div>
+      )}
       <button onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: accentColor + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{emoji}</div>
-          <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{section.title.replace(/^[^\w]*/, '').trim()}</span>
-        </div>
+        {!open || !imgUrl ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: accentColor + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>{emoji}</div>
+            <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{section.title.replace(/^[^\w]*/, '').trim()}</span>
+          </div>
+        ) : <div />}
         <span style={{ color: 'var(--muted)', fontSize: '18px', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
       </button>
       {open && (
