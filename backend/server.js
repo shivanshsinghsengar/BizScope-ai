@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
-const OpenAI = require('openai');
 const { Sequelize, DataTypes } = require('sequelize');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
@@ -10,6 +9,14 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 
 dotenv.config();
+
+// Prevent crashes from unhandled errors
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -252,10 +259,22 @@ const HealthCheck = sequelize.define('HealthCheck', {
   detail: DataTypes.STRING,
 });
 
-// AI Setup
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+// AI Setup — safe initialization
+let openai = null;
+try {
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key_here') {
+    const OpenAILib = require('openai');
+    openai = new OpenAILib({ apiKey: process.env.OPENAI_API_KEY });
+  }
+} catch (e) { console.log('OpenAI init skipped:', e.message); }
+
+let genAI = null;
+try {
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+} catch (e) { console.log('Gemini init skipped:', e.message); }
 
 const getAISuggestions = async (location, categoryStats) => {
   const cityName = location.split(',')[0].trim();
@@ -987,8 +1006,17 @@ const generateMockBusinesses = (lat, lng) => {
 const cache = new Map();
 const CACHE_TTL = 2 * 60 * 60 * 1000;
 
-const getCached = (_key) => null; // Cache disabled — always fetch fresh data
-const setCache = (_key, _data) => {}; // no-op
+const getCached = (key) => {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.time > CACHE_TTL) { cache.delete(key); return null; }
+  return entry.data;
+};
+const setCache = (key, data) => {
+  // Never cache estimated/mock data — only real OSM data
+  if (data?.estimatedData) return;
+  cache.set(key, { data, time: Date.now() });
+};
 
 // Warm up geocode cache for top Indian cities on startup
 const TOP_CITIES = ['Mumbai','Delhi','Bangalore','Hyderabad','Chennai','Kolkata','Pune','Ahmedabad','Jaipur','Lucknow','Agra','Surat','Mathura','Varanasi','Indore'];
