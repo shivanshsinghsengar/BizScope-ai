@@ -110,13 +110,131 @@ const buildDataQuality = (businesses = [], aiSuggestions = '') => {
 };
 
 // Rate limiting
-const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later.' } });
-const analysisLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: { error: 'Too many analysis requests. Wait a minute.' } });
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many auth attempts.' } });
-const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Too many admin login attempts. Try again later.' } });
-app.use('/api/', generalLimiter);
+const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests, please try again later.' }, validate: { xForwardedForHeader: false } });
+const analysisLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: { error: 'Too many analysis requests. Wait a minute.' }, validate: { xForwardedForHeader: false } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many auth attempts.' }, validate: { xForwardedForHeader: false } });
+const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Too many admin login attempts. Try again later.' }, validate: { xForwardedForHeader: false } });
+app.use('/api', generalLimiter);
 app.use('/api/analyze-location', analysisLimiter);
-app.use('/api/auth/', authLimiter);
+app.use('/api/auth', authLimiter);
+
+// ── Quick strategy route (registered early to avoid any issues) ──
+app.post('/api/strategy', async (req, res) => {
+  try {
+    const { idea, city, budget, background, timeline } = req.body;
+    if (!idea) return res.status(400).json({ error: 'Business idea is required' });
+
+    const prompt = `You are a world-class business strategist and McKinsey-level market analyst.
+
+User inputs:
+- Business Idea: ${idea}
+- Target City/Region: ${city || 'India (general)'}
+- Budget Range: ${budget || 'Bootstrap'}
+- Background: ${background || 'Entrepreneur'}
+- Timeline: ${timeline || '6 months'}
+
+Generate a complete business strategy with these EXACT sections:
+
+## 🎯 IDEA VERDICT
+One-line honest verdict.
+Market Demand: X/10 | reasoning
+Competition Level: X/10 | reasoning
+Execution Difficulty: X/10 | reasoning
+Profit Potential: X/10 | reasoning
+
+---
+## 🌍 MARKET REALITY CHECK
+1. WHO will pay? (age, income, pain point, where online)
+2. HOW BIG? (TAM/SAM/SOM India estimate)
+3. WHY NOW? (2025-2026 trend or gap)
+4. WHERE to launch first? (specific city/platform)
+5. WHAT do they really want? (job-to-be-done)
+
+---
+## ⚔️ COMPETITOR MAP
+3-5 competitors: Name | What they do | Weakness | Your gap
+Your unfair advantage window: [1 paragraph]
+
+---
+## 🚀 GO-TO-MARKET STRATEGY
+PHASE 1 — VALIDATE (Week 1-4, zero budget):
+- Steps to get first 10 paying customers
+- Platform + what to say
+- Success metric
+
+PHASE 2 — LAUNCH (Month 2-3):
+- MVP (what to build, what to skip)
+- 3 growth channels by ROI
+- Pricing: 3 tiers with ₹ amounts
+- Guerrilla tactic for their city
+
+PHASE 3 — SCALE (Month 4-12):
+- First hire (when + role)
+- Revenue milestone before scaling
+- Partnership strategy
+- One 10x move
+
+---
+## 💰 FINANCIAL BLUEPRINT
+Month 1: Revenue target + how
+Month 3: Break-even plan
+Month 6: Profit projection
+Key cost to eliminate
+CAC estimate | LTV estimate | reasoning
+
+---
+## 🆕 MARKET EXPANSION IDEAS
+5 unexpected angles (2 must be India-specific):
+ANGLE NAME — description
+Why it works: [logic]
+How to test: [one experiment]
+Revenue potential: Low/Medium/High/Moonshot
+
+---
+## ⚠️ RISK RADAR
+5 specific risks (not generic):
+Risk: [specific]
+Probability: Low/Medium/High
+Kill move: [exact action]
+
+---
+## 📅 90-DAY ACTION PLAN
+Week | Focus | Top 3 Actions | Success Signal
+(12 weeks, specific actions)
+
+---
+## 💬 FOUNDER'S HONEST TALK
+3 paragraphs: what makes/breaks it, common mistake, question to answer first.
+
+Use Indian context: ₹, WhatsApp, Instagram, Meesho, Zepto, local cities. Be brutally honest.`;
+
+    let strategy = null;
+
+    if (genAI) {
+      for (const m of ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.0-pro']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: m });
+          const result = await model.generateContent(prompt);
+          strategy = result.response.text();
+          break;
+        } catch (e) { console.log(`${m} failed:`, e.message.slice(0, 60)); }
+      }
+    }
+
+    if (!strategy && openai) {
+      try {
+        const r = await openai.chat.completions.create({ model: 'gpt-3.5-turbo', messages: [{ role: 'user', content: prompt }], max_tokens: 3000 });
+        strategy = r.choices[0].message.content;
+      } catch (e) { console.log('OpenAI failed:', e.message.slice(0, 60)); }
+    }
+
+    if (!strategy) return res.status(503).json({ error: 'AI quota exceeded. Please try again in a few minutes.' });
+    res.json({ strategy, idea, city, budget, background, timeline });
+  } catch (e) {
+    console.error('Strategy error:', e.message);
+    res.status(500).json({ error: 'Strategy generation failed.' });
+  }
+});
 app.use('/api/admin/login', adminLimiter);
 
 // Database
@@ -450,9 +568,9 @@ const runHealthChecks = async () => {
 };
 
 // Run health checks every 10 minutes
-setInterval(runHealthChecks, 10 * 60 * 1000);
-// Run once after 30s startup delay
-setTimeout(runHealthChecks, 30000);
+setInterval(() => { runHealthChecks().catch(() => {}); }, 10 * 60 * 1000);
+// Run once after 60s startup delay
+setTimeout(() => { runHealthChecks().catch(() => {}); }, 60000);
 
 // Geocode cache (in-memory, no expiry — city coords don't change)
 const geocodeCache = new Map();
@@ -1273,157 +1391,10 @@ app.post('/api/business-plan', authMiddleware, async (req, res) => {
   }
 });
 
-// Business Strategy Engine — full McKinsey-level strategy generation
-app.post('/api/strategy', async (req, res) => {
-  try {
-    const { idea, city, budget, background, timeline } = req.body;
-    if (!idea) return res.status(400).json({ error: 'Business idea is required' });
-
-    const prompt = `You are a world-class business strategist, McKinsey-level market analyst, and senior product architect.
-
-A user wants a complete business strategy. Here are their inputs:
-- Business Idea: ${idea}
-- Target City/Region: ${city || 'India (general)'}
-- Budget Range: ${budget || 'Bootstrap'}
-- Their Background: ${background || 'Entrepreneur'}
-- Timeline: ${timeline || '6 months'}
-
-Generate a complete, production-ready business strategy following this EXACT structure. Be brutally honest, specific, and use Indian market context (₹, cities, WhatsApp/Instagram/LinkedIn, local behaviors). No fluff. Every sentence must carry information or action.
-
-## 🎯 IDEA VERDICT
-Give a 1-line brutal honest verdict.
-SCORES (format exactly like this):
-Market Demand Score: X/10 — [one sentence reasoning]
-Competition Level: X/10 — [one sentence reasoning]
-Execution Difficulty: X/10 — [one sentence reasoning]
-Profit Potential: X/10 — [one sentence reasoning]
-
----
-
-## 🌍 MARKET REALITY CHECK
-1. WHO exactly will pay for this? (3 bullet points: age, income, pain point, where they hang out online)
-2. HOW BIG is this market in India? (TAM / SAM / SOM with reasoning)
-3. WHY NOW? (What trend makes 2025-2026 the right time?)
-4. WHERE to launch first? (Single best city/neighborhood/platform — explain why)
-5. WHAT does the customer actually want? (The real job-to-be-done)
-
----
-
-## ⚔️ COMPETITOR MAP
-List 3-5 real or likely competitors:
-Name | What they do | Their weakness | Your gap to exploit
-
-Then write: "Your unfair advantage window:" — 1 paragraph on the specific angle that makes this idea winnable.
-
----
-
-## 🚀 GO-TO-MARKET STRATEGY
-
-PHASE 1 — VALIDATE (Week 1–4, Zero budget):
-- Exact steps to get first 10 paying customers
-- Which platform to use
-- What to say / what offer to make
-- Success metric
-
-PHASE 2 — LAUNCH (Month 2–3, Low budget):
-- MVP description (what to build, what to skip)
-- 3 growth channels ranked by ROI
-- Pricing strategy with 3 tiers
-- One guerrilla marketing tactic specific to their city
-
-PHASE 3 — SCALE (Month 4–12):
-- When to hire first person (and what role)
-- Revenue milestone before scaling
-- Partnership strategy
-- One big bet move that could 10x the business
-
----
-
-## 💰 FINANCIAL BLUEPRINT
-
-BOOTSTRAP SCENARIO:
-- Month 1: Revenue target + how to hit it
-- Month 3: Break-even plan
-- Month 6: Profit projection
-- Key cost to eliminate
-
-FUNDED SCENARIO:
-- Where to deploy capital for fastest traction
-- What NOT to spend on in first 6 months
-- Unit economics: CAC / LTV estimate
-
----
-
-## 🆕 MARKET EXPANSION IDEAS
-Generate 5 unexpected angles. Format each as:
-ANGLE NAME — one line description
-Why it works: [market logic]
-How to test it: [one-sentence experiment]
-Revenue potential: Low / Medium / High / Moonshot
-
-At least 2 must be specific to Indian market behavior.
-
----
-
-## ⚠️ RISK RADAR
-Top 5 risks specific to THIS idea in THIS market.
-Risk: [what could go wrong]
-Probability: Low / Medium / High
-Kill move: [exact action to prevent or survive it]
-
----
-
-## 📅 90-DAY ACTION PLAN
-Week-by-week table:
-Week | Focus | Top 3 Actions | Success Signal
-
-Be specific. Tell them EXACTLY what to do — which app to open, what message to send, what to build first.
-
----
-
-## 💬 FOUNDER'S HONEST TALK
-3 paragraphs written like a brutally honest mentor:
-- The one thing that will make or break this idea
-- The mistake 90% of first-time founders make with this type of business
-- The one question they must answer before spending a single rupee`;
-
-    let strategy = null;
-
-    // Try Gemini first
-    if (genAI) {
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        const result = await model.generateContent(prompt);
-        strategy = result.response.text();
-      } catch (e) {
-        console.log('Gemini strategy failed:', e.message);
-      }
-    }
-
-    // Fallback to OpenAI
-    if (!strategy && openai) {
-      try {
-        const result = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 3000,
-        });
-        strategy = result.choices[0].message.content;
-      } catch (e) {
-        console.log('OpenAI strategy failed:', e.message);
-      }
-    }
-
-    if (!strategy) return res.status(503).json({ error: 'AI service unavailable. Please try again.' });
-
-    res.json({ strategy, idea, city, budget, background, timeline });
-  } catch (e) {
-    console.error('Strategy engine error:', e.message);
-    res.status(500).json({ error: 'Strategy generation failed. Please try again.' });
-  }
-});
-
 // ── Business Strategy Engine ──────────────────────────────────────────────────
+// Test route
+app.get('/api/strategy-test', (req, res) => res.json({ ok: true }));
+
 app.post('/api/strategy', async (req, res) => {
   try {
     const { idea, city, budget, background, timeline } = req.body;
@@ -1521,14 +1492,18 @@ Week | Focus | Top 3 Actions | Success Signal
 
     let strategy = null;
 
-    // Try Gemini first
+    // Try multiple Gemini models — each has separate quota
     if (genAI) {
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        const result = await model.generateContent(prompt);
-        strategy = result.response.text();
-      } catch (e) {
-        console.log('Gemini strategy failed:', e.message);
+      for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.0-pro']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(prompt);
+          strategy = result.response.text();
+          console.log(`Strategy: used ${modelName}`);
+          break;
+        } catch (e) {
+          console.log(`${modelName} failed:`, e.message.slice(0, 60));
+        }
       }
     }
 
@@ -1542,12 +1517,12 @@ Week | Focus | Top 3 Actions | Success Signal
         });
         strategy = result.choices[0].message.content;
       } catch (e) {
-        console.log('OpenAI strategy failed:', e.message);
+        console.log('OpenAI strategy failed:', e.message.slice(0, 60));
       }
     }
 
     if (!strategy) {
-      return res.status(503).json({ error: 'AI service unavailable. Please try again in a moment.' });
+      return res.status(503).json({ error: 'AI quota exceeded. Please try again in a few minutes.' });
     }
 
     res.json({ strategy, idea, city, budget, background, timeline });
