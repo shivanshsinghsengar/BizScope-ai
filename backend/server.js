@@ -581,6 +581,8 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, unique: true },
   password: DataTypes.STRING,
   businessName: DataTypes.STRING,
+  plan: { type: DataTypes.STRING, defaultValue: 'free' }, // free | pro
+  planExpiry: DataTypes.DATE,
 });
 
 const ManualBusiness = sequelize.define('ManualBusiness', {
@@ -1693,6 +1695,109 @@ app.patch('/api/admin/feedback/:id', adminAuth, async (req, res) => {
     if (!fb) return res.status(404).json({ error: 'Not found' });
     await fb.update({ status: req.body.status });
     res.json(fb);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── WhatsApp Bot — Twilio ─────────────────────────────────────────────────────
+app.post('/api/whatsapp', async (req, res) => {
+  try {
+    const { Body, From } = req.body;
+    const message = (Body || '').trim();
+    const from = From || '';
+
+    // Send WhatsApp reply via Twilio
+    const sendReply = async (text) => {
+      if (!process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_ACCOUNT_SID === 'your_twilio_sid') return;
+      try {
+        const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        await twilio.messages.create({ from: process.env.TWILIO_WHATSAPP_FROM, to: from, body: text });
+      } catch (e) { console.log('Twilio send failed:', e.message); }
+    };
+
+    // Help message
+    if (!message || message.toLowerCase() === 'help' || message.toLowerCase() === 'hi' || message.toLowerCase() === 'hello') {
+      await sendReply(`🚀 *BizScope AI — WhatsApp Bot*\n\nSend any Indian city name to get instant market analysis!\n\nExamples:\n• Mumbai\n• Connaught Place Delhi\n• Koramangala Bangalore\n\nType a city name to start 👇`);
+      return res.send('<Response></Response>');
+    }
+
+    // Analyze the location
+    await sendReply(`🔍 Analyzing *${message}*... Please wait 10-15 seconds.`);
+
+    const geo = await geocodeLocation(message);
+    if (!geo) {
+      await sendReply(`❌ Couldn't find "${message}". Try a more specific city name like "Mumbai" or "Connaught Place Delhi".`);
+      return res.send('<Response></Response>');
+    }
+
+    const businesses = await fetchRealBusinesses(geo.latitude, geo.longitude, 5000);
+    if (businesses.length === 0) {
+      await sendReply(`⚠️ No businesses found near ${geo.displayName.split(',')[0]}. Try a different area.`);
+      return res.send('<Response></Response>');
+    }
+
+    // Calculate category stats
+    const catStats = {};
+    businesses.forEach(({ category, rating, reviewCount }) => {
+      if (!catStats[category]) catStats[category] = { count: 0, totalRating: 0, totalReviews: 0 };
+      catStats[category].count++;
+      catStats[category].totalRating += parseFloat(rating);
+      catStats[category].totalReviews += reviewCount;
+    });
+    const sorted = Object.entries(catStats)
+      .map(([cat, s]) => ({ cat, count: s.count, score: s.count * 0.4 + (s.totalRating / s.count) * 0.3 + Math.sqrt(s.totalReviews) * 0.3 }))
+      .sort((a, b) => b.score - a.score);
+
+    const city = geo.displayName.split(',')[0];
+    const topCat = sorted[0];
+    const bestOpp = sorted[sorted.length - 1];
+
+    const reply = `📊 *Market Analysis: ${city}*\n\n` +
+      `🏪 *${businesses.length}* businesses found within 5km\n` +
+      `📂 *${sorted.length}* business categories\n\n` +
+      `🔴 *Most Competitive:* ${topCat.cat} (${topCat.count} businesses)\n` +
+      `🟢 *Best Opportunity:* ${bestOpp.cat} (${bestOpp.count} businesses)\n\n` +
+      `📈 *Top Categories:*\n` +
+      sorted.slice(0, 5).map((s, i) => `${i + 1}. ${s.cat} — ${s.count} competitors`).join('\n') +
+      `\n\n🔗 Full analysis: https://bizscope-og.vercel.app/?location=${encodeURIComponent(message)}\n\n_Reply with another city to analyze_`;
+
+    await sendReply(reply);
+    res.send('<Response></Response>');
+  } catch (e) {
+    console.error('WhatsApp bot error:', e.message);
+    res.send('<Response></Response>');
+  }
+});
+
+// ── Razorpay Payment — Pro Plan ──────────────────────────────────────────────
+const PRO_PRICE_PAISE = 49900; // ₹499 in paise
+
+app.post('/api/payment/create-order', authMiddleware, async (req, res) => {
+  try {
+    if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID === 'your_razorpay_key_id') {
+      return res.status(503).json({ error: 'Payment not configured yet. Contact support.' });
+    }
+    const Razorpay = require('razorpay');
+    const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+    const order = await razorpay.orders.create({
+      amount: PRO_PRICE_PAISE,
+      currency: 'INR',
+      receipt: `pro_${req.user.id}_${Date.now()}`,
+      notes: { userId: req.user.id, plan: 'pro' },
+    });
+    res.json({ orderId: order.id, amount: PRO_PRICE_PAISE, currency: 'INR', keyId: process.env.RAZORPAY_KEY_ID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/payment/verify', authMiddleware, async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const crypto = require('crypto');
+    const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`).digest('hex');
+    if (expected !== razorpay_signature) return res.status(400).json({ error: 'Invalid signature' });
+    // Upgrade user to Pro
+    await User.update({ plan: 'pro', planExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }, { where: { id: req.user.id } });
+    res.json({ success: true, message: 'Welcome to BizScope Pro! 🎉' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

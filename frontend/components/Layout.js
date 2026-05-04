@@ -78,9 +78,9 @@ export default function Layout({ children }) {
                 style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text2)', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px' }}>
                 Sign In
               </button>
-              <button onClick={() => router.push('/pricing')} className="hide-mobile"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 14px rgba(200,240,58,0.3)' }}>
-                ⚡ Upgrade
+              <button onClick={() => router.push('/upgrade')} className="hide-mobile"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', boxShadow: '0 4px 14px rgba(59,130,246,0.3)' }}>
+                ⚡ Go Pro
               </button>
             </>
           )}
