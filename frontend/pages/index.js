@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
-import ReviewWidget from '../components/ReviewWidget';
 import { useTheme } from '../context/ThemeContext';
 
 function FAQItem({ q, a }) {

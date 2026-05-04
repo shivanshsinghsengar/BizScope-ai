@@ -1,11 +1,10 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
+Disallow: /admin/login
 Disallow: /api/
 Disallow: /_next/
 Disallow: /404
 
-# Allow major search engine bots explicitly
 User-agent: Googlebot
 Allow: /
 
@@ -18,5 +17,4 @@ Allow: /
 User-agent: DuckDuckBot
 Allow: /
 
-# Sitemap location
-Sitemap: https://biz-scope-ai.vercel.app/sitemap.xml
+Sitemap: https://bizscope-og.vercel.app/sitemap.xml
