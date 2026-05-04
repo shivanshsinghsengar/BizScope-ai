@@ -58,7 +58,7 @@ export default function Auth() {
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', color: 'var(--text)' }}>
 
         {/* Left panel — branding */}
-        <div className="auth-left" style={{ flex: 1, background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px', position: 'relative', overflow: 'hidden' }}>
+        <div className="auth-left" style={{ flex: 1, background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px', position: 'relative', overflow: 'hidden' }}>
           {/* Decorative blobs */}
           <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '250px', height: '250px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
@@ -109,7 +109,7 @@ export default function Auth() {
 
             {/* Mobile logo */}
             <div className="auth-mobile-logo" style={{ display: 'none', alignItems: 'center', gap: '10px', marginBottom: '32px', justifyContent: 'center' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
               <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
             </div>
 
@@ -117,7 +117,7 @@ export default function Auth() {
             <div style={{ display: 'flex', background: 'var(--surface2)', borderRadius: '14px', padding: '4px', marginBottom: '28px', border: '1px solid var(--border)' }}>
               {['login', 'register'].map(t => (
                 <button key={t} onClick={() => switchTab(t)}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', background: tab === t ? 'linear-gradient(135deg,#4f46e5,#7c3aed)' : 'transparent', color: tab === t ? 'white' : 'var(--muted)', boxShadow: tab === t ? '0 4px 12px rgba(99,102,241,0.3)' : 'none' }}>
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', background: tab === t ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'transparent', color: tab === t ? 'white' : 'var(--muted)', boxShadow: tab === t ? '0 4px 12px rgba(59,130,246,0.3)' : 'none' }}>
                   {t === 'login' ? 'Sign In' : 'Register'}
                 </button>
               ))}
@@ -206,7 +206,7 @@ export default function Auth() {
             <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--muted)', marginTop: '20px' }}>
               {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
               <span onClick={() => switchTab(tab === 'login' ? 'register' : 'login')}
-                style={{ color: '#6366f1', cursor: 'pointer', fontWeight: '600' }}>
+                style={{ color: '#3b82f6', cursor: 'pointer', fontWeight: '600' }}>
                 {tab === 'login' ? 'Register free' : 'Sign in'}
               </span>
             </p>

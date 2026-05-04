@@ -83,7 +83,7 @@ export default function ListBusiness() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
           <div>
             <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '6px' }}>🏪 My Business Listings</h1>
-            <p style={{ color: 'var(--muted)' }}>Welcome, <span style={{ color: '#a78bfa' }}>{user.name}</span> — manage your business on the map</p>
+            <p style={{ color: 'var(--muted)' }}>Welcome, <span style={{ color: '#60a5fa' }}>{user.name}</span> — manage your business on the map</p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); setEditingId(null); setForm(emptyForm); }}
@@ -101,8 +101,8 @@ export default function ListBusiness() {
 
         {/* Add Business Form */}
         {showForm && (
-          <div style={{ background: 'var(--surface)', border: '1px solid #4f46e530', borderRadius: '24px', padding: '28px', marginBottom: '28px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f1, #a78bfa)' }} />
+          <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '28px', marginBottom: '28px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #3b82f6, #60a5fa)' }} />
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', marginBottom: '24px' }}>{editingId ? '✏️ Edit Business' : '📝 Add Your Business'}</h2>
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -127,7 +127,7 @@ export default function ListBusiness() {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {categories.map(cat => (
                     <button type="button" key={cat} onClick={() => setForm({ ...form, category: cat })}
-                      style={{ padding: '7px 14px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', transition: 'all 0.15s', background: form.category === cat ? '#6366f1' : 'var(--surface2)', color: form.category === cat ? 'white' : 'var(--muted)' }}>
+                      style={{ padding: '7px 14px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', transition: 'all 0.15s', background: form.category === cat ? '#3b82f6' : 'var(--surface2)', color: form.category === cat ? 'white' : 'var(--muted)' }}>
                       {categoryIcons[cat]} {cat}
                     </button>
                   ))}
@@ -181,13 +181,13 @@ export default function ListBusiness() {
               <div key={b.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '22px', display: 'flex', gap: '16px', alignItems: 'flex-start', transition: 'border-color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#6366f120', border: '1px solid #6366f130', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#3b82f620', border: '1px solid #3b82f630', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
                   {categoryIcons[b.category] || '🏪'}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                     <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '16px' }}>{b.name}</span>
-                    <span style={{ padding: '3px 10px', borderRadius: '100px', background: '#6366f120', color: '#a78bfa', fontSize: '11px', fontWeight: '600' }}>{b.category}</span>
+                    <span style={{ padding: '3px 10px', borderRadius: '100px', background: '#3b82f620', color: '#60a5fa', fontSize: '11px', fontWeight: '600' }}>{b.category}</span>
                     <span style={{ padding: '3px 10px', borderRadius: '100px', background: b.verified ? '#10b98120' : '#f59e0b20', color: b.verified ? '#34d399' : '#fbbf24', fontSize: '11px', fontWeight: '600' }}>
                       {b.verified ? '✅ Verified' : '⏳ Pending'}
                     </span>
@@ -201,7 +201,7 @@ export default function ListBusiness() {
                   🗑️ Remove
                 </button>
                 <button onClick={() => handleEdit(b)}
-                  style={{ padding: '8px 14px', borderRadius: '10px', border: '1px solid #6366f130', background: '#6366f115', color: '#a78bfa', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}>
+                  style={{ padding: '8px 14px', borderRadius: '10px', border: '1px solid #3b82f630', background: '#3b82f615', color: '#60a5fa', cursor: 'pointer', fontSize: '13px', flexShrink: 0 }}>
                   ✏️ Edit
                 </button>
               </div>

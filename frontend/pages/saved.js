@@ -61,7 +61,7 @@ export default function SavedSearches() {
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => load(s.id)}
-                  style={{ padding: '8px 18px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                  style={{ padding: '8px 18px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
                   Load →
                 </button>
                 <button onClick={() => remove(s.id)}

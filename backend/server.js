@@ -2926,6 +2926,200 @@ app.delete('/api/admin/properties/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Business Plan Public Endpoint (no auth required) ──────────────────────────
+app.post('/api/business-plan-public', async (req, res) => {
+  try {
+    const { idea, city, budget, timeline, background } = req.body;
+    if (!idea) return res.status(400).json({ error: 'Business idea is required' });
+
+    const prompt = `You are a world-class business plan writer. Create a comprehensive, investor-ready business plan for the following:
+
+Business Idea: ${idea}
+Target City: ${city || 'India'}
+Budget: ${budget || 'Bootstrap'}
+Timeline: ${timeline || '6 months'}
+Founder Background: ${background || 'Entrepreneur'}
+
+Write a complete business plan with these sections:
+## Executive Summary
+## Market Analysis
+## Business Model
+## Marketing Strategy
+## Operations Plan
+## Financial Projections
+## Risk Analysis
+## 90-Day Action Plan
+
+Be specific, practical, and India-focused. Use ₹ for currency. Keep each section concise but actionable.`;
+
+    let plan = null;
+
+    if (genAI) {
+      for (const m of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: m });
+          const r = await model.generateContent(prompt);
+          plan = r.response.text();
+          break;
+        } catch (e) { console.log(`business-plan-public ${m}:`, e.message.slice(0, 60)); }
+      }
+    }
+
+    if (!plan) {
+      plan = generateFallbackStrategy(idea, city, budget, background, timeline);
+    }
+
+    res.json({ plan });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Competitor Tracking Endpoints ─────────────────────────────────────────────
+const TrackedLocation = sequelize.define('TrackedLocation', {
+  userId: { type: DataTypes.INTEGER, allowNull: false },
+  location: { type: DataTypes.STRING, allowNull: false },
+  businessCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+  lastChecked: DataTypes.DATE,
+  newBusinesses: { type: DataTypes.INTEGER, defaultValue: 0 },
+  closedBusinesses: { type: DataTypes.INTEGER, defaultValue: 0 },
+  snapshotData: DataTypes.TEXT, // JSON stringified business list
+});
+
+// Get all tracked locations for user
+app.get('/api/track', authMiddleware, async (req, res) => {
+  try {
+    const items = await TrackedLocation.findAll({
+      where: { userId: req.user.id },
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(items);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Add a location to track
+app.post('/api/track', authMiddleware, async (req, res) => {
+  try {
+    const { location } = req.body;
+    if (!location || location.trim().length < 2) return res.status(400).json({ error: 'Location is required' });
+    const existing = await TrackedLocation.findOne({ where: { userId: req.user.id, location: location.trim() } });
+    if (existing) return res.status(409).json({ error: 'Already tracking this location' });
+    const item = await TrackedLocation.create({ userId: req.user.id, location: location.trim(), businessCount: 0 });
+    res.json(item);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Check a tracked location for changes
+app.get('/api/track/check', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.query;
+    const item = await TrackedLocation.findOne({ where: { id, userId: req.user.id } });
+    if (!item) return res.status(404).json({ error: 'Tracked location not found' });
+
+    // Geocode the location
+    let lat, lng;
+    try {
+      const geoRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: { q: item.location, format: 'json', limit: 1 },
+        headers: { 'User-Agent': 'BizScope/2.0' },
+        timeout: 8000,
+      });
+      if (geoRes.data?.[0]) { lat = parseFloat(geoRes.data[0].lat); lng = parseFloat(geoRes.data[0].lon); }
+    } catch (_) {}
+
+    let currentCount = item.businessCount;
+    if (lat && lng) {
+      try {
+        const osmRes = await axios.get('https://overpass-api.de/api/interpreter', {
+          params: { data: `[out:json][timeout:15];(node["shop"](around:1000,${lat},${lng});node["amenity"~"restaurant|cafe|pharmacy|hospital|school|bank"](around:1000,${lat},${lng}););out count;` },
+          timeout: 15000,
+        });
+        currentCount = osmRes.data?.elements?.[0]?.tags?.total || osmRes.data?.elements?.length || item.businessCount;
+      } catch (_) {}
+    }
+
+    const prevCount = item.businessCount || currentCount;
+    const diff = currentCount - prevCount;
+    const newBusinesses = diff > 0 ? diff : 0;
+    const closedBusinesses = diff < 0 ? Math.abs(diff) : 0;
+
+    await item.update({ businessCount: currentCount, lastChecked: new Date(), newBusinesses, closedBusinesses });
+    res.json({ businessCount: currentCount, lastChecked: new Date(), newBusinesses, closedBusinesses });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete a tracked location
+app.delete('/api/track/:id', authMiddleware, async (req, res) => {
+  try {
+    const item = await TrackedLocation.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    if (!item) return res.status(404).json({ error: 'Not found' });
+    await item.destroy();
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Co-founder Matcher Endpoints ──────────────────────────────────────────────
+const CoFounder = sequelize.define('CoFounder', {
+  name: { type: DataTypes.STRING, allowNull: false },
+  city: { type: DataTypes.STRING, allowNull: false },
+  skills: DataTypes.TEXT, // JSON array
+  lookingFor: DataTypes.STRING,
+  ideaStage: DataTypes.STRING,
+  commitment: DataTypes.STRING,
+  bio: DataTypes.TEXT,
+  whatsapp: DataTypes.STRING,
+});
+
+// Get all co-founder profiles (public)
+app.get('/api/cofounder', async (req, res) => {
+  try {
+    const profiles = await CoFounder.findAll({ order: [['createdAt', 'DESC']], limit: 100 });
+    res.json(profiles.map(p => ({
+      id: p.id,
+      name: p.name,
+      city: p.city,
+      skills: p.skills ? JSON.parse(p.skills) : [],
+      lookingFor: p.lookingFor,
+      ideaStage: p.ideaStage,
+      commitment: p.commitment,
+      bio: p.bio,
+      whatsapp: p.whatsapp,
+      createdAt: p.createdAt,
+    })));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Create a co-founder profile (public, no auth)
+app.post('/api/cofounder', async (req, res) => {
+  try {
+    const { name, city, skills, lookingFor, ideaStage, commitment, bio, whatsapp } = req.body;
+    if (!name || !city || !lookingFor || !commitment) {
+      return res.status(400).json({ error: 'Name, city, lookingFor, and commitment are required' });
+    }
+    const profile = await CoFounder.create({
+      name: String(name).slice(0, 100),
+      city: String(city).slice(0, 100),
+      skills: JSON.stringify(Array.isArray(skills) ? skills.slice(0, 10) : []),
+      lookingFor: String(lookingFor).slice(0, 100),
+      ideaStage: ideaStage ? String(ideaStage).slice(0, 100) : null,
+      commitment: String(commitment).slice(0, 100),
+      bio: bio ? String(bio).slice(0, 500) : null,
+      whatsapp: whatsapp ? String(whatsapp).replace(/[^0-9+]/g, '').slice(0, 15) : null,
+    });
+    res.json({ success: true, id: profile.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete a co-founder profile (by id — honor system, no auth for now)
+app.delete('/api/cofounder/:id', async (req, res) => {
+  try {
+    const profile = await CoFounder.findByPk(req.params.id);
+    if (!profile) return res.status(404).json({ error: 'Not found' });
+    await profile.destroy();
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Start server immediately — don't wait for DB sync
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

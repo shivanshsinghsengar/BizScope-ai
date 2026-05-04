@@ -7,12 +7,12 @@ import { PageSkeleton } from '../components/Skeleton';
 
 const categoryColors = {
   Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#3b82f6', Gym: '#3b82f6',
-  Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1',
+  Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#3b82f6',
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
   Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
   Hotel: '#0ea5e9', Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
-  Office: '#6366f1', Other: '#64748b',
+  Office: '#3b82f6', Other: '#64748b',
 };
 const categoryIcons = {
   Restaurant: '🍽️', Cafe: '☕', Grocery: '🛒', Gym: '💪',
@@ -197,23 +197,23 @@ export default function Insights() {
         <div style={{ marginBottom: '28px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>🤖 AI Insights</h1>
           <p style={{ color: 'var(--muted)', fontSize: '15px' }}>
-            Market intelligence for <span style={{ color: '#a78bfa', fontWeight: '600' }}>{data.location?.displayName?.split(',').slice(0, 2).join(', ')}</span>
+            Market intelligence for <span style={{ color: '#60a5fa', fontWeight: '600' }}>{data.location?.displayName?.split(',').slice(0, 2).join(', ')}</span>
           </p>
         </div>
 
         {/* AI Suggestions */}
-        <div style={{ background: 'var(--surface)', border: '1px solid #4f46e530', borderRadius: '24px', padding: '32px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f1, #a78bfa, #ec4899)' }} />
+        <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '32px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #3b82f6, #60a5fa, #ec4899)' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'linear-gradient(135deg, #4f46e520, #7c3aed20)', border: '1px solid #4f46e540', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>🤖</div>
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f620, #2563eb20)', border: '1px solid #3b82f640', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px' }}>🤖</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)' }}>AI Business Recommendations</div>
               <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Powered by Gemini / GPT market analysis</div>
             </div>
             {polling && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', background: '#6366f115', border: '1px solid #6366f130' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1', animation: 'pulse 1.2s infinite' }} />
-                <span style={{ fontSize: '12px', color: '#a78bfa' }}>Generating...</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.2s infinite' }} />
+                <span style={{ fontSize: '12px', color: '#60a5fa' }}>Generating...</span>
               </div>
             )}
           </div>
@@ -231,7 +231,7 @@ export default function Insights() {
               {[...data.categoryStats].reverse().slice(0, 5).map((s, i) => {
                 const areaSug = getAreaSuggestion(s.category, cityName, i);
                 return (
-                <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px 20px', marginBottom: '10px', borderLeft: `3px solid ${categoryColors[s.category] || '#6366f1'}` }}>
+                <div key={i} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '18px 20px', marginBottom: '10px', borderLeft: `3px solid ${categoryColors[s.category] || '#3b82f6'}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>{categoryIcons[s.category] || '🏪'} {s.category}</span>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -247,7 +247,7 @@ export default function Insights() {
                     {s.count} competitor{s.count !== 1 ? 's' : ''} nearby · avg rating {s.avgRating} · {s.riskLevel === 'Low' ? 'Great entry opportunity with low competition.' : s.riskLevel === 'Medium' ? 'Moderate competition — differentiation needed.' : 'Highly saturated — strong USP required.'}
                   </div>
                   <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ fontSize: '12px', color: '#a78bfa', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       📍 {areaSug.area}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--muted)' }}>💡 {areaSug.why}</div>
@@ -273,7 +273,7 @@ export default function Insights() {
               <div key={f.label} style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '16px' }}>
                 <div style={{ fontSize: '22px', marginBottom: '8px' }}>{f.icon}</div>
                 <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13px', marginBottom: '4px' }}>{f.label}</div>
-                <div style={{ fontSize: '20px', fontWeight: '800', color: '#6366f1', marginBottom: '4px' }}>{f.weight}</div>
+                <div style={{ fontSize: '20px', fontWeight: '800', color: '#3b82f6', marginBottom: '4px' }}>{f.weight}</div>
                 <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{f.desc}</div>
               </div>
             ))}
@@ -301,7 +301,7 @@ export default function Insights() {
             </div>
             {best.map((s, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'var(--surface2)', borderRadius: '14px', marginBottom: '10px', border: '1px solid #3b82f615' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${categoryColors[s.category] || '#6366f1'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${categoryColors[s.category] || '#3b82f6'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '14px' }}>{s.category}</div>
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Only {s.count} competitors nearby</div>
@@ -325,7 +325,7 @@ export default function Insights() {
             </div>
             {worst.map((s, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', background: 'var(--surface2)', borderRadius: '14px', marginBottom: '10px', border: '1px solid #ef444415' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${categoryColors[s.category] || '#6366f1'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${categoryColors[s.category] || '#3b82f6'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '14px' }}>{s.category}</div>
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{s.count} competitors • ⭐ {s.avgRating}</div>
@@ -344,17 +344,17 @@ export default function Insights() {
           {data.categoryStats?.map((s, i) => (
             <div key={i}
               onClick={() => setSelectedCat(s.category)}
-              style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#6366f1')}20`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '60'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#6366f1') + '20'; }}>
+              style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#3b82f6')}20`, borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#3b82f6') + '60'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#3b82f6') + '20'; }}>
               <div style={{ fontSize: '28px', marginBottom: '10px' }}>{categoryIcons[s.category] || '🏪'}</div>
               <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '6px' }}>{s.category}</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: categoryColors[s.category] || '#6366f1', marginBottom: '4px' }}>{s.count}</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: categoryColors[s.category] || '#3b82f6', marginBottom: '4px' }}>{s.count}</div>
               <div style={{ fontSize: '11px', color: 'var(--muted)' }}>competitors</div>
               <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#3b82f615' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
                 {s.riskLevel === 'Low' ? '🟢 Low Risk' : s.riskLevel === 'Medium' ? '🟡 Medium Risk' : '🔴 High Risk'}
               </div>
-              <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '6px', fontWeight: '600' }}>📦 View suppliers</div>
+              <div style={{ fontSize: '10px', color: '#60a5fa', marginTop: '6px', fontWeight: '600' }}>📦 View suppliers</div>
             </div>
           ))}
         </div>
@@ -362,7 +362,7 @@ export default function Insights() {
         {/* Suppliers Modal */}
         {selectedCat && (() => {
           const suppliers = getSuppliers(selectedCat);
-          const color = categoryColors[selectedCat] || '#6366f1';
+          const color = categoryColors[selectedCat] || '#3b82f6';
           return (
             <>
               {/* Backdrop */}

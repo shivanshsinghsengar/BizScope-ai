@@ -147,13 +147,13 @@ export default function Docs() {
         return <div key={i} style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px', marginTop: '18px', marginBottom: '6px' }}>{line.replace(/\*\*/g, '')}</div>;
       }
       if (line.startsWith('- ')) {
-        return <div key={i} style={{ display: 'flex', gap: '8px', color: 'var(--text2)', fontSize: '14px', marginBottom: '5px', paddingLeft: '8px' }}><span style={{ color: '#6366f1' }}>•</span>{line.slice(2)}</div>;
+        return <div key={i} style={{ display: 'flex', gap: '8px', color: 'var(--text2)', fontSize: '14px', marginBottom: '5px', paddingLeft: '8px' }}><span style={{ color: '#3b82f6' }}>•</span>{line.slice(2)}</div>;
       }
       if (line.match(/^\d\./)) {
         return <div key={i} style={{ color: 'var(--text2)', fontSize: '14px', marginBottom: '5px', paddingLeft: '8px' }}>{line}</div>;
       }
       if (line.startsWith('`') && line.endsWith('`')) {
-        return <code key={i} style={{ display: 'block', background: 'var(--surface2)', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: '#a78bfa', margin: '8px 0', fontFamily: 'monospace' }}>{line.replace(/`/g, '')}</code>;
+        return <code key={i} style={{ display: 'block', background: 'var(--surface2)', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: '#60a5fa', margin: '8px 0', fontFamily: 'monospace' }}>{line.replace(/`/g, '')}</code>;
       }
       if (line.trim() === '') return <div key={i} style={{ height: '6px' }} />;
       return <div key={i} style={{ color: 'var(--text2)', fontSize: '14px', lineHeight: '1.7', marginBottom: '4px' }}>{line}</div>;

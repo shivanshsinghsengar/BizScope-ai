@@ -15,12 +15,12 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const categoryColors = {
   Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#3b82f6',
   Gym: '#3b82f6', Salon: '#ec4899', Pharmacy: '#06b6d4',
-  Bakery: '#f97316', Laundry: '#6366f1',
+  Bakery: '#f97316', Laundry: '#3b82f6',
   Hospital: '#ef4444', Clothing: '#a855f7', Electronics: '#0ea5e9',
   Hardware: '#78716c', Furniture: '#d97706', Education: '#14b8a6',
   Jewellery: '#eab308', Automotive: '#64748b', Finance: '#22c55e',
   Hospitality: '#f43f5e', Retail: '#8b5cf6', Wholesale: '#0891b2',
-  Office: '#6366f1', Other: '#64748b',
+  Office: '#3b82f6', Other: '#64748b',
 };
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -71,7 +71,7 @@ export default function Trends() {
         ? s.competitorScore
         : s.popularityScore;
       const trend = generateTrend(base || 10);
-      const color = categoryColors[s.category] || '#6366f1';
+      const color = categoryColors[s.category] || '#3b82f6';
       return {
         label: s.category,
         data: trend,
@@ -140,7 +140,7 @@ export default function Trends() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
           {Object.entries(typeLabels).map(([key, val]) => (
             <button key={key} onClick={() => setChartType(key)}
-              style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: chartType === key ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : 'var(--surface2)', color: chartType === key ? 'white' : 'var(--muted)', boxShadow: chartType === key ? '0 4px 15px rgba(99,102,241,0.3)' : 'none' }}>
+              style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: chartType === key ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'var(--surface2)', color: chartType === key ? 'white' : 'var(--muted)', boxShadow: chartType === key ? '0 4px 15px rgba(59,130,246,0.3)' : 'none' }}>
               {val.label}
             </button>
           ))}
@@ -148,7 +148,7 @@ export default function Trends() {
 
         {/* Main chart */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f1, #a78bfa, #ec4899)' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #3b82f6, #60a5fa, #ec4899)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
             <div>
               <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>{typeLabels[chartType].label}</div>
@@ -158,7 +158,7 @@ export default function Trends() {
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {activeCats.map(s => (
                 <div key={s.category} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: categoryColors[s.category] || '#6366f1' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: categoryColors[s.category] || '#3b82f6' }} />
                   <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{s.category}</span>
                 </div>
               ))}
@@ -175,7 +175,7 @@ export default function Trends() {
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {categories.map(s => {
               const active = selected.includes(s.category) || (selected.length === 0 && activeCats.find(a => a.category === s.category));
-              const color = categoryColors[s.category] || '#6366f1';
+              const color = categoryColors[s.category] || '#3b82f6';
               return (
                 <button key={s.category} onClick={() => toggle(s.category)}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '100px', border: `1px solid ${active ? color + '60' : 'var(--border)'}`, cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: active ? color + '20' : 'var(--surface2)', color: active ? color : 'var(--muted)' }}>
@@ -196,7 +196,7 @@ export default function Trends() {
         {/* Mini trend cards per category */}
         <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
           {categories.map((s, i) => {
-            const color = categoryColors[s.category] || '#6366f1';
+            const color = categoryColors[s.category] || '#3b82f6';
             const trend = generateTrend(s.competitorScore || 5, 0.2);
             const first = trend[0], last = trend[trend.length - 1];
             const up = last >= first;

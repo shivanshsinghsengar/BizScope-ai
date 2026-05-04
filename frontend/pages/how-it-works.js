@@ -22,12 +22,12 @@ export default function HowItWorks() {
   const [active, setActive] = useState('overview');
 
   const Formula = ({ children }) => (
-    <div style={{ background: dark ? '#0a0f1a' : '#f1f5f9', border: '1px solid var(--border)', borderLeft: '3px solid #6366f1', borderRadius: '10px', padding: '14px 18px', margin: '12px 0', fontFamily: 'monospace', fontSize: '14px', color: '#a78bfa', lineHeight: '1.8' }}>
+    <div style={{ background: dark ? '#0a0f1a' : '#f1f5f9', border: '1px solid var(--border)', borderLeft: '3px solid #3b82f6', borderRadius: '10px', padding: '14px 18px', margin: '12px 0', fontFamily: 'monospace', fontSize: '14px', color: '#60a5fa', lineHeight: '1.8' }}>
       {children}
     </div>
   );
 
-  const Tag = ({ color = '#6366f1', children }) => (
+  const Tag = ({ color = '#3b82f6', children }) => (
     <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '100px', background: color + '20', color, fontSize: '12px', fontWeight: '600', margin: '2px' }}>{children}</span>
   );
 
@@ -46,7 +46,7 @@ export default function HowItWorks() {
         <H>Pipeline Flow</H>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '16px 0' }}>
           {[
-            { step: '01', title: 'Geocoding', desc: 'Convert city/address/pincode → lat/lng coordinates via Nominatim (OpenStreetMap)', color: '#6366f1' },
+            { step: '01', title: 'Geocoding', desc: 'Convert city/address/pincode → lat/lng coordinates via Nominatim (OpenStreetMap)', color: '#3b82f6' },
             { step: '02', title: 'OSM Query', desc: 'Fetch all businesses within 5km radius using Overpass API (nodes only, fast)', color: '#8b5cf6' },
             { step: '03', title: 'Category Grouping', desc: 'Map OSM amenity/shop tags → BizScope categories (Restaurant, Cafe, Gym, etc.)', color: '#ec4899' },
             { step: '04', title: 'Scoring Engine', desc: 'Calculate Competitor Score, Risk Score, Demand Score per category', color: '#f59e0b' },
@@ -100,7 +100,7 @@ export default function HowItWorks() {
           ].map(([tags, cat]) => (
             <div key={cat} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 14px', fontSize: '12px' }}>
               <span style={{ color: 'var(--muted)', fontFamily: 'monospace' }}>{tags}</span>
-              <span style={{ color: '#a78bfa', margin: '0 6px' }}>→</span>
+              <span style={{ color: '#60a5fa', margin: '0 6px' }}>→</span>
               <span style={{ color: 'var(--text)', fontWeight: '600' }}>{cat}</span>
             </div>
           ))}
@@ -143,7 +143,7 @@ export default function HowItWorks() {
             { w: '30%', title: 'Popularity (√reviews)', desc: 'Square root dampens outliers. A business with 10,000 reviews isn\'t 100× harder than one with 100 reviews.' },
           ].map(r => (
             <div key={r.w} style={{ display: 'flex', gap: '12px', padding: '12px 16px', background: 'var(--surface2)', borderRadius: '10px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#6366f120', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#a78bfa', fontSize: '12px', flexShrink: 0 }}>{r.w}</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#3b82f620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#60a5fa', fontSize: '12px', flexShrink: 0 }}>{r.w}</div>
               <div>
                 <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13px' }}>{r.title}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{r.desc}</div>
@@ -219,7 +219,7 @@ export default function HowItWorks() {
           ].map(r => (
             <div key={r.mode} style={{ padding: '12px 16px', background: 'var(--surface2)', borderRadius: '10px' }}>
               <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13px', marginBottom: '4px' }}>{r.mode}</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#a78bfa', marginBottom: '4px' }}>base = {r.base}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#60a5fa', marginBottom: '4px' }}>base = {r.base}</div>
               <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{r.desc}</div>
             </div>
           ))}
@@ -271,7 +271,7 @@ export default function HowItWorks() {
             { field: 'footTraffic', source: 'Random 55–95 (OSM has no foot traffic data)' },
           ].map(r => (
             <div key={r.field} style={{ display: 'flex', gap: '12px', padding: '10px 14px', background: 'var(--surface2)', borderRadius: '10px', fontSize: '13px' }}>
-              <code style={{ color: '#a78bfa', minWidth: '100px', fontFamily: 'monospace' }}>{r.field}</code>
+              <code style={{ color: '#60a5fa', minWidth: '100px', fontFamily: 'monospace' }}>{r.field}</code>
               <span style={{ color: 'var(--muted)' }}>{r.source}</span>
             </div>
           ))}
@@ -303,7 +303,7 @@ export default function HowItWorks() {
           ))}
         </div>
         <H>Database</H>
-        <P>PostgreSQL via Sequelize ORM. Tables auto-created on server start via <code style={{ color: '#a78bfa', fontFamily: 'monospace' }}>sequelize.sync()</code>. The database is named <code style={{ color: '#a78bfa', fontFamily: 'monospace' }}>bizscope</code> and is auto-created if it doesn't exist.</P>
+        <P>PostgreSQL via Sequelize ORM. Tables auto-created on server start via <code style={{ color: '#60a5fa', fontFamily: 'monospace' }}>sequelize.sync()</code>. The database is named <code style={{ color: '#60a5fa', fontFamily: 'monospace' }}>bizscope</code> and is auto-created if it doesn't exist.</P>
       </>
     ),
   };

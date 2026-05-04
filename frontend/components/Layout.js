@@ -15,6 +15,10 @@ const navItems = [
   { href: '/interior', icon: '🏠', label: 'Interior' },
   { href: '/sparks', icon: '⚡', label: 'SparkLab' },
   { href: '/business-plan', icon: '📋', label: 'Business Plan' },
+  { href: '/track', icon: '📡', label: 'Track' },
+  { href: '/franchises', icon: '🏪', label: 'Franchises' },
+  { href: '/loans', icon: '💰', label: 'Loans' },
+  { href: '/cofounder', icon: '🤝', label: 'Co-founder' },
   { href: '/list-business', icon: '➕', label: 'List Business' },
   { href: '/saved', icon: '🔖', label: 'Saved' },
 ];
