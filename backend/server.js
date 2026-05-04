@@ -649,6 +649,17 @@ const SavedSearch = sequelize.define('SavedSearch', {
   data: DataTypes.TEXT, // JSON stringified
 });
 
+// Feedback
+const Feedback = sequelize.define('Feedback', {
+  type: { type: DataTypes.STRING, defaultValue: 'general' }, // bug | feature | improvement | general
+  page: { type: DataTypes.STRING, defaultValue: 'Other' },
+  title: DataTypes.STRING,
+  message: { type: DataTypes.TEXT, allowNull: false },
+  email: DataTypes.STRING,
+  rating: { type: DataTypes.INTEGER, defaultValue: 0 },
+  status: { type: DataTypes.STRING, defaultValue: 'new' }, // new | read | resolved
+});
+
 // Reviews
 const Review = sequelize.define('Review', {
   rating: { type: DataTypes.INTEGER, allowNull: false },
@@ -1648,6 +1659,41 @@ app.post('/api/suggestions', async (req, res) => {
 // Admin: get all suggestions (protected)
 app.get('/api/suggestions', authMiddleware, async (req, res) => {
   res.json(await PublicSuggestion.findAll({ order: [['createdAt', 'DESC']] }));
+});
+
+// Feedback — public submit
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { type, page, title, message, email, rating } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'Message is required' });
+    const fb = await Feedback.create({
+      type: type || 'general',
+      page: page || 'Other',
+      title: (title || '').slice(0, 200),
+      message: message.slice(0, 2000),
+      email: (email || '').slice(0, 100),
+      rating: parseInt(rating) || 0,
+    });
+    res.json({ success: true, id: fb.id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: get all feedback
+app.get('/api/admin/feedback', adminAuth, async (req, res) => {
+  try {
+    const items = await Feedback.findAll({ order: [['createdAt', 'DESC']], limit: 200 });
+    res.json(items);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: update feedback status
+app.patch('/api/admin/feedback/:id', adminAuth, async (req, res) => {
+  try {
+    const fb = await Feedback.findByPk(req.params.id);
+    if (!fb) return res.status(404).json({ error: 'Not found' });
+    await fb.update({ status: req.body.status });
+    res.json(fb);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Reviews — public submit

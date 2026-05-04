@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users', 'Analytics', 'System Health'];
+const TABS = ['Overview', 'Suggestions', 'Enquiries', 'Properties', 'Users', 'Analytics', 'Feedback', 'System Health'];
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -16,6 +16,7 @@ export default function AdminPanel() {
   const [events, setEvents] = useState([]);
   const [errors, setErrors] = useState([]);
   const [health, setHealth] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [healthChecking, setHealthChecking] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +37,8 @@ export default function AdminPanel() {
       fetch(`${API_URL}/api/admin/events`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/errors`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
       fetch(`${API_URL}/api/admin/health`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-    ]).then(([s, u, e, p, ev, err, h]) => {
+      fetch(`${API_URL}/api/admin/feedback`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([s, u, e, p, ev, err, h, fb]) => {
       setSuggestions(Array.isArray(s) ? s : []);
       setUsers(Array.isArray(u) ? u : []);
       setEnquiries(Array.isArray(e) ? e : []);
@@ -44,6 +46,7 @@ export default function AdminPanel() {
       setEvents(Array.isArray(ev) ? ev : []);
       setErrors(Array.isArray(err) ? err : []);
       setHealth(Array.isArray(h) ? h : []);
+      setFeedbacks(Array.isArray(fb) ? fb : []);
       setLoading(false);
     }).catch(() => router.push('/admin/login'));
   }, [token]);
@@ -126,8 +129,8 @@ export default function AdminPanel() {
 
           <nav style={{ padding: '16px 12px', flex: 1 }}>
             {TABS.map(t => {
-              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥', Analytics: '📈', 'System Health': '🛡️' };
-              const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps, 'System Health': errors.filter(e => !e.resolved).length };
+              const icons = { Overview: '📊', Suggestions: '💡', Enquiries: '📬', Properties: '🏪', Users: '👥', Analytics: '📈', 'Feedback': '💬', 'System Health': '🛡️' };
+              const badges = { Suggestions: pending, Enquiries: newEnquiries, Properties: pendingProps, 'System Health': errors.filter(e => !e.resolved).length, 'Feedback': feedbacks.filter(f => f.status === 'new').length };
               const active = tab === t;
               return (
                 <button key={t} onClick={() => setTab(t)}
@@ -490,6 +493,62 @@ export default function AdminPanel() {
               </div>
             );
           })()}
+
+          {/* Feedback Tab */}
+          {!loading && tab === 'Feedback' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ color: 'white', fontWeight: '700', fontSize: '15px' }}>
+                  User Feedback
+                  <span style={{ marginLeft: '8px', background: '#3b82f620', color: '#60a5fa', padding: '2px 8px', borderRadius: '100px', fontSize: '11px' }}>{feedbacks.length} total</span>
+                </div>
+              </div>
+              {feedbacks.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px', background: '#080d18', border: '1px solid #0f1f35', borderRadius: '16px' }}>
+                  <div style={{ fontSize: '40px', marginBottom: '12px' }}>💬</div>
+                  <div style={{ color: '#475569' }}>No feedback yet</div>
+                </div>
+              )}
+              {feedbacks.map(fb => {
+                const typeColors = { bug: '#ef4444', feature: '#3b82f6', improvement: '#f59e0b', general: '#10b981' };
+                const typeEmojis = { bug: '🐛', feature: '💡', improvement: '⚡', general: '💬' };
+                const color = typeColors[fb.type] || '#3b82f6';
+                return (
+                  <div key={fb.id} style={{ background: '#080d18', border: `1px solid ${fb.status === 'new' ? color + '40' : '#0f1f35'}`, borderRadius: '14px', padding: '18px 22px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ padding: '2px 9px', borderRadius: '100px', background: color + '20', color, fontSize: '11px', fontWeight: '700' }}>{typeEmojis[fb.type]} {fb.type}</span>
+                        <span style={{ padding: '2px 9px', borderRadius: '100px', background: '#1e293b', color: '#94a3b8', fontSize: '11px' }}>{fb.page}</span>
+                        {fb.rating > 0 && <span style={{ fontSize: '12px' }}>{'⭐'.repeat(fb.rating)}</span>}
+                        {fb.status === 'new' && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#3b82f620', color: '#60a5fa', fontSize: '10px', fontWeight: '700' }}>NEW</span>}
+                        {fb.status === 'resolved' && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#10b98120', color: '#34d399', fontSize: '10px', fontWeight: '700' }}>✅ RESOLVED</span>}
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#334155' }}>{new Date(fb.createdAt).toLocaleString('en-IN')}</span>
+                    </div>
+                    {fb.title && <div style={{ fontWeight: '600', color: 'white', fontSize: '14px', marginBottom: '6px' }}>{fb.title}</div>}
+                    <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.7', marginBottom: '10px' }}>{fb.message}</div>
+                    {fb.email && <div style={{ fontSize: '12px', color: '#475569' }}>✉️ {fb.email}</div>}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      {fb.status !== 'resolved' && (
+                        <button onClick={async () => {
+                          await fetch(`${API_URL}/api/admin/feedback/${fb.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: 'resolved' }) });
+                          setFeedbacks(f => f.map(x => x.id === fb.id ? { ...x, status: 'resolved' } : x));
+                        }} style={{ padding: '5px 14px', borderRadius: '8px', border: 'none', background: '#10b98125', color: '#34d399', cursor: 'pointer', fontSize: '12px', fontWeight: '700' }}>
+                          ✅ Mark Resolved
+                        </button>
+                      )}
+                      {fb.email && (
+                        <a href={`mailto:${fb.email}?subject=Re: Your BizScope Feedback`}
+                          style={{ padding: '5px 14px', borderRadius: '8px', border: 'none', background: '#3b82f625', color: '#60a5fa', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+                          ✉️ Reply
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* System Health Tab */}
           {!loading && tab === 'System Health' && (
