@@ -1,0 +1,50 @@
+{
+  "name": "BizScope AI — Free Market Analysis Tool for India",
+  "short_name": "BizScope AI",
+  "description": "Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f0a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "BizScope AI — Market Analysis Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Analyze a Location",
+      "short_name": "Analyze",
+      "description": "Start a new market analysis",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Competitors",
+      "short_name": "Competitors",
+      "description": "View competitor analysis",
+      "url": "/competitors",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

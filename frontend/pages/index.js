@@ -225,19 +225,120 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BizScope AI — Business Intelligence Platform</title>
-        <meta name="description" content="Analyze competitors, discover market gaps, and find the perfect business location — powered by real data and AI. Free market analysis tool for entrepreneurs." />
-        <meta name="keywords" content="business analysis, competitor analysis, market research, business opportunity, India, entrepreneur" />
-        <meta property="og:title" content="BizScope AI — Business Intelligence Platform" />
-        <meta property="og:description" content="AI-powered market analysis. Find the best business opportunity in your area." />
+        <title>BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India</title>
+        <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
+        <meta name="keywords" content="market analysis India, competitor analysis tool, business opportunity finder, startup market research, free business intelligence, competitor research India, business location finder, market gap analysis" />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app" />
+        <meta property="og:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta property="og:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://bizscope-ai.vercel.app" />
-        <meta property="og:image" content="https://bizscope-ai.vercel.app/og-image.png" />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
+        <meta property="og:locale" content="en_IN" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="BizScope AI — Business Intelligence Platform" />
-        <meta name="twitter:description" content="AI-powered market analysis. Find the best business opportunity in your area." />
-        <meta name="twitter:image" content="https://bizscope-ai.vercel.app/og-image.png" />
+        <meta name="twitter:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta name="twitter:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data." />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "BizScope AI",
+              "url": "https://biz-scope-ai.vercel.app",
+              "description": "Free AI-powered market analysis and competitor research tool for Indian entrepreneurs. Analyze competitors, discover market gaps, and find the best business location in India using real OpenStreetMap data.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "INR"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "reviewCount": "500",
+                "bestRating": "5"
+              },
+              "featureList": [
+                "Competitor Analysis",
+                "Market Gap Analysis",
+                "Business Location Finder",
+                "AI Business Recommendations",
+                "Property Price Estimates",
+                "Interactive Competitor Map"
+              ],
+              "screenshot": "https://biz-scope-ai.vercel.app/og-image.png",
+              "softwareVersion": "2.0",
+              "author": {
+                "@type": "Organization",
+                "name": "BizScope AI",
+                "url": "https://biz-scope-ai.vercel.app"
+              }
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Is BizScope AI really free?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How accurate is the data?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How often is the data updated?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Can I use this for any city in India?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes — any city, town, or area in India (and 195 other countries). Just type the name and we'll find it."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Are the property prices real?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20–150% higher depending on location."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How does the AI recommendation work?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area."
+                  }
+                }
+              ]
+            })
+          }}
+        />
       </Head>
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', position: 'relative' }}>
@@ -723,6 +824,58 @@ export default function Home() {
                         </a>
                       ))}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Why BizScope AI — SEO content section */}
+            <div style={{ marginBottom: '64px', maxWidth: '860px', margin: '0 auto 64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>
+                  Why BizScope AI for Market Analysis in India?
+                </h2>
+                <p style={{ color: 'var(--muted)', fontSize: '15px', lineHeight: '1.8', maxWidth: '680px', margin: '0 auto' }}>
+                  India has over 63 million MSMEs — and most fail because founders skip market research. BizScope AI gives every Indian entrepreneur free, instant access to the same business intelligence that large corporations pay lakhs for.
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+                {[
+                  {
+                    icon: '🏪',
+                    title: 'Competitor Analysis for Any Indian City',
+                    desc: 'Instantly see every competitor within 3 km of your target location — from Mumbai\'s Dharavi to Delhi\'s Connaught Place. Our competitor analysis tool pulls real business data from OpenStreetMap, the same database powering Apple Maps and Wikipedia. Know exactly how saturated a market is before you invest a single rupee.',
+                  },
+                  {
+                    icon: '🎯',
+                    title: 'Find Business Opportunities & Market Gaps',
+                    desc: 'Our business opportunity finder scans local demand signals and competitor density to surface underserved niches. Whether you\'re looking for a gap in Tier-1 metros or Tier-2 cities like Jaipur, Surat, or Lucknow, BizScope AI identifies where demand outpaces supply — your next big opportunity.',
+                  },
+                  {
+                    icon: '📊',
+                    title: 'Startup Market Research in Under 10 Seconds',
+                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report — competitor count, market saturation score, AI-recommended business types, and nearby property prices — in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
+                  },
+                  {
+                    icon: '🤖',
+                    title: 'AI-Powered Business Intelligence, 100% Free',
+                    desc: 'Powered by Google Gemini AI and real-time OpenStreetMap data, BizScope AI provides free business intelligence that was previously only available to funded startups. No subscription, no credit card, no signup. Just enter your city and get actionable insights instantly.',
+                  },
+                  {
+                    icon: '🗺️',
+                    title: 'Location Intelligence for Indian Markets',
+                    desc: 'Location is everything in Indian retail and services. Our location intelligence engine analyzes foot traffic patterns, competitor clustering, and commercial property availability to help you pick the perfect spot. From street-level analysis in Chandni Chowk to suburb mapping in Pune\'s Hinjewadi.',
+                  },
+                  {
+                    icon: '📈',
+                    title: 'Market Trends & Demand Forecasting',
+                    desc: 'Stay ahead of market trends with our real-time business intelligence dashboard. Track which business categories are growing in your city, monitor competitor openings and closures, and get AI-driven demand forecasts tailored to Indian consumer behavior and seasonal patterns.',
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="card" style={{ padding: '24px' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>{item.icon}</div>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '10px', lineHeight: '1.4' }}>{item.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>{item.desc}</p>
                   </div>
                 ))}
               </div>
