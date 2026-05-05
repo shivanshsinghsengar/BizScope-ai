@@ -46,15 +46,18 @@ export default function TrackPage() {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      const count = data.businesses?.length || 0;
       const newItem = {
         id: Date.now(),
         location: loc,
         displayName: data.location?.displayName?.split(',').slice(0, 2).join(', ') || loc,
-        businessCount: data.businesses?.length || 0,
+        businessCount: count,
+        baselineCount: count, // locked baseline — never changes
         categoryStats: data.categoryStats || [],
         lastChecked: new Date().toISOString(),
         newBusinesses: 0,
         closedBusinesses: 0,
+        checksCount: 0,
       };
       const updated = [newItem, ...tracked];
       setTracked(updated);
@@ -75,26 +78,31 @@ export default function TrackPage() {
       const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location: item.location }),  // use cache — stable results
+        body: JSON.stringify({ location: item.location }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const currentCount = data.businesses?.length || 0;
-      const prevCount = item.businessCount || currentCount;
-      const diff = currentCount - prevCount;
 
-      // Only flag as change if difference is significant (>5%) to avoid noise
-      const threshold = Math.max(3, Math.floor(prevCount * 0.05));
-      const isSignificant = Math.abs(diff) >= threshold;
+      // Use the locked baseline — never change it after first set
+      // This prevents API noise from showing as fake changes
+      const baseline = item.baselineCount ?? item.businessCount ?? currentCount;
+      const diff = currentCount - baseline;
+
+      // Only flag as real change if >10% AND at least 5 businesses different
+      const threshold = Math.max(5, Math.floor(baseline * 0.10));
+      const isRealChange = Math.abs(diff) >= threshold;
 
       const updated = tracked.map(t => t.id === id ? {
         ...t,
         businessCount: currentCount,
+        baselineCount: baseline, // keep baseline locked
         categoryStats: data.categoryStats || t.categoryStats,
         lastChecked: new Date().toISOString(),
-        newBusinesses: (isSignificant && diff > 0) ? diff : 0,
-        closedBusinesses: (isSignificant && diff < 0) ? Math.abs(diff) : 0,
-        prevCount: prevCount,
+        // Only show changes if genuinely significant
+        newBusinesses: (isRealChange && diff > 0) ? diff : 0,
+        closedBusinesses: (isRealChange && diff < 0) ? Math.abs(diff) : 0,
+        checksCount: (t.checksCount || 0) + 1,
       } : t);
       setTracked(updated);
       saveTracked(updated);
@@ -205,7 +213,7 @@ export default function TrackPage() {
 
                       {/* Stats row */}
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--muted)', marginBottom: '12px' }}>
-                        <span>🏪 <strong style={{ color: 'var(--text)' }}>{item.businessCount}</strong> businesses</span>
+                        <span>🏪 <strong style={{ color: 'var(--text)' }}>{item.baselineCount || item.businessCount}</strong> businesses</span>
                         <span>🕐 <strong style={{ color: 'var(--text)' }}>{formatDate(item.lastChecked)}</strong></span>
                       </div>
 
@@ -229,7 +237,7 @@ export default function TrackPage() {
                           {/* Total categories */}
                           <div style={{ background: '#3b82f615', border: '1px solid #3b82f630', borderRadius: '12px', padding: '12px' }}>
                             <div style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>📊 Market Size</div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.businessCount} total</div>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.baselineCount || item.businessCount} total</div>
                             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{item.categoryStats.length} categories</div>
                           </div>
                         </div>
