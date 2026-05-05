@@ -1460,7 +1460,7 @@ const generateMockBusinesses = (lat, lng) => {
 
 // In-memory cache (location -> result, TTL 2 hours)
 const cache = new Map();
-const CACHE_TTL = 2 * 60 * 60 * 1000;
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours — stable results
 
 const getCached = (key) => {
   const entry = cache.get(key);

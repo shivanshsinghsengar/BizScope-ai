@@ -75,7 +75,7 @@ export default function TrackPage() {
       const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location: item.location, nocache: true }),
+        body: JSON.stringify({ location: item.location }),  // use cache — stable results
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
