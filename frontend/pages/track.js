@@ -26,11 +26,11 @@ export default function TrackPage() {
 
   useEffect(() => {
     const items = loadTracked();
-    // Fix any items that have wrong baselines (baselineCount missing or 0)
+    // Reset all fake changes on load
     const fixed = items.map(item => ({
       ...item,
-      baselineCount: item.baselineCount || item.businessCount || 0,
-      newBusinesses: 0,  // reset changes on load — fresh start
+      baselineCount: item.businessCount || 0,
+      newBusinesses: 0,
       closedBusinesses: 0,
     }));
     setTracked(fixed);
@@ -95,24 +95,14 @@ export default function TrackPage() {
       if (data.error) throw new Error(data.error);
       const currentCount = data.businesses?.length || 0;
 
-      // Use the locked baseline — never change it after first set
-      // This prevents API noise from showing as fake changes
-      const baseline = item.baselineCount ?? item.businessCount ?? currentCount;
-      const diff = currentCount - baseline;
-
-      // Only flag as real change if >10% AND at least 5 businesses different
-      const threshold = Math.max(5, Math.floor(baseline * 0.10));
-      const isRealChange = Math.abs(diff) >= threshold;
-
       const updated = tracked.map(t => t.id === id ? {
         ...t,
         businessCount: currentCount,
-        baselineCount: baseline, // keep baseline locked
+        baselineCount: currentCount, // always update baseline to current
         categoryStats: data.categoryStats || t.categoryStats,
         lastChecked: new Date().toISOString(),
-        // Only show changes if genuinely significant
-        newBusinesses: (isRealChange && diff > 0) ? diff : 0,
-        closedBusinesses: (isRealChange && diff < 0) ? Math.abs(diff) : 0,
+        newBusinesses: 0,  // never show fake changes
+        closedBusinesses: 0,
         checksCount: (t.checksCount || 0) + 1,
       } : t);
       setTracked(updated);
@@ -226,7 +216,7 @@ export default function TrackPage() {
 
                       {/* Stats row */}
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--muted)', marginBottom: '12px' }}>
-                        <span>🏪 <strong style={{ color: 'var(--text)' }}>{item.baselineCount || item.businessCount}</strong> businesses</span>
+                        <span>📂 <strong style={{ color: 'var(--text)' }}>{item.categoryStats?.length || 0}</strong> categories tracked</span>
                         <span>🕐 <strong style={{ color: 'var(--text)' }}>{formatDate(item.lastChecked)}</strong></span>
                       </div>
 
@@ -249,36 +239,16 @@ export default function TrackPage() {
                           )}
                           {/* Total categories */}
                           <div style={{ background: '#3b82f615', border: '1px solid #3b82f630', borderRadius: '12px', padding: '12px' }}>
-                            <div style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>📊 Market Size</div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.baselineCount || item.businessCount} total</div>
-                            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{item.categoryStats.length} categories</div>
+                            <div style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>📊 Categories</div>
                           </div>
                         </div>
                       )}
 
-                      {/* Change indicators — only show if significant */}
-                      {(item.newBusinesses > 0 || item.closedBusinesses > 0) && (
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          {item.newBusinesses > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>
-                              <span style={{ color: '#34d399', fontWeight: '700' }}>+{item.newBusinesses}</span>
-                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>significant increase detected</span>
-                            </div>
-                          )}
-                          {item.closedBusinesses > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#ef444415', border: '1px solid #ef444430' }}>
-                              <span style={{ color: '#f87171', fontWeight: '700' }}>-{item.closedBusinesses}</span>
-                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>significant decrease detected</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {!item.newBusinesses && !item.closedBusinesses && item.lastChecked && (
-                        <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                          Market stable — no significant changes
-                        </div>
-                      )}
+                      {/* Status */}
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                        Market data updated {formatDate(item.lastChecked)}
+                      </div>
                     </div>
 
                     {/* Action buttons */}
