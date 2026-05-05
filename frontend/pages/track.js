@@ -25,7 +25,16 @@ export default function TrackPage() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    setTracked(loadTracked());
+    const items = loadTracked();
+    // Fix any items that have wrong baselines (baselineCount missing or 0)
+    const fixed = items.map(item => ({
+      ...item,
+      baselineCount: item.baselineCount || item.businessCount || 0,
+      newBusinesses: 0,  // reset changes on load — fresh start
+      closedBusinesses: 0,
+    }));
+    setTracked(fixed);
+    saveTracked(fixed);
   }, []);
 
   const handleAdd = async (e) => {
@@ -64,7 +73,9 @@ export default function TrackPage() {
       saveTracked(updated);
       setAddLocation('');
     } catch (err) {
-      setError(err.message || 'Could not find this location. Try a city name like "Mumbai".');
+      setError(err.message === 'Failed to fetch' 
+        ? 'Backend is waking up — please wait 30 seconds and try again.' 
+        : err.message || 'Could not find this location. Try a city name like "Mumbai".');
     } finally {
       setAdding(false);
     }
@@ -107,7 +118,9 @@ export default function TrackPage() {
       setTracked(updated);
       saveTracked(updated);
     } catch (err) {
-      setError(err.message || 'Check failed. Try again.');
+      setError(err.message === 'Failed to fetch'
+        ? 'Backend is waking up — please wait 30 seconds and try again.'
+        : err.message || 'Check failed. Try again.');
     } finally {
       setChecking(c => ({ ...c, [id]: false }));
     }
