@@ -1025,10 +1025,10 @@ const stableReviews = (name, category, max = 300) => {
   const r = deterministicRandom(`${name}_${category}_reviews`);
   return Math.floor(r * max + 10);
 };
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 10000) => {
   try {
     // ONE combined query — much faster than 4 separate requests
-    const query = `[out:json][timeout:25];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
+    const query = `[out:json][timeout:10];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
@@ -2444,11 +2444,11 @@ app.get('/api/analyze-stream', async (req, res) => {
     }
     send('geocode', `Found: ${displayName.split(',').slice(0, 2).join(', ')}`, 'Location confirmed', 20);
 
-    // Step 2: Fetch businesses
-    send('fetch', 'Scanning businesses nearby...', 'Fetching real data from OpenStreetMap', 30);
-    const [osmBusinesses, tomtomBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 5000),
+    // Step 2: Fetch businesses — TomTom fast (8s), OSM slower (15s), run in parallel
+    send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
+    const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 5000),
+      fetchRealBusinesses(latitude, longitude, 5000, 15000), // 15s max for OSM
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -2565,10 +2565,10 @@ app.post('/api/analyze-location', async (req, res) => {
       cache.delete(cacheKey);
     }
 
-    // Fetch OSM + manual in parallel — skip Foursquare (slow, rarely has key)
-    const [osmBusinesses, tomtomBusinesses, manualBusinesses] = await Promise.all([
-      fetchRealBusinesses(latitude, longitude, 10000),
-      fetchTomTomBusinesses(latitude, longitude, 10000),
+    // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
+    const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
+      fetchTomTomBusinesses(latitude, longitude, 5000),
+      fetchRealBusinesses(latitude, longitude, 5000, 15000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
