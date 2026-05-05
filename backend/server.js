@@ -1006,7 +1006,25 @@ const osmToCategory = {
   wholesale: 'Wholesale', warehouse: 'Wholesale',
 };
 
-// Fetch real businesses from Overpass API — single combined query, parallel mirrors
+// Deterministic pseudo-random — same input always gives same output
+// Prevents rating/review fluctuation on every analysis
+const deterministicRandom = (seed) => {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+  }
+  return Math.abs(h) / 2147483647;
+};
+
+const stableRating = (name, category) => {
+  const r = deterministicRandom(`${name}_${category}_rating`);
+  return parseFloat((r * 2 + 3).toFixed(1)); // 3.0 – 5.0
+};
+
+const stableReviews = (name, category, max = 300) => {
+  const r = deterministicRandom(`${name}_${category}_reviews`);
+  return Math.floor(r * max + 10);
+};
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25000) => {
   try {
     // ONE combined query — much faster than 4 separate requests
@@ -1051,8 +1069,8 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 25
       return {
         name: tags.name || `${category} (unnamed)`,
         category,
-        rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
-        reviewCount: Math.floor(Math.random() * 300 + 10),
+        rating: stableRating(tags.name || `${el.lat}_${el.lon}`, category),
+        reviewCount: stableReviews(tags.name || `${el.lat}_${el.lon}`, category),
         address: addrParts.join(', ') || `Near ${el.lat?.toFixed(3)}, ${el.lon?.toFixed(3)}`,
         phone: tags.phone || tags['contact:phone'] || '',
         website: tags.website || tags['contact:website'] || '',
@@ -1159,8 +1177,8 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
         results.push({
           name: place.poi?.name || `${category} (unnamed)`,
           category,
-          rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
-          reviewCount: Math.floor(Math.random() * 200 + 20),
+          rating: stableRating(place.poi?.name || `${pos.lat}_${pos.lon}`, category),
+          reviewCount: stableReviews(place.poi?.name || `${pos.lat}_${pos.lon}`, category, 200),
           address: [
             place.address?.streetName,
             place.address?.municipalitySubdivision,
@@ -1220,8 +1238,8 @@ const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
       return {
         name: place.name,
         category: mapped,
-        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : parseFloat((Math.random() * 2 + 3).toFixed(1)),
-        reviewCount: place.stats?.total_ratings || Math.floor(Math.random() * 200 + 10),
+        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : stableRating(place.name, mapped),
+        reviewCount: place.stats?.total_ratings || stableReviews(place.name, mapped, 200),
         address: [place.location?.address, place.location?.locality, place.location?.region].filter(Boolean).join(', ') || 'Unknown',
         phone: place.tel || '',
         website: place.website || '',
@@ -1280,8 +1298,8 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
       return {
         name: b.placeLabel?.value || 'Unknown Place',
         category: mapped,
-        rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
-        reviewCount: Math.floor(Math.random() * 150 + 20),
+        rating: stableRating(b.placeLabel?.value || `${b.lat?.value}_${b.lng?.value}`, mapped),
+        reviewCount: stableReviews(b.placeLabel?.value || `${b.lat?.value}_${b.lng?.value}`, mapped, 150),
         address: '',
         phone: b.phone?.value || '',
         website: b.website?.value || '',
@@ -2696,11 +2714,12 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
           ? addrParts.join(', ')
           : name || `Commercial Space near ${elLat?.toFixed(3)}, ${elLon?.toFixed(3)}`;
 
-        // Use govt circle rates for realistic pricing
-        const sizeSqft = Math.floor(Math.random() * 1200 + 200);
+        // Use govt circle rates for realistic pricing — deterministic based on element ID
+        const sizeR = deterministicRandom(`size_${el.id}`);
+        const sizeSqft = Math.floor(sizeR * 1200 + 200);
         const isRent = i % 3 !== 1;
-        // Add ±20% variance to circle rate
-        const variance = 0.8 + Math.random() * 0.4;
+        const varianceR = deterministicRandom(`variance_${el.id}`);
+        const variance = 0.8 + varianceR * 0.4;
         const price = isRent
           ? Math.round((sizeSqft * circleRate.rent * variance) / 1000) * 1000
           : Math.round((sizeSqft * circleRate.sale * variance) / 100000) * 100000;
@@ -2709,7 +2728,7 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
           id: el.id, type: isRent ? 'rent' : 'sale',
           price, size: sizeSqft, address,
           latitude: elLat, longitude: elLon,
-          footTraffic: Math.floor(Math.random() * 35 + 60),
+          footTraffic: 60 + Math.floor(deterministicRandom(`traffic_${el.id}`) * 35),
           priceSource: 'govt_circle_rate',
           cityTier: circleRate.tier,
         };
@@ -2735,15 +2754,17 @@ app.get('/api/properties/:lat/:lng', async (req, res) => {
   const sizes = [300, 450, 600, 250, 800, 500, 350, 1200];
   const fallback = Array.from({ length: 8 }, (_, i) => {
     const isRent = types[i] === 'rent';
-    const variance = 0.8 + Math.random() * 0.4;
+    const variance = 0.8 + deterministicRandom(`fallback_prop_${i}_${lat}`) * 0.4;
     const price = isRent
       ? Math.round((sizes[i] * circleRate.rent * variance) / 1000) * 1000
       : Math.round((sizes[i] * circleRate.sale * variance) / 100000) * 100000;
+    const latOff = (deterministicRandom(`lat_${i}_${lat}`) - 0.5) * 0.025;
+    const lngOff = (deterministicRandom(`lng_${i}_${lng}`) - 0.5) * 0.025;
     return {
       id: i + 1, type: types[i], price, size: sizes[i],
       address: `${areas[i]}, ${cityName || 'City Center'}`,
-      latitude: lat + (Math.random() - 0.5) * 0.025,
-      longitude: lng + (Math.random() - 0.5) * 0.025,
+      latitude: lat + latOff,
+      longitude: lng + lngOff,
       footTraffic: [85, 92, 78, 70, 95, 82, 88, 75][i],
       priceSource: 'govt_circle_rate',
       cityTier: circleRate.tier,
@@ -2802,8 +2823,8 @@ app.get('/api/businesses/:lat/:lng', async (req, res) => {
           id: `${el.type}_${el.id}`,
           name,
           category,
-          rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
-          reviewCount: Math.floor(Math.random() * 240 + 8),
+          rating: stableRating(name, category),
+          reviewCount: stableReviews(name, category, 240),
           address,
           latitude: elLat,
           longitude: elLon,

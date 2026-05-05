@@ -3,140 +3,152 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import API_URL from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+
+const STORAGE_KEY = 'bizscope_tracked_locations';
+
+function loadTracked() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveTracked(items) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+}
 
 export default function TrackPage() {
-  const { user, token } = useAuth();
   const router = useRouter();
   const [tracked, setTracked] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState({});
   const [error, setError] = useState('');
   const [addLocation, setAddLocation] = useState('');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    fetchTracked();
-  }, [user]);
-
-  const fetchTracked = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/track`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setTracked(Array.isArray(data) ? data : []);
-    } catch {
-      setError('Failed to load tracked locations.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    setTracked(loadTracked());
+  }, []);
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!addLocation.trim()) return;
-    setAdding(true);
+    const loc = addLocation.trim();
+    if (!loc) return;
+    if (tracked.find(t => t.location.toLowerCase() === loc.toLowerCase())) {
+      setError('Already tracking this location.');
+      return;
+    }
+    setAdding(true); setError('');
     try {
-      const res = await fetch(`${API_URL}/api/track`, {
+      // Quick geocode check
+      const res = await fetch(`${API_URL}/api/analyze-location`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ location: addLocation.trim() }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location: loc }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add');
+      if (data.error) throw new Error(data.error);
+      const newItem = {
+        id: Date.now(),
+        location: loc,
+        displayName: data.location?.displayName?.split(',').slice(0, 2).join(', ') || loc,
+        businessCount: data.businesses?.length || 0,
+        categoryStats: data.categoryStats || [],
+        lastChecked: new Date().toISOString(),
+        newBusinesses: 0,
+        closedBusinesses: 0,
+      };
+      const updated = [newItem, ...tracked];
+      setTracked(updated);
+      saveTracked(updated);
       setAddLocation('');
-      fetchTracked();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Could not find this location. Try a city name like "Mumbai".');
     } finally {
       setAdding(false);
     }
   };
 
   const handleCheck = async (id) => {
-    setChecking(c => ({ ...c, [id]: true }));
+    const item = tracked.find(t => t.id === id);
+    if (!item) return;
+    setChecking(c => ({ ...c, [id]: true })); setError('');
     try {
-      const res = await fetch(`${API_URL}/api/track/check?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_URL}/api/analyze-location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location: item.location, nocache: true }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Check failed');
-      setTracked(t => t.map(item => item.id === id ? { ...item, ...data } : item));
+      if (data.error) throw new Error(data.error);
+      const currentCount = data.businesses?.length || 0;
+      const prevCount = item.businessCount || currentCount;
+      const diff = currentCount - prevCount;
+      const updated = tracked.map(t => t.id === id ? {
+        ...t,
+        businessCount: currentCount,
+        categoryStats: data.categoryStats || t.categoryStats,
+        lastChecked: new Date().toISOString(),
+        newBusinesses: diff > 0 ? diff : 0,
+        closedBusinesses: diff < 0 ? Math.abs(diff) : 0,
+      } : t);
+      setTracked(updated);
+      saveTracked(updated);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Check failed. Try again.');
     } finally {
       setChecking(c => ({ ...c, [id]: false }));
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await fetch(`${API_URL}/api/track/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTracked(t => t.filter(item => item.id !== id));
-    } catch {
-      setError('Failed to remove.');
-    }
+  const handleDelete = (id) => {
+    const updated = tracked.filter(t => t.id !== id);
+    setTracked(updated);
+    saveTracked(updated);
   };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Never';
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diff = Math.floor((now - d) / 1000);
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
-  if (!user) {
-    return (
-      <Layout>
-        <div style={{ maxWidth: '500px', margin: '80px auto', padding: '40px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-          <h2 style={{ color: '#f3f4f6', fontSize: '22px', fontWeight: '700', marginBottom: '10px' }}>Sign in to track locations</h2>
-          <p style={{ color: '#9ca3af', marginBottom: '24px' }}>Competitor tracking requires a free account.</p>
-          <button onClick={() => router.push('/login')} className="btn-primary">Sign In</button>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <Head>
         <title>Competitor Tracking — BizScope AI</title>
-        <meta name="description" content="Track competitor locations and get notified of changes." />
+        <meta name="description" content="Track competitor locations and monitor business changes over time." />
       </Head>
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
+
         {/* Header */}
-        <div className="anim-fade-up" style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
             <div style={{ fontSize: '36px' }}>📡</div>
             <div>
-              <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#f3f4f6', margin: 0 }}>Competitor Tracking</h1>
-              <p style={{ color: '#9ca3af', fontSize: '14px', margin: '4px 0 0' }}>Monitor business changes in your target locations</p>
+              <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text)', margin: 0 }}>Competitor Tracking</h1>
+              <p style={{ color: 'var(--muted)', fontSize: '14px', margin: '4px 0 0' }}>
+                Monitor business changes in your target locations — no login required
+              </p>
             </div>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#3b82f615', border: '1px solid #3b82f630', borderRadius: '100px', padding: '4px 12px', fontSize: '11px', color: '#3b82f6', fontWeight: '700' }}>
+            💾 Saved locally in your browser
           </div>
         </div>
 
         {/* Add location form */}
-        <div className="card anim-fade-up delay-1" style={{ padding: '24px', marginBottom: '28px' }}>
-          <div style={{ fontSize: '13px', color: '#9ca3af', fontWeight: '600', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <div className="card" style={{ padding: '24px', marginBottom: '28px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             ➕ Track a New Location
           </div>
           <form onSubmit={handleAdd} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <input
               value={addLocation}
               onChange={e => setAddLocation(e.target.value)}
-              placeholder="e.g. Koramangala, Bangalore"
+              placeholder="e.g. Koramangala Bangalore, Connaught Place Delhi"
               className="input-field"
               style={{ flex: 1, minWidth: '200px' }}
             />
@@ -144,93 +156,95 @@ export default function TrackPage() {
               {adding ? '⏳ Adding...' : '📡 Start Tracking'}
             </button>
           </form>
+          {/* Quick add examples */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+            {['Mumbai', 'Mathura', 'Connaught Place Delhi', 'Koramangala Bangalore'].map(loc => (
+              <button key={loc} type="button" onClick={() => setAddLocation(loc)}
+                style={{ padding: '3px 10px', borderRadius: '100px', border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '11px', cursor: 'pointer' }}>
+                📍 {loc}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && (
-          <div style={{ background: '#ef444415', border: '1px solid #ef444440', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', color: '#f87171', fontSize: '14px' }}>
-            ⚠️ {error}
-            <button onClick={() => setError('')} style={{ marginLeft: '12px', background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+          <div style={{ background: '#ef444415', border: '1px solid #ef444440', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', color: '#f87171', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>⚠️ {error}</span>
+            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px' }}>✕</button>
           </div>
         )}
 
         {/* Tracked list */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'pulse 1.5s infinite' }}>📡</div>
-            Loading tracked locations...
-          </div>
-        ) : tracked.length === 0 ? (
+        {tracked.length === 0 ? (
           <div className="card" style={{ padding: '60px', textAlign: 'center' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📍</div>
-            <div style={{ color: '#f3f4f6', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>No locations tracked yet</div>
-            <div style={{ color: '#9ca3af', fontSize: '14px' }}>Add a location above to start monitoring competitor activity.</div>
+            <div style={{ color: 'var(--text)', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>No locations tracked yet</div>
+            <div style={{ color: 'var(--muted)', fontSize: '14px' }}>Add a city above to start monitoring competitor activity.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {tracked.map((item, i) => {
-              const newCount = item.newBusinesses || 0;
-              const closedCount = item.closedBusinesses || 0;
-              const hasChanges = newCount > 0 || closedCount > 0;
+              const hasChanges = item.newBusinesses > 0 || item.closedBusinesses > 0;
+              const topCat = item.categoryStats?.[0];
+              const bestOpp = item.categoryStats?.[item.categoryStats.length - 1];
               return (
-                <div key={item.id} className="card anim-fade-up" style={{ padding: '24px', animationDelay: `${i * 0.05}s` }}>
+                <div key={item.id} className="card" style={{ padding: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '20px' }}>📍</span>
-                        <span style={{ fontSize: '16px', fontWeight: '700', color: '#f3f4f6' }}>{item.location}</span>
+                      {/* Location name */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '18px' }}>📍</span>
+                        <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>{item.displayName || item.location}</span>
                         <span style={{ padding: '3px 10px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630', color: '#3b82f6', fontSize: '11px', fontWeight: '700' }}>
                           TRACKING
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#9ca3af' }}>
-                        <span>🕐 Last checked: <strong style={{ color: '#d1d5db' }}>{formatDate(item.lastChecked)}</strong></span>
-                        <span>🏪 Businesses: <strong style={{ color: '#d1d5db' }}>{item.businessCount || 0}</strong></span>
+                      {/* Stats row */}
+                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--muted)', marginBottom: '10px' }}>
+                        <span>🏪 <strong style={{ color: 'var(--text)' }}>{item.businessCount}</strong> businesses</span>
+                        <span>🕐 Last checked: <strong style={{ color: 'var(--text)' }}>{formatDate(item.lastChecked)}</strong></span>
+                        {topCat && <span>🔴 Most competitive: <strong style={{ color: 'var(--text)' }}>{topCat.category}</strong></span>}
+                        {bestOpp && bestOpp.category !== topCat?.category && <span>🟢 Best opportunity: <strong style={{ color: 'var(--text)' }}>{bestOpp.category}</strong></span>}
                       </div>
 
+                      {/* Change indicators */}
                       {hasChanges && (
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
-                          {newCount > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>
-                              <span style={{ color: '#34d399', fontWeight: '700', fontSize: '14px' }}>+{newCount}</span>
-                              <span style={{ color: '#9ca3af', fontSize: '12px' }}>new businesses</span>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          {item.newBusinesses > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>
+                              <span style={{ color: '#34d399', fontWeight: '700' }}>+{item.newBusinesses}</span>
+                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>new businesses</span>
                             </div>
                           )}
-                          {closedCount > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '100px', background: '#ef444415', border: '1px solid #ef444430' }}>
-                              <span style={{ color: '#f87171', fontWeight: '700', fontSize: '14px' }}>-{closedCount}</span>
-                              <span style={{ color: '#9ca3af', fontSize: '12px' }}>closed</span>
+                          {item.closedBusinesses > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#ef444415', border: '1px solid #ef444430' }}>
+                              <span style={{ color: '#f87171', fontWeight: '700' }}>-{item.closedBusinesses}</span>
+                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>closed</span>
                             </div>
                           )}
                         </div>
                       )}
-
                       {!hasChanges && item.lastChecked && (
-                        <div style={{ marginTop: '10px', fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
+                        <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                           No changes since last check
                         </div>
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                      <button
-                        onClick={() => handleCheck(item.id)}
-                        disabled={checking[item.id]}
-                        style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid #3b82f640', background: '#3b82f615', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
-                      >
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
+                      <button onClick={() => handleCheck(item.id)} disabled={checking[item.id]}
+                        style={{ padding: '9px 16px', borderRadius: '10px', border: '1px solid #3b82f640', background: '#3b82f615', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
                         {checking[item.id] ? '⏳' : '🔄'} {checking[item.id] ? 'Checking...' : 'Check Now'}
                       </button>
-                      <button
-                        onClick={() => router.push(`/?location=${encodeURIComponent(item.location)}`)}
-                        style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid #2d3748', background: 'transparent', color: '#9ca3af', cursor: 'pointer', fontSize: '13px' }}
-                      >
+                      <button onClick={() => router.push(`/?location=${encodeURIComponent(item.location)}`)}
+                        style={{ padding: '9px 16px', borderRadius: '10px', border: '1px solid var(--border2)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px' }}>
                         📊 Analyze
                       </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        style={{ padding: '9px 14px', borderRadius: '10px', border: '1px solid #ef444430', background: 'transparent', color: '#f87171', cursor: 'pointer', fontSize: '13px' }}
-                      >
+                      <button onClick={() => handleDelete(item.id)}
+                        style={{ padding: '9px 12px', borderRadius: '10px', border: '1px solid #ef444430', background: 'transparent', color: '#f87171', cursor: 'pointer', fontSize: '13px' }}>
                         🗑️
                       </button>
                     </div>
@@ -241,11 +255,11 @@ export default function TrackPage() {
           </div>
         )}
 
-        {/* Info box */}
+        {/* Info */}
         <div style={{ marginTop: '32px', background: '#3b82f608', border: '1px solid #3b82f620', borderRadius: '16px', padding: '20px 24px' }}>
           <div style={{ fontSize: '13px', fontWeight: '700', color: '#3b82f6', marginBottom: '8px' }}>ℹ️ How Tracking Works</div>
-          <div style={{ fontSize: '13px', color: '#9ca3af', lineHeight: '1.7' }}>
-            When you click "Check Now", BizScope re-runs a live analysis of that location and compares the business count with the last saved snapshot. New businesses and closures are highlighted automatically.
+          <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>
+            Tracked locations are saved in your browser. Click "Check Now" to re-run a live analysis and see if the business count has changed since your last check. Data is stored locally — clearing browser data will remove your tracked locations.
           </div>
         </div>
       </div>
