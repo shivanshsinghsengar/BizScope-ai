@@ -2456,7 +2456,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     ]);
 
     const seen = new Set();
-    let businesses = [...osmBusinesses, ...tomtomBusinesses,
+    let businesses = [...tomtomBusinesses, ...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
@@ -2576,7 +2576,7 @@ app.post('/api/analyze-location', async (req, res) => {
     ]);
 
     const seen = new Set();
-    let businesses = [...osmBusinesses, ...tomtomBusinesses,
+    let businesses = [...tomtomBusinesses, ...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
       const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
