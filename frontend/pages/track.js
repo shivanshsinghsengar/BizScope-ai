@@ -82,13 +82,19 @@ export default function TrackPage() {
       const currentCount = data.businesses?.length || 0;
       const prevCount = item.businessCount || currentCount;
       const diff = currentCount - prevCount;
+
+      // Only flag as change if difference is significant (>5%) to avoid noise
+      const threshold = Math.max(3, Math.floor(prevCount * 0.05));
+      const isSignificant = Math.abs(diff) >= threshold;
+
       const updated = tracked.map(t => t.id === id ? {
         ...t,
         businessCount: currentCount,
         categoryStats: data.categoryStats || t.categoryStats,
         lastChecked: new Date().toISOString(),
-        newBusinesses: diff > 0 ? diff : 0,
-        closedBusinesses: diff < 0 ? Math.abs(diff) : 0,
+        newBusinesses: (isSignificant && diff > 0) ? diff : 0,
+        closedBusinesses: (isSignificant && diff < 0) ? Math.abs(diff) : 0,
+        prevCount: prevCount,
       } : t);
       setTracked(updated);
       saveTracked(updated);
@@ -184,9 +190,6 @@ export default function TrackPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {tracked.map((item, i) => {
-              const hasChanges = item.newBusinesses > 0 || item.closedBusinesses > 0;
-              const topCat = item.categoryStats?.[0];
-              const bestOpp = item.categoryStats?.[item.categoryStats.length - 1];
               return (
                 <div key={item.id} className="card" style={{ padding: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
@@ -201,34 +204,58 @@ export default function TrackPage() {
                       </div>
 
                       {/* Stats row */}
-                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--muted)', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--muted)', marginBottom: '12px' }}>
                         <span>🏪 <strong style={{ color: 'var(--text)' }}>{item.businessCount}</strong> businesses</span>
-                        <span>🕐 Last checked: <strong style={{ color: 'var(--text)' }}>{formatDate(item.lastChecked)}</strong></span>
-                        {topCat && <span>🔴 Most competitive: <strong style={{ color: 'var(--text)' }}>{topCat.category}</strong></span>}
-                        {bestOpp && bestOpp.category !== topCat?.category && <span>🟢 Best opportunity: <strong style={{ color: 'var(--text)' }}>{bestOpp.category}</strong></span>}
+                        <span>🕐 <strong style={{ color: 'var(--text)' }}>{formatDate(item.lastChecked)}</strong></span>
                       </div>
 
-                      {/* Change indicators */}
-                      {hasChanges && (
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      {/* Market insights cards */}
+                      {item.categoryStats?.length > 0 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                          {/* Most competitive */}
+                          <div style={{ background: '#ef444415', border: '1px solid #ef444430', borderRadius: '12px', padding: '12px' }}>
+                            <div style={{ fontSize: '10px', color: '#f87171', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>🔴 Most Competitive</div>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.categoryStats[0]?.category}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{item.categoryStats[0]?.count} businesses</div>
+                          </div>
+                          {/* Best opportunity */}
+                          {item.categoryStats.length > 1 && (
+                            <div style={{ background: '#10b98115', border: '1px solid #10b98130', borderRadius: '12px', padding: '12px' }}>
+                              <div style={{ fontSize: '10px', color: '#34d399', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>🟢 Best Opportunity</div>
+                              <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.categoryStats[item.categoryStats.length - 1]?.category}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Only {item.categoryStats[item.categoryStats.length - 1]?.count} competitors</div>
+                            </div>
+                          )}
+                          {/* Total categories */}
+                          <div style={{ background: '#3b82f615', border: '1px solid #3b82f630', borderRadius: '12px', padding: '12px' }}>
+                            <div style={{ fontSize: '10px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>📊 Market Size</div>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)' }}>{item.businessCount} total</div>
+                            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{item.categoryStats.length} categories</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Change indicators — only show if significant */}
+                      {(item.newBusinesses > 0 || item.closedBusinesses > 0) && (
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
                           {item.newBusinesses > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#10b98115', border: '1px solid #10b98130' }}>
                               <span style={{ color: '#34d399', fontWeight: '700' }}>+{item.newBusinesses}</span>
-                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>new businesses</span>
+                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>significant increase detected</span>
                             </div>
                           )}
                           {item.closedBusinesses > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '100px', background: '#ef444415', border: '1px solid #ef444430' }}>
                               <span style={{ color: '#f87171', fontWeight: '700' }}>-{item.closedBusinesses}</span>
-                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>closed</span>
+                              <span style={{ color: 'var(--muted)', fontSize: '12px' }}>significant decrease detected</span>
                             </div>
                           )}
                         </div>
                       )}
-                      {!hasChanges && item.lastChecked && (
+                      {!item.newBusinesses && !item.closedBusinesses && item.lastChecked && (
                         <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                          No changes since last check
+                          Market stable — no significant changes
                         </div>
                       )}
                     </div>
