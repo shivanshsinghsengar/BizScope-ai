@@ -1256,13 +1256,6 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
 
 // Foursquare category → our category mapping
 
-    }).filter(b => b.latitude && b.longitude);
-  } catch (e) {
-    console.log('Foursquare failed:', e.message);
-    return [];
-  }
-};
-
 // Wikidata SPARQL — fetch notable places near location
 const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
   try {
