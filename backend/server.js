@@ -1090,6 +1090,57 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 10
   }
 };
 
+// Foursquare Places API — real ratings and reviews, no card needed
+const fsqCategoryMap = {
+  'Restaurant': 'Restaurant', 'Fast Food': 'Restaurant', 'Café': 'Cafe', 'Coffee Shop': 'Cafe',
+  'Bakery': 'Bakery', 'Grocery Store': 'Grocery', 'Supermarket': 'Grocery',
+  'Pharmacy': 'Pharmacy', 'Hospital': 'Hospital', 'Clinic': 'Hospital', 'Doctor': 'Hospital',
+  'Gym': 'Gym', 'Fitness Center': 'Gym', 'Yoga Studio': 'Gym',
+  'Salon': 'Salon', 'Beauty Salon': 'Salon', 'Spa': 'Salon',
+  'Clothing Store': 'Clothing', 'Electronics Store': 'Electronics',
+  'Hotel': 'Hotel', 'Hostel': 'Hotel', 'Bank': 'Finance', 'ATM': 'Finance',
+  'School': 'Education', 'College': 'Education', 'University': 'Education',
+};
+
+const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
+  const key = process.env.FOURSQUARE_API_KEY;
+  if (!key || key === 'your_foursquare_key') return [];
+  try {
+    const res = await axios.get('https://api.foursquare.com/v3/places/search', {
+      headers: { Authorization: key, Accept: 'application/json' },
+      params: {
+        ll: `${lat},${lng}`,
+        radius: radiusMeters,
+        limit: 50,
+        fields: 'name,categories,location,tel,website,rating,stats,geocodes',
+      },
+      timeout: 8000,
+    });
+    return (res.data.results || []).map(place => {
+      const cat = place.categories?.[0]?.name || 'Other';
+      const mapped = fsqCategoryMap[cat] || cat;
+      const geo = place.geocodes?.main;
+      if (!geo?.latitude || !geo?.longitude) return null;
+      return {
+        name: place.name,
+        category: mapped,
+        // Real ratings from Foursquare — not estimated!
+        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : stableRating(place.name, mapped),
+        reviewCount: place.stats?.total_ratings || stableReviews(place.name, mapped),
+        address: [place.location?.address, place.location?.locality].filter(Boolean).join(', ') || 'Unknown',
+        phone: place.tel || '',
+        website: place.website || '',
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        source: 'foursquare',
+      };
+    }).filter(Boolean);
+  } catch (e) {
+    console.log('Foursquare failed:', e.message.slice(0, 60));
+    return [];
+  }
+};
+
 // TomTom POI fetch — great coverage for Indian cities
 
 const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
@@ -1204,51 +1255,7 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
 };
 
 // Foursquare category → our category mapping
-const fsqCategoryMap = {
-  'Restaurant': 'Restaurant', 'Fast Food': 'Restaurant', 'Café': 'Cafe', 'Coffee Shop': 'Cafe',
-  'Bakery': 'Bakery', 'Grocery Store': 'Grocery', 'Supermarket': 'Grocery',
-  'Pharmacy': 'Pharmacy', 'Hospital': 'Hospital', 'Clinic': 'Hospital', 'Doctor': 'Hospital',
-  'Gym': 'Gym', 'Fitness Center': 'Gym', 'Yoga Studio': 'Gym',
-  'Salon': 'Salon', 'Beauty Salon': 'Salon', 'Spa': 'Salon',
-  'Clothing Store': 'Clothing', 'Electronics Store': 'Electronics',
-  'Hotel': 'Hotel', 'Hostel': 'Hotel', 'Bank': 'Finance', 'ATM': 'Finance',
-  'School': 'Education', 'College': 'Education',
-};
 
-const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
-  if (!process.env.FOURSQUARE_API_KEY) return [];
-  try {
-    const res = await axios.get('https://api.foursquare.com/v3/places/search', {
-      headers: {
-        Authorization: process.env.FOURSQUARE_API_KEY,
-        Accept: 'application/json',
-      },
-      params: {
-        ll: `${lat},${lng}`,
-        radius: radiusMeters,
-        limit: 50,
-        fields: 'name,categories,location,tel,website,rating,stats,geocodes',
-      },
-      timeout: 10000,
-    });
-    return (res.data.results || []).map(place => {
-      const cat = place.categories?.[0]?.name || 'Other';
-      const mapped = fsqCategoryMap[cat] || cat;
-      const geo = place.geocodes?.main;
-      return {
-        name: place.name,
-        category: mapped,
-        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : stableRating(place.name, mapped),
-        reviewCount: place.stats?.total_ratings || stableReviews(place.name, mapped, 200),
-        address: [place.location?.address, place.location?.locality, place.location?.region].filter(Boolean).join(', ') || 'Unknown',
-        phone: place.tel || '',
-        website: place.website || '',
-        latitude: geo?.latitude,
-        longitude: geo?.longitude,
-        source: 'foursquare',
-        ratingEstimated: !place.rating,
-        reviewCountEstimated: !place.stats?.total_ratings,
-      };
     }).filter(b => b.latitude && b.longitude);
   } catch (e) {
     console.log('Foursquare failed:', e.message);
