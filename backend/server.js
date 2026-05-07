@@ -2524,7 +2524,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     res.write(`data: ${JSON.stringify({ step: 'result', data: result })}\n\n`);
     res.end();
   } catch (error) {
-    console.error(error);
+    console.error('[SSE CRASH]', error?.message, error?.stack?.split('\n').slice(0,3).join(' | '));
     res.write(`data: ${JSON.stringify({ step: 'error', message: 'Analysis failed. Please try again.' })}\n\n`);
     res.end();
   }
@@ -2655,8 +2655,8 @@ app.post('/api/analyze-location', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Analysis failed' });
+    console.error('[POST CRASH]', error?.message, error?.stack?.split('\n').slice(0,3).join(' | '));
+    if (!res.headersSent) res.status(500).json({ error: 'Analysis failed' });
   }
 });
 
