@@ -7,7 +7,6 @@ export default function useAnalysis() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    // Refresh via SSE stream — gets real TomTom + OSM hybrid data
     const refreshFromStream = (location) => {
       return new Promise((resolve) => {
         try {
@@ -47,20 +46,25 @@ export default function useAnalysis() {
         const parsed = JSON.parse(raw);
         setData(parsed);
 
-        // Background refresh with hybrid data if stale or single-source
-        if (parsed.location?.displayName) {
-          const sources = parsed.dataQuality?.sourceCounts
-            ? Object.keys(parsed.dataQuality.sourceCounts)
-            : [];
-          const isSingleSource = sources.length === 1;
-          const isEstimated = !!parsed.estimatedData;
+        // Only refresh if data is genuinely bad (mock/estimated only)
+        // Do NOT refresh just because it's single-source — that causes flicker
+        const isEstimated = !!parsed.estimatedData;
+        const isMock = parsed.businesses?.some(b => b.isMock);
 
-          if (isSingleSource || isEstimated) {
-            const fresh = await refreshFromStream(parsed.location.displayName);
-            if (fresh && !fresh.error) {
-              sessionStorage.setItem('analysisData', JSON.stringify(fresh));
-              setData(fresh);
-            }
+        if ((isEstimated || isMock) && parsed.location?.displayName) {
+          const fresh = await refreshFromStream(parsed.location.displayName);
+
+          // Only replace if fresh data is strictly better:
+          // more businesses AND not estimated/mock
+          if (
+            fresh &&
+            !fresh.error &&
+            !fresh.estimatedData &&
+            !fresh.businesses?.some(b => b.isMock) &&
+            (fresh.businesses?.length || 0) >= (parsed.businesses?.length || 0)
+          ) {
+            sessionStorage.setItem('analysisData', JSON.stringify(fresh));
+            setData(fresh);
           }
         }
       } catch {
