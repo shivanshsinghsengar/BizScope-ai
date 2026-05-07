@@ -6,21 +6,20 @@ import SuggestBusiness from './SuggestBusiness';
 import Logo from './Logo';
 
 const navItems = [
-  { href: '/analysis', icon: '📊', label: 'Dashboard' },
-  { href: '/competitors', icon: '🏪', label: 'Competitors' },
-  { href: '/properties', icon: '🏠', label: 'Properties' },
-  { href: '/insights', icon: '🤖', label: 'AI Insights' },
-  { href: '/trends', icon: '📈', label: 'Trends' },
-  { href: '/strategy', icon: '🎯', label: 'Strategy' },
-  { href: '/interior', icon: '🏠', label: 'Interior' },
-  { href: '/sparks', icon: '⚡', label: 'SparkLab' },
-  { href: '/business-plan', icon: '📋', label: 'Business Plan' },
-  { href: '/track', icon: '📡', label: 'Track' },
-  { href: '/franchises', icon: '🏪', label: 'Franchises' },
-  { href: '/loans', icon: '💰', label: 'Loans' },
-  { href: '/cofounder', icon: '🤝', label: 'Co-founder' },
-  { href: '/list-business', icon: '➕', label: 'List Business' },
-  { href: '/saved', icon: '🔖', label: 'Saved' },
+  { href: '/analysis',      label: 'Dashboard' },
+  { href: '/competitors',   label: 'Competitors' },
+  { href: '/insights',      label: 'AI Insights' },
+  { href: '/properties',    label: 'Properties' },
+  { href: '/trends',        label: 'Trends' },
+  { href: '/strategy',      label: 'Strategy' },
+  { href: '/sparks',        label: 'SparkLab' },
+  { href: '/business-plan', label: 'Business Plan' },
+  { href: '/track',         label: 'Track' },
+  { href: '/franchises',    label: 'Franchises' },
+  { href: '/loans',         label: 'Loans' },
+  { href: '/cofounder',     label: 'Co-founder' },
+  { href: '/list-business', label: 'List Business' },
+  { href: '/saved',         label: 'Saved' },
 ];
 
 export default function Layout({ children }) {
@@ -52,10 +51,10 @@ export default function Layout({ children }) {
         <div className="nav-links" style={{ display: 'flex', gap: '2px', overflowX: 'auto' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => router.push(n.href)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', transition: 'all 0.2s', background: router.pathname === n.href ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent', color: router.pathname === n.href ? '#ffffff' : 'var(--muted)' }}
-              onMouseEnter={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; } }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: router.pathname === n.href ? '600' : '500', whiteSpace: 'nowrap', transition: 'all 0.15s', background: router.pathname === n.href ? 'var(--surface2)' : 'transparent', color: router.pathname === n.href ? 'var(--text)' : 'var(--muted)' }}
+              onMouseEnter={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text2)'; } }}
               onMouseLeave={e => { if (router.pathname !== n.href) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; } }}>
-              <span>{n.icon}</span><span>{n.label}</span>
+              {n.label}
             </button>
           ))}
         </div>
@@ -102,8 +101,8 @@ export default function Layout({ children }) {
         <div style={{ position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 99, background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {navItems.map(n => (
             <button key={n.href} onClick={() => { router.push(n.href); setMenuOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent', color: router.pathname === n.href ? '#ffffff' : 'var(--text)' }}>
-              <span>{n.icon}</span><span>{n.label}</span>
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', textAlign: 'left', background: router.pathname === n.href ? 'var(--surface2)' : 'transparent', color: router.pathname === n.href ? 'var(--text)' : 'var(--muted)', borderLeft: router.pathname === n.href ? '2px solid var(--accent)' : '2px solid transparent' }}>
+              {n.label}
             </button>
           ))}
         </div>
@@ -135,31 +134,44 @@ export default function Layout({ children }) {
       </button>
 
       {/* Footer */}
-      <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', background: 'var(--bg2)', padding: '20px 24px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🚀</div>
-            <span style={{ fontSize: '13px', color: 'var(--muted3)' }}>© 2026 BizScope AI · Built by Shivansh Singh Sengar</span>
+      <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', background: 'var(--bg2)', padding: '32px 24px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '32px', marginBottom: '28px' }}>
+            {/* Brand */}
+            <div style={{ maxWidth: '260px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #4f8ef7, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>B</div>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7', margin: 0 }}>
+                Free market intelligence for Indian entrepreneurs. Know your market before you invest.
+              </p>
+            </div>
+            {/* Links */}
+            <div style={{ display: 'flex', gap: '48px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Product</div>
+                {[['How it Works', '/how-it-works'], ['Pricing', '/pricing'], ['Docs', '/docs'], ['Changelog', '/changelog']].map(([l, h]) => (
+                  <div key={l} onClick={() => router.push(h)} style={{ fontSize: '13px', color: 'var(--muted)', cursor: 'pointer', marginBottom: '8px', transition: 'color 0.15s' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{l}</div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Company</div>
+                {[['About', '/about'], ['Feedback', '/feedback'], ['Privacy', '/privacy'], ['Terms', '/terms']].map(([l, h]) => (
+                  <div key={l} onClick={() => router.push(h)} style={{ fontSize: '13px', color: 'var(--muted)', cursor: 'pointer', marginBottom: '8px', transition: 'color 0.15s' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{l}</div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-            {[
-              { label: 'About', href: '/about' },
-              { label: 'Docs', href: '/docs' },
-              { label: 'Pricing', href: '/pricing' },
-              { label: 'How it Works', href: '/how-it-works' },
-              { label: 'Privacy', href: '/privacy' },
-              { label: 'Terms', href: '/terms' },
-              { label: 'Status', href: '/status' },
-              { label: '💬 Feedback', href: '/feedback' },
-            ].map(l => (
-              <span key={l.label} onClick={() => router.push(l.href)}
-                style={{ fontSize: '12px', color: 'var(--muted3)', cursor: 'pointer', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.target.style.color = 'var(--text)'}
-                onMouseLeave={e => e.target.style.color = 'var(--muted3)'}>{l.label}</span>
-            ))}
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6' }} />
-              <span style={{ fontSize: '12px', color: 'var(--muted3)' }}>All systems operational</span>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--muted2)' }}>© 2026 BizScope AI · Built by Shivansh Singh Sengar</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
+              <span style={{ fontSize: '12px', color: 'var(--muted2)' }}>All systems operational</span>
             </div>
           </div>
         </div>

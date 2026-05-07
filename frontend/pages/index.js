@@ -508,20 +508,20 @@ export default function Home() {
             </div>
 
             {/* Badge */}
-            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#3b82f6' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                🇮🇳 #1 Free Business Intelligence Tool for India
+            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#4f8ef7' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                Free for Indian entrepreneurs · No signup needed
               </div>
             </div>
 
             {/* Headline */}
-            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(32px, 6vw, 68px)', fontWeight: '900', lineHeight: '1.05', marginBottom: '20px', color: 'var(--text)', letterSpacing: '-1px' }}>
-              Know Your Market<br />
-              <span className="gradient-text-animated">Before You Invest</span>
+            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(34px, 6vw, 66px)', fontWeight: '900', lineHeight: '1.06', marginBottom: '22px', color: 'var(--text)', letterSpacing: '-2px' }}>
+              Know your market<br />
+              <span className="gradient-text-animated">before you invest.</span>
             </h1>
-            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 19px)', color: 'var(--muted)', maxWidth: '580px', margin: '0 auto 28px', lineHeight: '1.7' }}>
-              Enter any city in India — get real competitor data, AI business recommendations, available properties, and market scores in seconds. <strong style={{ color: 'var(--text)' }}>100% free.</strong>
+            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '520px', margin: '0 auto 32px', lineHeight: '1.75', fontWeight: '400' }}>
+              Type any city in India. Get real competitor counts, AI business ideas, available properties, and market scores — in under 10 seconds.
             </p>
 
             {/* Star rating social proof */}
@@ -529,62 +529,55 @@ export default function Home() {
               <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
                 <div style={{ display: 'flex', gap: '2px' }}>
                   {[1,2,3,4,5].map(s => (
-                    <span key={s} style={{ fontSize: '18px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>⭐</span>
+                    <span key={s} style={{ fontSize: '16px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>⭐</span>
                   ))}
                 </div>
-                <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '15px' }}>{reviews.avg}</span>
-                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>from {reviews.total} reviews</span>
+                <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{reviews.avg}</span>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>{reviews.total} reviews</span>
               </div>
             )}
 
             {/* Trust pills */}
-            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '40px' }}>
-              {['🗺️ Real OSM Data', '🤖 Gemini AI', '⚡ Under 10 sec', '🔒 No signup needed', '📄 PDF Export'].map(s => (
-                <div key={s} style={{ padding: '5px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--muted)', fontWeight: '500' }}>{s}</div>
+            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '44px' }}>
+              {['TomTom + OSM data', 'Gemini AI', 'Under 10 sec', 'No signup', 'PDF export'].map(s => (
+                <div key={s} style={{ padding: '5px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--muted)', fontWeight: '500' }}>{s}</div>
               ))}
             </div>
 
             {/* Form Card */}
-            <div className="anim-scale delay-3" style={{ maxWidth: '520px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: dark ? '0 25px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
-                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text2)' }}>Analyze a Location</span>
-              </div>
+            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', boxShadow: dark ? '0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)' : '0 8px 40px rgba(0,0,0,0.06)' }}>
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                   {[
-                    { name: 'city', label: 'City / Area *', placeholder: 'e.g. Mumbai, Connaught Place, Lajpat Nagar' },
-                    { name: 'address', label: 'Street Address (optional)', placeholder: 'e.g. MG Road, Sector 18' },
-                    { name: 'pincode', label: 'Pincode (optional)', placeholder: 'e.g. 400001' },
+                    { name: 'city', label: 'City or area', placeholder: 'Mumbai, Connaught Place, Lajpat Nagar…' },
+                    { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
+                    { name: 'pincode', label: 'Pincode', placeholder: '400001 (optional)' },
                   ].map(f => (
                     <div key={f.name}>
-                      <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{f.label}</label>
+                      <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>{f.label}</label>
                       <input name={f.name} value={form[f.name]} onChange={handleChange} placeholder={f.placeholder} required={f.name === 'city'} className="input-field" />
                       {/* AI insights below city field */}
                       {f.name === 'city' && (insightsLoading || cityInsights) && (
-                        <div style={{ marginTop: '8px', background: 'var(--surface2)', border: '1px solid #3b82f630', borderRadius: '12px', padding: '12px 14px', animation: 'fadeInUp 0.3s ease' }}>
+                        <div style={{ marginTop: '8px', background: 'var(--surface2)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '12px', padding: '12px 14px', animation: 'fadeInUp 0.3s ease' }}>
                           {insightsLoading ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--muted)' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block', animation: 'pulse 1s infinite' }} />
-                              Getting AI insights for {form.city}...
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+                              Getting insights for {form.city}…
                             </div>
                           ) : cityInsights && (
                             <>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '14px' }}>🤖</span>
-                                <span style={{ fontSize: '11px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>AI Insights for {cityInsights.city}</span>
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f8ef7', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>AI snapshot · {cityInsights.city}</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                 {cityInsights.insights?.map((insight, i) => (
                                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'var(--text2)', lineHeight: '1.5' }}>
-                                    <span style={{ color: '#3b82f6', flexShrink: 0, marginTop: '1px' }}>→</span>
+                                    <span style={{ color: '#4f8ef7', flexShrink: 0, marginTop: '1px' }}>→</span>
                                     <span>{insight}</span>
                                   </div>
                                 ))}
                               </div>
                               {cityInsights.topOpportunity && (
-                                <div style={{ marginTop: '8px', padding: '6px 10px', background: '#3b82f615', borderRadius: '8px', fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>
-                                  🎯 Top opportunity: {cityInsights.topOpportunity}
+                                <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(79,142,247,0.08)', borderRadius: '8px', fontSize: '11px', color: '#4f8ef7', fontWeight: '600' }}>
+                                  Top opportunity: {cityInsights.topOpportunity}
                                 </div>
                               )}
                             </>
@@ -594,22 +587,22 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
+                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠ {error}</p>}
                 {history.length > 0 && !loading && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Recent searches</div>
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--muted2)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>Recent</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {history.map(h => (
                         <button key={h} type="button" onClick={() => setForm(f => ({ ...f, city: h }))}
-                          style={{ padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--border2)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' }}>
-                          🕐 {h}
+                          style={{ padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {h}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px' }}>
-                  {loading ? '⏳ Analyzing...' : '🔍 Analyze Market'}
+                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em' }}>
+                  {loading ? 'Analyzing…' : 'Analyze market →'}
                 </button>
               </form>
             </div>
@@ -633,83 +626,81 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Stats bar — animated counters */}
-            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '40px', marginBottom: '64px' }}>
+            {/* Stats bar */}
+            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '48px', marginBottom: '72px' }}>
               {[
-                { value: '50M+', label: 'Businesses Indexed', icon: '🏪' },
-                { value: '195',  label: 'Countries Covered',  icon: '🌍' },
-                { value: '100%', label: 'Free Forever',       icon: '🆓' },
-                { value: '<10s', label: 'Analysis Time',      icon: '⚡' },
+                { value: '50M+', label: 'Businesses indexed' },
+                { value: '195',  label: 'Countries covered' },
+                { value: '100%', label: 'Free forever' },
+                { value: '<10s', label: 'Analysis time' },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', marginBottom: '4px' }}>{s.icon}</div>
-                  <div style={{ fontSize: '26px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1px' }}>{s.value}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{s.label}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', fontWeight: '500' }}>{s.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Feature cards */}
-            <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '64px' }}>
+            <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '72px' }}>
               {[
-                { icon: '🏪', title: 'Competitor Analysis', desc: 'Real businesses from OpenStreetMap within 3km radius.', color: '#3b82f6' },
-                { icon: '📊', title: 'Market Scoring', desc: 'See how crowded each business type is and find opportunities.', color: '#ef4444' },
-                { icon: '🏠', title: 'Property Finder', desc: 'Available commercial spaces for rent or sale near your location.', color: '#ffffff' },
-                { icon: '🤖', title: 'AI Recommendations', desc: 'Business suggestions tailored to local market conditions.', color: '#2563eb' },
-                { icon: '🗺️', title: 'Interactive Map', desc: 'Visualize competitors and properties on a live map.', color: '#dc2626' },
-                { icon: '📈', title: 'Profit Estimates', desc: 'Revenue projections based on local demand and competition.', color: '#3b82f6' },
+                { title: 'Competitor Analysis', desc: 'Real businesses from TomTom + OpenStreetMap within 5 km. See exactly how crowded your market is.', color: '#4f8ef7' },
+                { title: 'Market Scoring', desc: 'Each category gets a competition score. Low score = open opportunity. High score = think twice.', color: '#ef4444' },
+                { title: 'Property Finder', desc: 'Commercial spaces for rent or sale near your location, with government circle rate estimates.', color: '#a78bfa' },
+                { title: 'AI Recommendations', desc: 'Gemini AI reads your local market data and suggests the 5 best businesses to start there.', color: '#34d399' },
+                { title: 'Interactive Map', desc: 'Every competitor and property plotted on a live map. Spot clusters and gaps at a glance.', color: '#f59e0b' },
+                { title: 'Profit Estimates', desc: 'Revenue projections based on local demand, competition density, and category benchmarks.', color: '#4f8ef7' },
               ].map((f, i) => (
-                <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '22px' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: `${f.color}20`, border: `1px solid ${f.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '14px' }}>{f.icon}</div>
-                  <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>{f.title}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6' }}>{f.desc}</p>
+                <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '24px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: f.color, marginBottom: '16px', boxShadow: `0 0 8px ${f.color}60` }} />
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.3px' }}>{f.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.65', margin: 0 }}>{f.desc}</p>
                 </div>
               ))}
             </div>
 
             {/* How it works */}
-            <div id="how-it-works" style={{ textAlign: 'center', marginBottom: '64px' }}>
-              <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: '700', color: 'var(--text)', marginBottom: '12px' }}>How it Works</h2>
-              <p style={{ color: 'var(--muted)', marginBottom: '40px' }}>Three simple steps to market intelligence</p>
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div id="how-it-works" style={{ textAlign: 'center', marginBottom: '72px' }}>
+              <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px', letterSpacing: '-0.5px' }}>How it works</h2>
+              <p style={{ color: 'var(--muted)', marginBottom: '48px', fontSize: '15px' }}>Three steps. Under 10 seconds.</p>
+              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0' }}>
                 {[
-                  { step: '01', icon: '📍', title: 'Enter Location', desc: 'Type your city, address, or pincode' },
-                  { step: '02', icon: '⚡', title: 'Instant Analysis', desc: 'We fetch real data from OpenStreetMap' },
-                  { step: '03', icon: '🎯', title: 'Get Insights', desc: 'View competitors, properties & AI tips' },
-                ].map((s) => (
-                  <div key={s.step} style={{ flex: '1', minWidth: '200px', maxWidth: '260px', padding: '28px 20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', margin: '0 auto 14px' }}>{s.icon}</div>
-                    <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '8px' }}>STEP {s.step}</div>
-                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>{s.title}</h3>
-                    <p style={{ fontSize: '13px', color: 'var(--muted)' }}>{s.desc}</p>
+                  { step: '1', title: 'Enter a location', desc: 'City, address, or pincode — anything works.' },
+                  { step: '2', title: 'We fetch real data', desc: 'TomTom + OpenStreetMap + AI run in parallel.' },
+                  { step: '3', title: 'You get insights', desc: 'Competitors, properties, scores, and AI tips.' },
+                ].map((s, i) => (
+                  <div key={s.step} style={{ flex: '1', minWidth: '200px', maxWidth: '280px', padding: '32px 24px', position: 'relative' }}>
+                    {i < 2 && <div style={{ position: 'absolute', top: '44px', right: '-1px', width: '2px', height: '24px', background: 'var(--border)', display: 'none' }} className="hide-mobile" />}
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: 'var(--text)', margin: '0 auto 16px', letterSpacing: '-0.5px' }}>{s.step}</div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.3px' }}>{s.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0 }}>{s.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Testimonials */}
-            <div style={{ marginBottom: '64px' }}>
+            <div style={{ marginBottom: '72px' }}>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What Entrepreneurs Say</h2>
-                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Real feedback from real business owners</p>
+                <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '800', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.5px' }}>What entrepreneurs say</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Real people, real decisions made with BizScope</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 {[
-                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant Owner', avatar: '👨‍🍳', text: 'I was about to open a restaurant in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad — much better decision. Saved me lakhs.', stars: 5 },
-                  { name: 'Priya Gupta', city: 'Jaipur', role: 'Salon Entrepreneur', avatar: '💇‍♀️', text: 'The AI recommendations were spot on. It suggested a salon near a college area — I opened there and got 200+ customers in the first month.', stars: 5 },
-                  { name: 'Amit Verma', city: 'Delhi', role: 'Grocery Store Owner', avatar: '🛒', text: 'The property prices based on government circle rates helped me negotiate my rent. I showed the data to the landlord and got 15% off.', stars: 5 },
-                  { name: 'Sunita Patel', city: 'Ahmedabad', role: 'Clothing Boutique', avatar: '👗', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it. Highly recommend to any new entrepreneur.', stars: 5 },
+                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant owner', initials: 'RS', color: '#4f8ef7', text: 'I was about to open in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad — much better. Saved me lakhs.' },
+                  { name: 'Priya Gupta', city: 'Jaipur', role: 'Salon entrepreneur', initials: 'PG', color: '#a78bfa', text: 'The AI suggestions were accurate. It pointed me to a salon near a college area. 200+ customers in the first month.' },
+                  { name: 'Amit Verma', city: 'Delhi', role: 'Grocery store owner', initials: 'AV', color: '#34d399', text: 'The property price data helped me negotiate rent. I showed the circle rates to my landlord and got 15% off.' },
+                  { name: 'Sunita Patel', city: 'Ahmedabad', role: 'Clothing boutique', initials: 'SP', color: '#f59e0b', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it.' },
                 ].map((t, i) => (
-                  <div key={i} className="card" style={{ padding: '24px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '24px', opacity: 0.15 }}>"</div>
-                    <div style={{ display: 'flex', gap: '2px', marginBottom: '14px' }}>
-                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '14px' }}>⭐</span>)}
+                  <div key={i} className="card" style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', gap: '2px', marginBottom: '16px' }}>
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '13px' }}>★</span>)}
                     </div>
-                    <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '18px', fontStyle: 'italic' }}>"{t.text}"</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f620, #ef444420)', border: '1px solid #3b82f630', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{t.avatar}</div>
+                    <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '20px', margin: '0 0 20px' }}>"{t.text}"</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${t.color}18`, border: `1px solid ${t.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: t.color, flexShrink: 0 }}>{t.initials}</div>
                       <div>
-                        <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{t.name}</div>
+                        <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '13px' }}>{t.name}</div>
                         <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} · {t.city}</div>
                       </div>
                     </div>
