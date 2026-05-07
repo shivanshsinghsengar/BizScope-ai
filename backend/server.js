@@ -1112,10 +1112,27 @@ const mergeSmarter = (tomtomList = [], osmList = []) => {
   return final;
 };
 
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 12000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12000) => {
   try {
-    // ONE combined query — much faster than 4 separate requests
-    const query = `[out:json][timeout:10];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer|marketplace|post_office|police|fire_station|library|cinema|theatre|nightclub|casino|driving_school|language_school|music_school|dance_school|art_school|kindergarten|childcare|nursing_home|veterinary|dentist|optician|physiotherapist|alternative|social_facility|community_centre|place_of_worship|studio"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold|bakery|confectionery|pastry|deli|butcher|seafood|greengrocer|alcohol|beverages|tobacco|gift|art|craft|fabric|sewing|leather|bags|accessories|cosmetics|perfumery|medical_supply|hearing_aids|bicycle|outdoor|travel_agency|ticket|copyshop|printing|photo|video|music|musical_instrument|games|toys|baby_goods|second_hand|charity|pawnbroker|antiques|auction|interior_decoration|kitchen|bathroom|garden_centre|plant_nursery|agrarian|pet|aquarium|electrical|lighting|paint|glaziery|doors|windows|flooring|tiles|carpet|curtain|blinds|security|locksmith|key|mobile_phone_repair|appliance|vacuum_cleaner|sewing_machine|laundry|dry_cleaning|tailor|shoe_repair|watch_repair|jewellery_repair"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting|insurance|financial|travel_agent|employment_agency|advertising|marketing|media|newspaper|publishing|research|ngo|government|diplomatic|political_party|association|foundation|educational_institution"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel|apartment|camp_site|caravan_site|chalet|information|museum|gallery|attraction|theme_park|zoo|aquarium|viewpoint"](around:${radiusMeters},${lat},${lng});node["leisure"~"fitness_centre|gym|sports_centre|swimming_pool|stadium|pitch|track|golf_course|miniature_golf|bowling_alley|amusement_arcade|escape_game|trampoline_park|climbing|yoga|dance|martial_arts"](around:${radiusMeters},${lat},${lng}););out body qt;`;
+    // Query node + way — Indian businesses are often mapped as ways (buildings)
+    // timeout:25 gives Overpass enough time for dense cities like Mumbai/Delhi
+    const amenityVals = "restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer|marketplace|post_office|library|cinema|theatre|nursing_home|veterinary|optician|physiotherapist|studio";
+    const shopVals = "supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold|bakery|confectionery|pastry|deli|butcher|greengrocer|cosmetics|medical_supply|bicycle|outdoor|gift|art|electrical|paint|pet|second_hand|fabric|bags|accessories|perfumery|kitchen|carpet|interior_decoration";
+    const officeVals = "company|it|lawyer|accountant|architect|engineer|real_estate|consulting|insurance|financial|travel_agent|employment_agency|advertising|educational_institution";
+    const tourismVals = "hotel|hostel|guest_house|motel|apartment";
+    const leisureVals = "fitness_centre|gym|sports_centre|swimming_pool|bowling_alley|yoga|dance|martial_arts";
+    const query = `[out:json][timeout:25];(`
+      + `node["amenity"~"${amenityVals}"](around:${radiusMeters},${lat},${lng});`
+      + `way["amenity"~"${amenityVals}"](around:${radiusMeters},${lat},${lng});`
+      + `node["shop"~"${shopVals}"](around:${radiusMeters},${lat},${lng});`
+      + `way["shop"~"${shopVals}"](around:${radiusMeters},${lat},${lng});`
+      + `node["office"~"${officeVals}"](around:${radiusMeters},${lat},${lng});`
+      + `way["office"~"${officeVals}"](around:${radiusMeters},${lat},${lng});`
+      + `node["tourism"~"${tourismVals}"](around:${radiusMeters},${lat},${lng});`
+      + `way["tourism"~"${tourismVals}"](around:${radiusMeters},${lat},${lng});`
+      + `node["leisure"~"${leisureVals}"](around:${radiusMeters},${lat},${lng});`
+      + `way["leisure"~"${leisureVals}"](around:${radiusMeters},${lat},${lng});`
+      + `);out center qt;`;
 
     const mirrors = [
       'https://overpass-api.de/api/interpreter',
@@ -1150,7 +1167,11 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 12
 
     const results = allElements.map((el) => {
       const tags = el.tags || {};
-      const rawCat = tags.amenity || tags.shop || tags.office || tags.tourism || 'Other';
+      // way elements use center.lat/center.lon (from "out center"); node elements use el.lat/el.lon
+      const elLat = el.lat ?? el.center?.lat;
+      const elLon = el.lon ?? el.center?.lon;
+      if (!elLat || !elLon) return null;
+      const rawCat = tags.amenity || tags.shop || tags.office || tags.tourism || tags.leisure || 'Other';
       let category = osmToCategory[rawCat];
       if (!category && tags.office) category = 'Office';
       if (!category) category = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).replace(/_/g, ' ');
@@ -1159,13 +1180,13 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 12
       return {
         name: tags.name || `${category} (unnamed)`,
         category,
-        rating: stableRating(tags.name || `${el.lat}_${el.lon}`, category),
-        reviewCount: stableReviews(tags.name || `${el.lat}_${el.lon}`, category),
-        address: addrParts.join(', ') || `Near ${el.lat?.toFixed(3)}, ${el.lon?.toFixed(3)}`,
+        rating: stableRating(tags.name || `${elLat}_${elLon}`, category),
+        reviewCount: stableReviews(tags.name || `${elLat}_${elLon}`, category),
+        address: addrParts.join(', ') || `Near ${elLat.toFixed(3)}, ${elLon.toFixed(3)}`,
         phone: tags.phone || tags['contact:phone'] || '',
         website: tags.website || tags['contact:website'] || '',
-        latitude: el.lat,
-        longitude: el.lon,
+        latitude: elLat,
+        longitude: elLon,
         source: 'osm',
         ratingEstimated: true,
         reviewCountEstimated: true,
@@ -1192,7 +1213,7 @@ const fsqCategoryMap = {
   'School': 'Education', 'College': 'Education', 'University': 'Education',
 };
 
-const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
+const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 8000) => {
   const key = process.env.FOURSQUARE_API_KEY;
   if (!key || key === 'your_foursquare_key') return [];
   try {
@@ -1263,7 +1284,7 @@ const tomtomCatMap = (catStr) => {
   return 'Other';
 };
 
-const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
+const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 8000) => {
   const key = process.env.TOMTOM_API_KEY;
   if (!key || key === 'your_tomtom_key_here') return [];
 
@@ -1312,22 +1333,23 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
       nearbyRes.data.results.forEach(addPlace);
     }
 
-    // If nearbySearch gave < 50, do ONE batch of top 6 categories (fast, ~5s)
-    // Keeping total TomTom time under 8s so Render 30s limit is never hit
-    if (results.length < 50) {
-      const topCats = ['7315','9376','9361','7321','7318','7332'];
-      const catRes = await Promise.all(
-        topCats.map(catId =>
-          axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
-            params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, categorySet: catId, language: 'en-GB' },
-            timeout: 6000,
-          }).catch(() => null)
-        )
-      );
-      catRes.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
-    }
+    // Always run category searches to maximise coverage — TomTom nearbySearch caps at 100
+    // These 14 category IDs cover all major business types in Indian cities
+    // 7315=restaurant, 9376=grocery, 9361=hotel, 7321=pharmacy, 7318=hospital,
+    // 7332=bank, 9362=gym, 9379=salon, 7311=clothing, 7312=electronics,
+    // 7317=education, 9383=automotive, 9374=bakery, 7313=hardware
+    const allCats = ['7315','9376','9361','7321','7318','7332','9362','9379','7311','7312','7317','9383','9374','7313'];
+    const catRes = await Promise.all(
+      allCats.map(catId =>
+        axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
+          params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, categorySet: catId, language: 'en-GB' },
+          timeout: 8000,
+        }).catch(() => null)
+      )
+    );
+    catRes.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
 
-    console.log('TomTom returned ' + results.length + ' businesses');
+    console.log(`TomTom returned ${results.length} businesses (nearbySearch + ${allCats.length} category searches)`);
     return results;
   } catch (e) {
     console.log('TomTom failed:', e.message);
@@ -1338,7 +1360,7 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
 // Foursquare category → our category mapping
 
 // Wikidata SPARQL — fetch notable places near location
-const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
+const fetchWikidataPlaces = async (lat, lng, radiusMeters = 8000) => {
   try {
     // Query specifically for business/commercial entities — NOT generic geographic locations
     // Q4830453=business, Q11707=restaurant, Q27686=hotel, Q3918=university, Q16917=hospital
@@ -1362,7 +1384,7 @@ const fetchWikidataPlaces = async (lat, lng, radiusMeters = 5000) => {
         BIND(geof:latitude(?location) AS ?lat)
         BIND(geof:longitude(?location) AS ?lng)
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en,hi" }
-      } LIMIT 60
+      } LIMIT 100
     `;
 
     const res = await axios.get('https://query.wikidata.org/sparql', {
@@ -2528,8 +2550,8 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Step 2: Fetch businesses — TomTom + OSM + Manual all in parallel
     send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000),
+      fetchTomTomBusinesses(latitude, longitude, 8000),
+      fetchRealBusinesses(latitude, longitude, 8000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -2560,7 +2582,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Retry with wider radius if empty
     if (businesses.length === 0) {
       send('fetch', 'Expanding search radius...', 'Trying 5km radius', 40);
-      const wider = await fetchRealBusinesses(latitude, longitude, 5000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 10000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
@@ -2667,8 +2689,8 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000),
+      fetchTomTomBusinesses(latitude, longitude, 8000),
+      fetchRealBusinesses(latitude, longitude, 8000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
