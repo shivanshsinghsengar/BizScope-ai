@@ -1058,6 +1058,60 @@ const stableReviews = (name, category, max = 300) => {
   const r = deterministicRandom(`${name}_${category}_reviews`);
   return Math.floor(r * max + 10);
 };
+
+// ── Smart merge: compare TomTom vs OSM, take best of each ──
+// - Business count: whichever source gives MORE unique businesses wins
+// - Category: per-category, whichever source has MORE businesses for that category wins
+// - Dedup: name+position based (not category+position)
+const mergeSmarter = (tomtomList = [], osmList = []) => {
+  const dedup = (list) => {
+    const seen = new Set();
+    return list.filter(b => {
+      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+      const posKey = `${Math.round((b.latitude || 0) * 2000)}_${Math.round((b.longitude || 0) * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const ttUnique = dedup(tomtomList);
+  const osmUnique = dedup(osmList);
+
+  // Count categories per source
+  const ttCats = ttUnique.reduce((acc, b) => { acc[b.category] = (acc[b.category] || 0) + 1; return acc; }, {});
+  const osmCats = osmUnique.reduce((acc, b) => { acc[b.category] = (acc[b.category] || 0) + 1; return acc; }, {});
+
+  // All categories from both sources
+  const allCats = new Set([...Object.keys(ttCats), ...Object.keys(osmCats)]);
+
+  const merged = [];
+
+  allCats.forEach(cat => {
+    const ttCount = ttCats[cat] || 0;
+    const osmCount = osmCats[cat] || 0;
+
+    if (ttCount >= osmCount) {
+      // TomTom wins for this category
+      merged.push(...ttUnique.filter(b => b.category === cat));
+    } else {
+      // OSM wins for this category
+      merged.push(...osmUnique.filter(b => b.category === cat));
+    }
+  });
+
+  // Final dedup on merged result
+  const final = dedup(merged);
+
+  console.log(`[mergeSmarter] TomTom: ${ttUnique.length} | OSM: ${osmUnique.length} | Merged: ${final.length}`);
+  console.log(`[mergeSmarter] Category winners:`, Object.fromEntries(
+    [...allCats].map(cat => [cat, (ttCats[cat] || 0) >= (osmCats[cat] || 0) ? `TomTom(${ttCats[cat]||0})` : `OSM(${osmCats[cat]||0})`])
+  ));
+
+  return final;
+};
+
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 12000) => {
   try {
     // ONE combined query — much faster than 4 separate requests
@@ -2495,18 +2549,12 @@ app.get('/api/analyze-stream', async (req, res) => {
     if (osmBusinesses.length)    rawSourceCounts.osm    = osmBusinesses.length;
     if (manualBusinesses.length) rawSourceCounts.manual = manualBusinesses.length;
 
-    const seen = new Set();
-    let businesses = [...tomtomBusinesses, ...osmBusinesses,
+    // Smart merge: per-category, whichever source gives more businesses wins
+    const allOsm = [...osmBusinesses, ...(osmWider || [])];
+    let businesses = [
+      ...mergeSmarter(tomtomBusinesses, allOsm),
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
-    ].filter(b => {
-      // Dedup by name+position — NOT category+position (that drops legit businesses at same location)
-      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
-      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
-      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    ];
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
@@ -2632,17 +2680,11 @@ app.post('/api/analyze-location', async (req, res) => {
     if (osmBusinesses.length)    rawSourceCounts.osm    = osmBusinesses.length;
     if (manualBusinesses.length) rawSourceCounts.manual = manualBusinesses.length;
 
-    const seen = new Set();
-    let businesses = [...tomtomBusinesses, ...osmBusinesses,
+    // Smart merge: per-category winner takes all
+    let businesses = [
+      ...mergeSmarter(tomtomBusinesses, osmBusinesses),
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
-    ].filter(b => {
-      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
-      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
-      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    ];
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
