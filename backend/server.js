@@ -1026,10 +1026,10 @@ const stableReviews = (name, category, max = 300) => {
   const r = deterministicRandom(`${name}_${category}_reviews`);
   return Math.floor(r * max + 10);
 };
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 10000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 8000) => {
   try {
     // ONE combined query — much faster than 4 separate requests
-    const query = `[out:json][timeout:10];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
+    const query = `[out:json][timeout:8];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
@@ -1037,27 +1037,29 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 10
       'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
-    // Try mirrors one by one — Promise.any unreliable on some Node versions
+    // Race all mirrors in PARALLEL — take the first one that responds with data
+    // This prevents sequential timeouts (3 x 15s = 45s) causing server 500s
     let allElements = [];
     let fetched = false;
-    for (const url of mirrors) {
-      try {
-        const res = await axios.post(url, `data=${encodeURIComponent(query)}`,
-          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-        );
-        if (res?.data?.elements?.length > 0) {
-          allElements = res.data.elements;
-          fetched = true;
-          break;
-        }
-      } catch (e) {
-        console.log(`Overpass mirror ${url} failed:`, e.message);
-      }
-    }
-    if (!fetched) {
+    try {
+      const winner = await Promise.any(
+        mirrors.map(url =>
+          axios.post(url, `data=${encodeURIComponent(query)}`,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+          ).then(res => {
+            if (!res?.data?.elements?.length) throw new Error('empty');
+            return res.data.elements;
+          })
+        )
+      );
+      allElements = winner;
+      fetched = true;
+    } catch (e) {
+      // Promise.any rejects only if ALL mirrors fail
       logError('overpass', 'All mirrors failed', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
       return [];
     }
+    if (!fetched) return [];
 
     const results = allElements.map((el) => {
       const tags = el.tags || {};
@@ -2431,7 +2433,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000, 15000), // 15s max for OSM
+      fetchRealBusinesses(latitude, longitude, 5000, 8000), // parallel mirrors, 8s max
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -2457,7 +2459,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Retry with wider radius if empty
     if (businesses.length === 0) {
       send('fetch', 'Expanding search radius...', 'Trying 5km radius', 40);
-      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 20000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 8000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
@@ -2557,7 +2559,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000, 15000),
+      fetchRealBusinesses(latitude, longitude, 5000, 8000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -2582,7 +2584,7 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
-      const wider = await fetchRealBusinesses(latitude, longitude, 15000, 30000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 10000, 8000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
