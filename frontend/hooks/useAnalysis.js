@@ -7,21 +7,37 @@ export default function useAnalysis() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    const refreshFromBackend = async (location) => {
-      try {
-        const res = await fetch(`${API_URL}/api/analyze-location`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ location }),
-        });
-        const fresh = await res.json();
-        if (!fresh.error) {
-          sessionStorage.setItem('analysisData', JSON.stringify(fresh));
-          setData(fresh);
+    // Refresh via SSE stream — gets real TomTom + OSM hybrid data
+    const refreshFromStream = (location) => {
+      return new Promise((resolve) => {
+        try {
+          const url = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
+          const evtSource = new EventSource(url);
+          const timeout = setTimeout(() => { evtSource.close(); resolve(null); }, 30000);
+
+          evtSource.onmessage = (e) => {
+            try {
+              const payload = JSON.parse(e.data);
+              if (payload.step === 'result') {
+                clearTimeout(timeout);
+                evtSource.close();
+                resolve(payload.data);
+              } else if (payload.step === 'error') {
+                clearTimeout(timeout);
+                evtSource.close();
+                resolve(null);
+              }
+            } catch (_) {}
+          };
+          evtSource.onerror = () => {
+            clearTimeout(timeout);
+            evtSource.close();
+            resolve(null);
+          };
+        } catch (_) {
+          resolve(null);
         }
-      } catch {
-        // Ignore refresh failures and keep existing data
-      }
+      });
     };
 
     const load = async () => {
@@ -30,8 +46,22 @@ export default function useAnalysis() {
         if (!raw) { router.push('/'); return; }
         const parsed = JSON.parse(raw);
         setData(parsed);
+
+        // Background refresh with hybrid data if stale or single-source
         if (parsed.location?.displayName) {
-          await refreshFromBackend(parsed.location.displayName);
+          const sources = parsed.dataQuality?.sourceCounts
+            ? Object.keys(parsed.dataQuality.sourceCounts)
+            : [];
+          const isSingleSource = sources.length === 1;
+          const isEstimated = !!parsed.estimatedData;
+
+          if (isSingleSource || isEstimated) {
+            const fresh = await refreshFromStream(parsed.location.displayName);
+            if (fresh && !fresh.error) {
+              sessionStorage.setItem('analysisData', JSON.stringify(fresh));
+              setData(fresh);
+            }
+          }
         }
       } catch {
         router.push('/');

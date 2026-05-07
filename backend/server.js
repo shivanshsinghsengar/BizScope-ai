@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -1141,118 +1141,100 @@ const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 5000) => {
   }
 };
 
-// TomTom POI fetch — great coverage for Indian cities
+// TomTom POI fetch — nearbySearch primary, category fallback
+
+const tomtomCatMap = (catStr) => {
+  if (catStr.includes('restaurant') || catStr.includes('fast food') || catStr.includes('food court')) return 'Restaurant';
+  if (catStr.includes('cafe') || catStr.includes('coffee') || catStr.includes('tea house')) return 'Cafe';
+  if (catStr.includes('grocery') || catStr.includes('supermarket') || catStr.includes('convenience store')) return 'Grocery';
+  if (catStr.includes('pharmacy') || catStr.includes('chemist') || catStr.includes('drug store')) return 'Pharmacy';
+  if (catStr.includes('hospital') || catStr.includes('clinic') || catStr.includes('doctor') || catStr.includes('medical')) return 'Hospital';
+  if (catStr.includes('gym') || catStr.includes('fitness') || catStr.includes('sports centre') || catStr.includes('yoga')) return 'Gym';
+  if (catStr.includes('salon') || catStr.includes('beauty') || catStr.includes('spa') || catStr.includes('hair')) return 'Salon';
+  if (catStr.includes('cloth') || catStr.includes('fashion') || catStr.includes('apparel') || catStr.includes('boutique')) return 'Clothing';
+  if (catStr.includes('electron') || catStr.includes('mobile') || catStr.includes('computer') || catStr.includes('phone')) return 'Electronics';
+  if (catStr.includes('hotel') || catStr.includes('hostel') || catStr.includes('motel') || catStr.includes('lodge') || catStr.includes('guest house')) return 'Hotel';
+  if (catStr.includes('bank') || catStr.includes('atm') || catStr.includes('finance') || catStr.includes('money')) return 'Finance';
+  if (catStr.includes('school') || catStr.includes('college') || catStr.includes('university') || catStr.includes('education') || catStr.includes('coaching')) return 'Education';
+  if (catStr.includes('jewel') || catStr.includes('gold') || catStr.includes('jewelry')) return 'Jewellery';
+  if (catStr.includes('car') || catStr.includes('auto') || catStr.includes('petrol') || catStr.includes('fuel') || catStr.includes('garage')) return 'Automotive';
+  if (catStr.includes('bakery') || catStr.includes('pastry') || catStr.includes('bread') || catStr.includes('cake')) return 'Bakery';
+  if (catStr.includes('hardware') || catStr.includes('tool') || catStr.includes('building material')) return 'Hardware';
+  if (catStr.includes('furniture') || catStr.includes('home decor') || catStr.includes('interior')) return 'Furniture';
+  if (catStr.includes('laundry') || catStr.includes('dry clean')) return 'Laundry';
+  if (catStr.includes('wholesale') || catStr.includes('warehouse')) return 'Wholesale';
+  if (catStr.includes('retail') || catStr.includes('department store') || catStr.includes('shopping')) return 'Retail';
+  if (catStr.includes('office') || catStr.includes('business centre') || catStr.includes('coworking')) return 'Office';
+  return 'Other';
+};
 
 const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
-  if (!process.env.TOMTOM_API_KEY || process.env.TOMTOM_API_KEY === 'your_tomtom_key_here') return [];
-  try {
-    // Use category codes instead of text search — more reliable and returns more results
-    // TomTom category IDs: https://developer.tomtom.com/search-api/documentation/product-information/supported-categories
-    const categoryIds = [
-      '7315', // Restaurant
-      '9376', // Cafe/pub
-      '9361', // Grocery/supermarket
-      '7321', // Pharmacy
-      '7321015', // Hospital
-      '7320', // Doctor
-      '7318', // Gym/fitness
-      '7326', // Beauty salon/spa
-      '9361065', // Clothing store
-      '7332', // Electronics
-      '7314', // Hotel
-      '7332005', // Bank
-      '7372', // School/education
-      '7994', // Jewellery
-      '7310', // Automotive/car repair
-      '9361061', // Bakery
-      '7315037', // Fast food
-      '7315036', // Pizza
-      '9361067', // Hardware store
-      '7315034', // Indian restaurant
-    ];
+  const key = process.env.TOMTOM_API_KEY;
+  if (!key || key === 'your_tomtom_key_here') return [];
 
-    // Fetch all categories in parallel with limit=50 each
-    const fetches = categoryIds.map(catId =>
-      axios.get(`https://api.tomtom.com/search/2/categorySearch/.json`, {
-        params: {
-          key: process.env.TOMTOM_API_KEY,
-          lat, lon: lng,
-          radius: radiusMeters,
-          limit: 50,
-          categorySet: catId,
-          language: 'en-GB',
-          countrySet: 'IN',
-        },
-        timeout: 10000,
-      }).catch(e => { console.log(`TomTom cat ${catId} failed:`, e.message); return null; })
-    );
+  const seen = new Set();
+  const results = [];
 
-    const responses = await Promise.all(fetches);
-    const results = [];
-    const seen = new Set();
-
-    responses.forEach(res => {
-      if (!res?.data?.results) return;
-      res.data.results.forEach(place => {
-        const pos = place.position;
-        if (!pos?.lat || !pos?.lon) return;
-
-        // Deduplicate by name+position
-        const key = `${place.poi?.name}_${Math.round(pos.lat * 1000)}_${Math.round(pos.lon * 1000)}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-
-        // Map TomTom category to our category
-        const cats = place.poi?.categories || [];
-        const catStr = cats.join(' ').toLowerCase();
-        let category = 'Other';
-        if (catStr.includes('restaurant') || catStr.includes('food')) category = 'Restaurant';
-        else if (catStr.includes('cafe') || catStr.includes('coffee') || catStr.includes('tea')) category = 'Cafe';
-        else if (catStr.includes('grocery') || catStr.includes('supermarket') || catStr.includes('convenience')) category = 'Grocery';
-        else if (catStr.includes('pharmacy') || catStr.includes('chemist') || catStr.includes('drug')) category = 'Pharmacy';
-        else if (catStr.includes('hospital') || catStr.includes('clinic') || catStr.includes('doctor') || catStr.includes('medical')) category = 'Hospital';
-        else if (catStr.includes('gym') || catStr.includes('fitness') || catStr.includes('sport')) category = 'Gym';
-        else if (catStr.includes('salon') || catStr.includes('beauty') || catStr.includes('spa') || catStr.includes('hair')) category = 'Salon';
-        else if (catStr.includes('cloth') || catStr.includes('fashion') || catStr.includes('apparel')) category = 'Clothing';
-        else if (catStr.includes('electron') || catStr.includes('mobile') || catStr.includes('computer')) category = 'Electronics';
-        else if (catStr.includes('hotel') || catStr.includes('hostel') || catStr.includes('motel') || catStr.includes('lodge')) category = 'Hotel';
-        else if (catStr.includes('bank') || catStr.includes('atm') || catStr.includes('finance')) category = 'Finance';
-        else if (catStr.includes('school') || catStr.includes('college') || catStr.includes('university') || catStr.includes('education')) category = 'Education';
-        else if (catStr.includes('jewel') || catStr.includes('gold') || catStr.includes('jewelry')) category = 'Jewellery';
-        else if (catStr.includes('car') || catStr.includes('auto') || catStr.includes('petrol') || catStr.includes('fuel')) category = 'Automotive';
-        else if (catStr.includes('bakery') || catStr.includes('pastry') || catStr.includes('bread')) category = 'Bakery';
-        else if (catStr.includes('hardware') || catStr.includes('tool')) category = 'Hardware';
-        else if (catStr.includes('furniture') || catStr.includes('home')) category = 'Furniture';
-        else if (catStr.includes('laundry') || catStr.includes('dry clean')) category = 'Laundry';
-
-        results.push({
-          name: place.poi?.name || `${category} (unnamed)`,
-          category,
-          rating: stableRating(place.poi?.name || `${pos.lat}_${pos.lon}`, category),
-          reviewCount: stableReviews(place.poi?.name || `${pos.lat}_${pos.lon}`, category, 200),
-          address: [
-            place.address?.streetName,
-            place.address?.municipalitySubdivision,
-            place.address?.municipality,
-          ].filter(Boolean).join(', ') || `Near ${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`,
-          phone: place.poi?.phone || '',
-          website: place.poi?.url || '',
-          latitude: pos.lat,
-          longitude: pos.lon,
-          source: 'tomtom',
-          ratingEstimated: true,
-          reviewCountEstimated: true,
-        });
-      });
+  const addPlace = (place) => {
+    const pos = place.position;
+    if (!pos?.lat || !pos?.lon || !place.poi?.name) return;
+    const dk = place.poi.name.toLowerCase().replace(/\s+/g, '').slice(0, 20)
+      + '_' + Math.round(pos.lat * 2000) + '_' + Math.round(pos.lon * 2000);
+    if (seen.has(dk)) return;
+    seen.add(dk);
+    const catStr = (place.poi?.categories || []).join(' ').toLowerCase();
+    const category = tomtomCatMap(catStr);
+    results.push({
+      name: place.poi.name,
+      category,
+      rating: stableRating(place.poi.name, category),
+      reviewCount: stableReviews(place.poi.name, category, 200),
+      address: [place.address?.streetName, place.address?.municipalitySubdivision, place.address?.municipality]
+        .filter(Boolean).join(', ') || ('Near ' + pos.lat.toFixed(3) + ', ' + pos.lon.toFixed(3)),
+      phone: place.poi?.phone || '',
+      website: place.poi?.url || '',
+      latitude: pos.lat,
+      longitude: pos.lon,
+      source: 'tomtom',
+      ratingEstimated: true,
+      reviewCountEstimated: true,
     });
+  };
 
-    console.log(`TomTom returned ${results.length} businesses`);
+  try {
+    // Primary: nearbySearch — single call, most reliable, no countrySet restriction
+    const nearbyRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
+      params: {
+        key, lat, lon: lng, radius: radiusMeters, limit: 100, language: 'en-GB',
+        categorySet: '7315,9376,9361,7321,7320,7318,7326,9361065,7332,7314,7372,7994,7310',
+      },
+      timeout: 12000,
+    }).catch(e => { console.log('TomTom nearbySearch failed:', e.message); return null; });
+
+    if (nearbyRes?.data?.results?.length > 0) {
+      nearbyRes.data.results.forEach(addPlace);
+    }
+
+    // Fallback: category search if nearbySearch returned < 20
+    if (results.length < 20) {
+      const catIds = ['7315','9376','9361','7321','7320','7318','7326','7332','7314','7372','7994'];
+      const fetches = catIds.map(catId =>
+        axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
+          params: { key, lat, lon: lng, radius: radiusMeters, limit: 50, categorySet: catId, language: 'en-GB' },
+          timeout: 10000,
+        }).catch(() => null)
+      );
+      const responses = await Promise.all(fetches);
+      responses.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
+    }
+
+    console.log('TomTom returned ' + results.length + ' businesses');
     return results;
   } catch (e) {
     console.log('TomTom failed:', e.message);
     return [];
   }
-};
+}
 
 // Foursquare category → our category mapping
 

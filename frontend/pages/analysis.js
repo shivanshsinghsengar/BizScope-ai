@@ -190,7 +190,20 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} /> {data.businesses?.length} businesses</span>
             <span>📂 {data.categoryStats?.length} categories</span>
-            <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>✅ Live OSM Data</span>
+            <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>
+              {(() => {
+                const sources = data.dataQuality?.sourceCounts ? Object.keys(data.dataQuality.sourceCounts) : [];
+                const hasTomTom = sources.includes('tomtom');
+                const hasOsm = sources.includes('osm');
+                const hasFoursquare = sources.includes('foursquare');
+                if (hasTomTom && hasOsm) return '✅ TomTom + OSM Hybrid';
+                if (hasTomTom && hasFoursquare) return '✅ TomTom + Foursquare';
+                if (hasTomTom) return '✅ TomTom Data';
+                if (hasOsm) return '✅ Live OSM Data';
+                if (hasFoursquare) return '✅ Foursquare Data';
+                return '✅ Live Data';
+              })()}
+            </span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #3b82f640', background: copied ? '#3b82f615' : 'transparent', color: copied ? '#3b82f6' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
@@ -214,7 +227,10 @@ export default function Dashboard() {
               {data.dataQuality?.hasEstimatedMetrics && <div>Ratings and review counts may include estimates where source APIs do not provide them.</div>}
               {(data.dataQuality?.sourceCounts && Object.keys(data.dataQuality.sourceCounts).length > 0) && (
                 <div>
-                  Sources: {Object.entries(data.dataQuality.sourceCounts).map(([k, v]) => `${k} (${v})`).join(', ')}
+                  Sources: {Object.entries(data.dataQuality.sourceCounts).map(([k, v]) => {
+                    const icon = k === 'tomtom' ? '🗺️' : k === 'osm' ? '🌍' : k === 'foursquare' ? '📍' : k === 'manual' ? '✏️' : '📊';
+                    return `${icon} ${k.charAt(0).toUpperCase() + k.slice(1)} (${v})`;
+                  }).join('  ·  ')}
                 </div>
               )}
             </div>

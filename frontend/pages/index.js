@@ -95,7 +95,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
         </div>
 
         <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-          💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope analyzes real businesses from OpenStreetMap — the same data used by Apple Maps and Wikipedia.
+          💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.
         </div>
       </div>
     </div>
@@ -182,39 +182,49 @@ export default function Home() {
     const location = parts.join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
-    // Animate loading steps while POST runs
-    const steps = [
-      { step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 15 },
-      { step: 'fetch',   message: 'Scanning businesses nearby...', sub: 'Fetching from OpenStreetMap', progress: 35 },
-      { step: 'count',   message: 'Counting competitors...', sub: 'Analyzing categories', progress: 55 },
-      { step: 'score',   message: 'Calculating market scores...', sub: 'Running competition analysis', progress: 75 },
-      { step: 'ai',      message: 'Asking AI for recommendations...', sub: 'Generating insights', progress: 90 },
-    ];
-    let stepIdx = 0;
-    setLoadState(steps[0]);
-    const stepTimer = setInterval(() => {
-      stepIdx = Math.min(stepIdx + 1, steps.length - 1);
-      setLoadState(steps[stepIdx]);
-    }, 3000);
+    // Use SSE stream for real-time progress — TomTom + OSM + Foursquare hybrid
+    setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
 
     try {
-      const res = await fetch(`${API_URL}/api/analyze-location`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location }),
+      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
+      const evtSource = new EventSource(streamUrl);
+
+      await new Promise((resolve, reject) => {
+        evtSource.onmessage = (e) => {
+          try {
+            const payload = JSON.parse(e.data);
+            if (payload.step === 'result') {
+              evtSource.close();
+              const data = payload.data;
+              if (data.error) { reject(new Error(data.error)); return; }
+              setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
+              saveToHistory(form.city || form.address);
+              sessionStorage.setItem('analysisData', JSON.stringify(data));
+              setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+              trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
+              resolve(data);
+            } else if (payload.step === 'error') {
+              evtSource.close();
+              reject(new Error(payload.message || 'Analysis failed. Please try again.'));
+            } else {
+              // Real-time step updates from backend
+              setLoadState({
+                step: payload.step,
+                message: payload.message || '',
+                sub: payload.sub || '',
+                progress: payload.progress || 0,
+              });
+            }
+          } catch (_) {}
+        };
+        evtSource.onerror = () => {
+          evtSource.close();
+          reject(new Error('Connection lost. Please try again.'));
+        };
       });
-      clearInterval(stepTimer);
-      if (!res.ok) throw new Error(`Server error ${res.status} — please try again`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
-      saveToHistory(form.city || form.address);
-      sessionStorage.setItem('analysisData', JSON.stringify(data));
-      setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
-      trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
+
       router.push('/analysis');
     } catch (err) {
-      clearInterval(stepTimer);
       setError(err.message || 'Analysis failed. Please try again.');
       setLoading(false);
       trackEvent('analysis_failed', { reason: err.message });
