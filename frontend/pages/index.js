@@ -189,12 +189,19 @@ export default function Home() {
       const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
       const evtSource = new EventSource(streamUrl);
 
+      // 90s timeout — deep analysis takes time
+      const sseTimeout = setTimeout(() => {
+        evtSource.close();
+        reject(new Error('Analysis timed out. Please try again.'));
+      }, 90000);
+
       await new Promise((resolve, reject) => {
         evtSource.onmessage = (e) => {
           try {
             const payload = JSON.parse(e.data);
             if (payload.step === 'result') {
               evtSource.close();
+              clearTimeout(sseTimeout);
               const data = payload.data;
               if (data.error) { reject(new Error(data.error)); return; }
               setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });

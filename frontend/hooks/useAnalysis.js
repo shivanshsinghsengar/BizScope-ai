@@ -12,7 +12,7 @@ export default function useAnalysis() {
         try {
           const url = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
           const evtSource = new EventSource(url);
-          const timeout = setTimeout(() => { evtSource.close(); resolve(null); }, 30000);
+          const timeout = setTimeout(() => { evtSource.close(); resolve(null); }, 90000);
 
           evtSource.onmessage = (e) => {
             try {
