@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -87,8 +87,9 @@ const isSafeLocation = (location = '') => location.length >= 2 && location.lengt
 const isStrongPassword = (password = '') => typeof password === 'string' && password.length >= 8;
 const isValidEventName = (event = '') => /^[a-z0-9_]{3,64}$/.test(event);
 
-const buildDataQuality = (businesses = [], aiSuggestions = '') => {
-  const sourceCounts = businesses.reduce((acc, b) => {
+const buildDataQuality = (businesses = [], aiSuggestions = '', rawSourceCounts = null) => {
+  // rawSourceCounts = pre-dedup counts so OSM/Foursquare aren't hidden by dedup
+  const sourceCounts = rawSourceCounts || businesses.reduce((acc, b) => {
     const source = b.source || (b.isMock ? 'mock' : b.isManual ? 'manual' : 'unknown');
     acc[source] = (acc[source] || 0) + 1;
     return acc;
@@ -2437,6 +2438,12 @@ app.get('/api/analyze-stream', async (req, res) => {
       )),
     ]);
 
+    // Track raw source counts BEFORE dedup so OSM is not hidden by TomTom dedup
+    const rawSourceCounts = {};
+    if (tomtomBusinesses.length) rawSourceCounts.tomtom = tomtomBusinesses.length;
+    if (osmBusinesses.length)    rawSourceCounts.osm    = osmBusinesses.length;
+    if (manualBusinesses.length) rawSourceCounts.manual = manualBusinesses.length;
+
     const seen = new Set();
     let businesses = [...tomtomBusinesses, ...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
@@ -2509,7 +2516,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses, categoryStats: sortedStats, aiSuggestions,
       userLat: latitude, userLng: longitude,
-      dataQuality: buildDataQuality(businesses, aiSuggestions),
+      dataQuality: buildDataQuality(businesses, aiSuggestions, rawSourceCounts),
     };
     setCache(cacheKey, result);
     res.write(`data: ${JSON.stringify({ step: 'result', data: result })}\n\n`);
@@ -2556,6 +2563,12 @@ app.post('/api/analyze-location', async (req, res) => {
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )),
     ]);
+
+    // Track raw source counts BEFORE dedup — OSM entries get deduped out by TomTom
+    const rawSourceCounts = {};
+    if (tomtomBusinesses.length) rawSourceCounts.tomtom = tomtomBusinesses.length;
+    if (osmBusinesses.length)    rawSourceCounts.osm    = osmBusinesses.length;
+    if (manualBusinesses.length) rawSourceCounts.manual = manualBusinesses.length;
 
     const seen = new Set();
     let businesses = [...tomtomBusinesses, ...osmBusinesses,
@@ -2625,7 +2638,7 @@ app.post('/api/analyze-location', async (req, res) => {
       aiSuggestions: 'Generating AI recommendations...',
       userLat: latitude,
       userLng: longitude,
-      dataQuality: buildDataQuality(businesses, 'Generating AI recommendations...'),
+      dataQuality: buildDataQuality(businesses, 'Generating AI recommendations...', rawSourceCounts),
     };
 
     // Send response immediately, then get AI in background
@@ -2635,7 +2648,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // Update cache with AI result after response sent
     getAISuggestions(location, categoryStats).then(ai => {
       result.aiSuggestions = ai;
-      result.dataQuality = buildDataQuality(result.businesses, ai);
+      result.dataQuality = buildDataQuality(result.businesses, ai, rawSourceCounts);
       setCache(cacheKey, result);
     });
 
