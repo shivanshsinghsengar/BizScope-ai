@@ -953,6 +953,38 @@ const geocodeLocation = async (location) => {
 const osmToCategory = {
   // Food & Drink
   restaurant: 'Restaurant', fast_food: 'Restaurant', food_court: 'Restaurant',
+  bar: 'Restaurant', pub: 'Restaurant', nightclub: 'Restaurant', casino: 'Restaurant',
+  marketplace: 'Retail', deli: 'Restaurant', butcher: 'Grocery', seafood: 'Grocery',
+  greengrocer: 'Grocery', alcohol: 'Grocery', beverages: 'Grocery',
+  // Leisure
+  fitness_centre: 'Gym', sports_centre: 'Gym', swimming_pool: 'Gym', stadium: 'Gym',
+  bowling_alley: 'Gym', climbing: 'Gym', yoga: 'Gym', dance: 'Gym', martial_arts: 'Gym',
+  trampoline_park: 'Gym', amusement_arcade: 'Gym', escape_game: 'Gym',
+  // Education extras
+  driving_school: 'Education', language_school: 'Education', music_school: 'Education',
+  dance_school: 'Education', art_school: 'Education', kindergarten: 'Education',
+  childcare: 'Education', library: 'Education',
+  // Health extras
+  nursing_home: 'Hospital', veterinary: 'Hospital', physiotherapist: 'Hospital',
+  alternative: 'Hospital', optician: 'Pharmacy',
+  // Retail extras
+  gift: 'Retail', art: 'Retail', craft: 'Retail', fabric: 'Retail', sewing: 'Retail',
+  leather: 'Retail', bags: 'Retail', accessories: 'Retail', cosmetics: 'Salon',
+  perfumery: 'Salon', second_hand: 'Retail', charity: 'Retail', antiques: 'Retail',
+  interior_decoration: 'Furniture', kitchen: 'Furniture', bathroom: 'Furniture',
+  garden_centre: 'Retail', pet: 'Retail', bicycle: 'Retail', outdoor: 'Retail',
+  travel_agency: 'Office', ticket: 'Retail', copyshop: 'Retail', printing: 'Retail',
+  photo: 'Retail', music: 'Retail', musical_instrument: 'Retail', games: 'Retail',
+  // Tourism
+  museum: 'Other', gallery: 'Other', attraction: 'Other', theme_park: 'Other',
+  zoo: 'Other', aquarium: 'Other', viewpoint: 'Other',
+  // Services
+  post_office: 'Finance', police: 'Other', fire_station: 'Other',
+  cinema: 'Other', theatre: 'Other', studio: 'Other',
+  community_centre: 'Other', social_facility: 'Other', place_of_worship: 'Other',
+  // Office extras
+  insurance: 'Finance', financial: 'Finance', employment_agency: 'Office',
+  advertising: 'Office', marketing: 'Office', media: 'Office', research: 'Office',
   bar: 'Restaurant', pub: 'Restaurant', biergarten: 'Restaurant',
   sweet_shop: 'Restaurant', ice_cream: 'Cafe', juice_bar: 'Cafe',
   cafe: 'Cafe', coffee_shop: 'Cafe', tea: 'Cafe',
@@ -1026,10 +1058,10 @@ const stableReviews = (name, category, max = 300) => {
   const r = deterministicRandom(`${name}_${category}_reviews`);
   return Math.floor(r * max + 10);
 };
-const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 8000) => {
+const fetchRealBusinesses = async (lat, lng, radiusMeters = 5000, timeoutMs = 28000) => {
   try {
     // ONE combined query — much faster than 4 separate requests
-    const query = `[out:json][timeout:8];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel"](around:${radiusMeters},${lat},${lng}););out body;`;
+    const query = `[out:json][timeout:25];(node["amenity"~"restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer|marketplace|post_office|police|fire_station|library|cinema|theatre|nightclub|casino|driving_school|language_school|music_school|dance_school|art_school|kindergarten|childcare|nursing_home|veterinary|dentist|optician|physiotherapist|alternative|social_facility|community_centre|place_of_worship|studio"](around:${radiusMeters},${lat},${lng});node["shop"~"supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|optician|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold|bakery|confectionery|pastry|deli|butcher|seafood|greengrocer|alcohol|beverages|tobacco|gift|art|craft|fabric|sewing|leather|bags|accessories|cosmetics|perfumery|medical_supply|hearing_aids|bicycle|outdoor|travel_agency|ticket|copyshop|printing|photo|video|music|musical_instrument|games|toys|baby_goods|second_hand|charity|pawnbroker|antiques|auction|interior_decoration|kitchen|bathroom|garden_centre|plant_nursery|agrarian|pet|aquarium|electrical|lighting|paint|glaziery|doors|windows|flooring|tiles|carpet|curtain|blinds|security|locksmith|key|mobile_phone_repair|appliance|vacuum_cleaner|sewing_machine|laundry|dry_cleaning|tailor|shoe_repair|watch_repair|jewellery_repair"](around:${radiusMeters},${lat},${lng});node["office"~"company|it|lawyer|accountant|architect|engineer|real_estate|consulting|insurance|financial|travel_agent|employment_agency|advertising|marketing|media|newspaper|publishing|research|ngo|government|diplomatic|political_party|association|foundation|educational_institution"](around:${radiusMeters},${lat},${lng});node["tourism"~"hotel|hostel|guest_house|motel|apartment|camp_site|caravan_site|chalet|information|museum|gallery|attraction|theme_park|zoo|aquarium|viewpoint"](around:${radiusMeters},${lat},${lng});node["leisure"~"fitness_centre|gym|sports_centre|swimming_pool|stadium|pitch|track|golf_course|miniature_golf|bowling_alley|amusement_arcade|escape_game|trampoline_park|climbing|yoga|dance|martial_arts"](around:${radiusMeters},${lat},${lng}););out body qt;`;
 
     const mirrors = [
       'https://overpass.kumi.systems/api/interpreter',
@@ -1215,26 +1247,46 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
       params: {
         key, lat, lon: lng, radius: radiusMeters, limit: 100, language: 'en-GB',
         // No categorySet — get ALL business types for accurate market analysis
+        spreadingMode: 'auto',
       },
       timeout: 12000,
     }).catch(e => { console.log('TomTom nearbySearch failed:', e.message); return null; });
 
+    // Add nearbySearch results first
     if (nearbyRes?.data?.results?.length > 0) {
       nearbyRes.data.results.forEach(addPlace);
     }
 
-    // Fallback: category search if nearbySearch returned < 50
-    if (results.length < 50) {
-      const catIds = ['7315','9376','9361','7321','7320','7318','7326','7332','7314','7372','7994'];
-      const fetches = catIds.map(catId =>
-        axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
-          params: { key, lat, lon: lng, radius: radiusMeters, limit: 50, categorySet: catId, language: 'en-GB' },
-          timeout: 10000,
-        }).catch(() => null)
-      );
-      const responses = await Promise.all(fetches);
-      responses.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
-    }
+    // ALWAYS run per-category searches — each returns up to 100
+    // 18 categories × 100 = up to 1800 businesses before dedup
+    const catIds = [
+      '7315',    // food & drink
+      '9376',    // shop / retail
+      '9361',    // restaurant
+      '7321',    // cafe / coffee shop
+      '7320',    // grocery / supermarket
+      '7318',    // pharmacy / chemist
+      '7326',    // hospital / clinic / doctor
+      '9361065', // gym / fitness centre
+      '7332',    // hotel / accommodation
+      '7314',    // bank / finance / ATM
+      '7372',    // education / school / college
+      '7994',    // entertainment / cinema / theatre
+      '7310',    // petrol station / fuel
+      '9913',    // clothing / fashion / boutique
+      '9663',    // electronics / mobile / computer
+      '9357',    // beauty / salon / spa / nail
+      '7374',    // office / real estate / coworking
+      '9362',    // nightlife / bar / pub / club
+    ];
+    const catFetches = catIds.map(catId =>
+      axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
+        params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, categorySet: catId, language: 'en-GB' },
+        timeout: 10000,
+      }).catch(() => null)
+    );
+    const catResponses = await Promise.all(catFetches);
+    catResponses.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
 
     console.log('TomTom returned ' + results.length + ' businesses');
     return results;
@@ -2438,7 +2490,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000, 8000), // parallel mirrors, 8s max
+      fetchRealBusinesses(latitude, longitude, 5000), // uses default 28s timeout
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
@@ -2467,7 +2519,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Retry with wider radius if empty
     if (businesses.length === 0) {
       send('fetch', 'Expanding search radius...', 'Trying 5km radius', 40);
-      const wider = await fetchRealBusinesses(latitude, longitude, 5000, 8000);
+      const wider = await fetchRealBusinesses(latitude, longitude, 5000);
       const seen2 = new Set();
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
@@ -2569,7 +2621,7 @@ app.post('/api/analyze-location', async (req, res) => {
     // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 5000),
-      fetchRealBusinesses(latitude, longitude, 5000, 8000),
+      fetchRealBusinesses(latitude, longitude, 5000),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
