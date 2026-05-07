@@ -1168,6 +1168,11 @@ const tomtomCatMap = (catStr) => {
   if (catStr.includes('wholesale') || catStr.includes('warehouse')) return 'Wholesale';
   if (catStr.includes('retail') || catStr.includes('department store') || catStr.includes('shopping')) return 'Retail';
   if (catStr.includes('office') || catStr.includes('business centre') || catStr.includes('coworking')) return 'Office';
+  if (catStr.includes('shop') || catStr.includes('store') || catStr.includes('market')) return 'Retail';
+  if (catStr.includes('bar') || catStr.includes('pub') || catStr.includes('nightclub')) return 'Restaurant';
+  if (catStr.includes('park') || catStr.includes('garden') || catStr.includes('recreation')) return 'Other';
+  if (catStr.includes('place of worship') || catStr.includes('temple') || catStr.includes('mosque') || catStr.includes('church')) return 'Other';
+  if (catStr.includes('it') || catStr.includes('tech') || catStr.includes('software')) return 'Office';
   return 'Other';
 };
 
@@ -1209,7 +1214,7 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
     const nearbyRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
       params: {
         key, lat, lon: lng, radius: radiusMeters, limit: 100, language: 'en-GB',
-        categorySet: '7315,9376,9361,7321,7320,7318,7326,9361065,7332,7314,7372,7994,7310',
+        // No categorySet — get ALL business types for accurate market analysis
       },
       timeout: 12000,
     }).catch(e => { console.log('TomTom nearbySearch failed:', e.message); return null; });
@@ -1218,8 +1223,8 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 5000) => {
       nearbyRes.data.results.forEach(addPlace);
     }
 
-    // Fallback: category search if nearbySearch returned < 20
-    if (results.length < 20) {
+    // Fallback: category search if nearbySearch returned < 50
+    if (results.length < 50) {
       const catIds = ['7315','9376','9361','7321','7320','7318','7326','7332','7314','7372','7994'];
       const fetches = catIds.map(catId =>
         axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
@@ -2450,7 +2455,10 @@ app.get('/api/analyze-stream', async (req, res) => {
     let businesses = [...tomtomBusinesses, ...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
-      const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+      // Dedup by name+position — NOT category+position (that drops legit businesses at same location)
+      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -2464,7 +2472,9 @@ app.get('/api/analyze-stream', async (req, res) => {
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
       ].filter(b => {
-        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+        const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+        const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+        const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
         if (seen2.has(key)) return false;
         seen2.add(key);
         return true;
@@ -2576,7 +2586,9 @@ app.post('/api/analyze-location', async (req, res) => {
     let businesses = [...tomtomBusinesses, ...osmBusinesses,
       ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
     ].filter(b => {
-      const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -2589,7 +2601,9 @@ app.post('/api/analyze-location', async (req, res) => {
       businesses = [...wider,
         ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
       ].filter(b => {
-        const key = `${Math.round(b.latitude * 1000)}_${Math.round(b.longitude * 1000)}_${b.category}`;
+        const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+        const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+        const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
         if (seen2.has(key)) return false;
         seen2.add(key);
         return true;
