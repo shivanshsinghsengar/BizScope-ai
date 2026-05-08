@@ -1,4 +1,4 @@
-﻿import API_URL from '../utils/api';
+import API_URL from '../utils/api';
 import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
