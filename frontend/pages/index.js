@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
@@ -43,12 +43,12 @@ function NewsTicker({ headlines }) {
 
 // Real-time steps driven by SSE events
 const STEP_META = {
-  geocode: { icon: '≡ƒôì', label: 'Finding your location...' },
+  geocode: { icon: '📍', label: 'Finding your location...' },
   fetch:   { icon: '≡ƒöì', label: 'Scanning businesses nearby...' },
   count:   { icon: '≡ƒÅ¬', label: 'Counting competitors...' },
   score:   { icon: '≡ƒôè', label: 'Calculating market scores...' },
-  ai:      { icon: '≡ƒñû', label: 'Asking AI for recommendations...' },
-  done:    { icon: 'Γ£¿', label: 'Polishing results...' },
+  ai:      { icon: '🏪', label: 'Asking AI for recommendations...' },
+  done:    { icon: '✨', label: 'Polishing results...' },
   cache:   { icon: 'ΓÜí', label: 'Loading from cache...' },
 };
 
@@ -155,7 +155,7 @@ export default function Home() {
     } catch (_) {}
   };
 
-  // Handle shared link ΓÇö auto-fill location from URL param
+  // Handle shared link — auto-fill location from URL param
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const loc = params.get('location');
@@ -192,14 +192,14 @@ export default function Home() {
     const location = parts.join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
-    // Use SSE stream for real-time progress ΓÇö TomTom + OSM + Foursquare hybrid
+    // Use SSE stream for real-time progress — TomTom + OSM + Foursquare hybrid
     setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
 
     try {
       const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
       const evtSource = new EventSource(streamUrl);
 
-      // 90s timeout ΓÇö deep analysis takes time
+      // 90s timeout — deep analysis takes time
       const sseTimeout = setTimeout(() => {
         evtSource.close();
         reject(new Error('Analysis timed out. Please try again.'));
@@ -251,18 +251,18 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India</title>
+        <title>BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India</title>
         <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
         <meta name="keywords" content="market analysis India, competitor analysis tool, business opportunity finder, startup market research, free business intelligence, competitor research India, business location finder, market gap analysis" />
         <link rel="canonical" href="https://biz-scope-ai.vercel.app" />
-        <meta property="og:title" content="BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta property="og:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
         <meta property="og:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://biz-scope-ai.vercel.app" />
         <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta property="og:locale" content="en_IN" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta name="twitter:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
         <meta name="twitter:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data." />
         <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta name="robots" content="index, follow" />
@@ -326,7 +326,7 @@ export default function Home() {
                   "name": "How accurate is the data?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Business data comes from OpenStreetMap ΓÇö the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community."
+                    "text": "Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community."
                   }
                 },
                 {
@@ -342,7 +342,7 @@ export default function Home() {
                   "name": "Can I use this for any city in India?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes ΓÇö any city, town, or area in India (and 195 other countries). Just type the name and we'll find it."
+                    "text": "Yes — any city, town, or area in India (and 195 other countries). Just type the name and we'll find it."
                   }
                 },
                 {
@@ -350,7 +350,7 @@ export default function Home() {
                   "name": "Are the property prices real?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20ΓÇô150% higher depending on location."
+                    "text": "Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20–150% higher depending on location."
                   }
                 },
                 {
@@ -379,14 +379,14 @@ export default function Home() {
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>≡ƒÜÇ</div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🚀</div>
               <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #3b82f6, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
             </div>
             <div className="nav-links" style={{ display: 'flex', gap: '24px', fontSize: '14px', color: 'var(--muted)' }}>
               {[
                 { label: 'Features', action: () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) },
                 { label: 'How it Works', action: () => router.push('/how-it-works') },
-                { label: '≡ƒô░ News', action: () => router.push('/news') },
+                { label: '📰 News', action: () => router.push('/news') },
                 { label: 'Pricing', action: () => router.push('/pricing') },
                 { label: 'Docs', action: () => router.push('/docs') },
               ].map(item => (
@@ -398,11 +398,11 @@ export default function Home() {
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button onClick={toggle} title="Toggle theme"
                 style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {dark ? 'ΓÿÇ∩╕Å' : '≡ƒîÖ'}
+                {dark ? 'ΓÿÇ' : '≡ƒîÖ'}
               </button>
               <button onClick={() => router.push('/analysis')}
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
-                Get Started ΓåÆ
+                Get Started →
               </button>
             </div>
           </div>
@@ -412,12 +412,99 @@ export default function Home() {
         <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px 40px' }}>
 
-            {/* ΓöÇΓöÇ DIVIDER ΓöÇΓöÇ */}
+            {/* ── WORLD INNOVATION NEWS — TOP SECTION ── */}
+            <div style={{ marginBottom: '56px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
+                    🌍 World Innovation News
+                  </h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups · AI · Tech · Hackathons — updated every 30 min</p>
+                </div>
+                <button onClick={() => router.push('/news')}
+                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  Full News Feed →
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)}
+                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              {(() => {
+                const filtered = news.filter(a => {
+                  if (activeCategory === 'All') return true;
+                  const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                  if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                  if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
+                  if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
+                  if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
+                  if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
+                  if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
+                  return true;
+                });
+                const featured = filtered[0];
+                const rest = filtered.slice(1, 7);
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
+                    {featured && (
+                      <a href={featured.url} target="_blank" rel="noreferrer"
+                        style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                        {featured.urlToImage ? (
+                          <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                            <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                          </div>
+                        ) : (
+                          <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>🚀</div>
+                        )}
+                        <div style={{ padding: '20px' }}>
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
+                          </div>
+                          <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
+                          {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
+                        </div>
+                      </a>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {rest.map((a, i) => (
+                        <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                          style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
+                          {a.urlToImage ? (
+                            <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                          ) : (
+                            <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>📰</div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
+                            <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
+                          </div>
+                        </a>
+                      ))}
+                      <button onClick={() => router.push('/news')}
+                        style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
+                        📰 View All Innovation News →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ── DIVIDER ── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#3b82f615,#ef444410)', border: '1px solid #3b82f630' }}>
-                <span style={{ fontSize: '16px' }}>≡ƒÜÇ</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI ΓÇö Market Analysis</span>
+                <span style={{ fontSize: '16px' }}>🚀</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI — Market Analysis</span>
               </div>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
             </div>
@@ -426,7 +513,7 @@ export default function Home() {
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#4f8ef7' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                Free for Indian entrepreneurs ┬╖ No signup needed
+                Free for Indian entrepreneurs · No signup needed
               </div>
             </div>
 
@@ -436,7 +523,7 @@ export default function Home() {
               <span className="gradient-text-animated">before you invest.</span>
             </h1>
             <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '520px', margin: '0 auto 32px', lineHeight: '1.75', fontWeight: '400' }}>
-              Type any city in India. Get real competitor counts, AI business ideas, available properties, and market scores ΓÇö in under 10 seconds.
+              Type any city in India. Get real competitor counts, AI business ideas, available properties, and market scores — in under 10 seconds.
             </p>
 
             {/* Star rating social proof */}
@@ -444,7 +531,7 @@ export default function Home() {
               <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
                 <div style={{ display: 'flex', gap: '2px' }}>
                   {[1,2,3,4,5].map(s => (
-                    <span key={s} style={{ fontSize: '16px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>Γ¡É</span>
+                    <span key={s} style={{ fontSize: '16px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>⭐</span>
                   ))}
                 </div>
                 <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{reviews.avg}</span>
@@ -481,11 +568,11 @@ export default function Home() {
                             </div>
                           ) : cityInsights && (
                             <>
-                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f8ef7', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>AI snapshot ┬╖ {cityInsights.city}</div>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f8ef7', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>AI snapshot · {cityInsights.city}</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                 {cityInsights.insights?.map((insight, i) => (
                                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'var(--text2)', lineHeight: '1.5' }}>
-                                    <span style={{ color: '#4f8ef7', flexShrink: 0, marginTop: '1px' }}>ΓåÆ</span>
+                                    <span style={{ color: '#4f8ef7', flexShrink: 0, marginTop: '1px' }}>→</span>
                                     <span>{insight}</span>
                                   </div>
                                 ))}
@@ -517,7 +604,7 @@ export default function Home() {
                   </div>
                 )}
                 <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em' }}>
-                  {loading ? 'AnalyzingΓÇª' : 'Analyze market ΓåÆ'}
+                  {loading ? 'AnalyzingΓÇª' : 'Analyze market →'}
                 </button>
               </form>
             </div>
@@ -526,7 +613,7 @@ export default function Home() {
             <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
               <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '36px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>≡ƒÄ»</div>
-                <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed ΓÇö just try it</h2>
+                <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed — just try it</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>
                   Type any Indian city above and see real competitor data, AI insights, and property prices in under 10 seconds. No signup, no credit card.
                 </p>
@@ -534,7 +621,7 @@ export default function Home() {
                   {['Mumbai', 'Delhi', 'Mathura', 'Jaipur', 'Bangalore'].map(city => (
                     <button key={city} onClick={() => { setForm(f => ({ ...f, city })); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#2563eb', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-                      ≡ƒôì {city}
+                      📍 {city}
                     </button>
                   ))}
                 </div>
@@ -580,7 +667,7 @@ export default function Home() {
               <p style={{ color: 'var(--muted)', marginBottom: '48px', fontSize: '15px' }}>Three steps. Under 10 seconds.</p>
               <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0' }}>
                 {[
-                  { step: '1', title: 'Enter a location', desc: 'City, address, or pincode ΓÇö anything works.' },
+                  { step: '1', title: 'Enter a location', desc: 'City, address, or pincode — anything works.' },
                   { step: '2', title: 'We fetch real data', desc: 'TomTom + OpenStreetMap + AI run in parallel.' },
                   { step: '3', title: 'You get insights', desc: 'Competitors, properties, scores, and AI tips.' },
                 ].map((s, i) => (
@@ -602,7 +689,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 {[
-                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant owner', initials: 'RS', color: '#4f8ef7', text: 'I was about to open in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad ΓÇö much better. Saved me lakhs.' },
+                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant owner', initials: 'RS', color: '#4f8ef7', text: 'I was about to open in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad — much better. Saved me lakhs.' },
                   { name: 'Priya Gupta', city: 'Jaipur', role: 'Salon entrepreneur', initials: 'PG', color: '#a78bfa', text: 'The AI suggestions were accurate. It pointed me to a salon near a college area. 200+ customers in the first month.' },
                   { name: 'Amit Verma', city: 'Delhi', role: 'Grocery store owner', initials: 'AV', color: '#34d399', text: 'The property price data helped me negotiate rent. I showed the circle rates to my landlord and got 15% off.' },
                   { name: 'Sunita Patel', city: 'Ahmedabad', role: 'Clothing boutique', initials: 'SP', color: '#f59e0b', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it.' },
@@ -616,7 +703,7 @@ export default function Home() {
                       <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${t.color}18`, border: `1px solid ${t.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: t.color, flexShrink: 0 }}>{t.initials}</div>
                       <div>
                         <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '13px' }}>{t.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} ┬╖ {t.city}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} · {t.city}</div>
                       </div>
                     </div>
                   </div>
@@ -624,113 +711,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ΓöÇΓöÇ WORLD INNOVATION NEWS ΓÇö TOP SECTION ΓöÇΓöÇ */}
-            <div style={{ marginBottom: '56px' }}>
-              {/* Section header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
-                    ≡ƒîì World Innovation News
-                  </h2>
-                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ AI ┬╖ Tech ┬╖ Hackathons ΓÇö updated every 30 min</p>
-                </div>
-                <button onClick={() => router.push('/news')}
-                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
-                  Full News Feed ΓåÆ
-                </button>
-              </div>
-
-              {/* Category filter */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
-                  <button key={cat} onClick={() => setActiveCategory(cat)}
-                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {newsLoading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '14px' }}>
-                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: '160px', borderRadius: '14px' }} />)}
-                </div>
-              ) : (
-                <>
-                  {/* Featured + grid layout */}
-                  {(() => {
-                    const filtered = news.filter(a => {
-                      if (activeCategory === 'All') return true;
-                      const t = (a.title + ' ' + (a.description || '')).toLowerCase();
-                      if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
-                      if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
-                      if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
-                      if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
-                      if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
-                      if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
-                      return true;
-                    });
-                    const featured = filtered[0];
-                    const rest = filtered.slice(1, 7);
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
-                        {/* Featured */}
-                        {featured && (
-                          <a href={featured.url} target="_blank" rel="noreferrer"
-                            style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            {featured.urlToImage ? (
-                              <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
-                                <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
-                              </div>
-                            ) : (
-                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>≡ƒÜÇ</div>
-                            )}
-                            <div style={{ padding: '20px' }}>
-                              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
-                                <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
-                              </div>
-                              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
-                              {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
-                            </div>
-                          </a>
-                        )}
-                        {/* Right column ΓÇö list */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          {rest.map((a, i) => (
-                            <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                              style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
-                              {a.urlToImage ? (
-                                <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
-                              ) : (
-                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>≡ƒô░</div>
-                              )}
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
-                                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
-                              </div>
-                            </a>
-                          ))}
-                          <button onClick={() => router.push('/news')}
-                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
-                            ≡ƒô░ View All Innovation News ΓåÆ
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
-            </div>
-
             {/* Resource Hub */}
             <div style={{ marginBottom: '64px' }}>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#3b82f6', marginBottom: '14px' }}>
-                  ≡ƒîÉ Entrepreneur Resource Hub
+                  🌐 Entrepreneur Resource Hub
                 </div>
                 <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Stay Ahead of the Market</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Curated resources for Indian entrepreneurs</p>
@@ -741,8 +726,8 @@ export default function Home() {
                     icon: '≡ƒÆí', title: 'New Ideas', color: '#3b82f6',
                     desc: 'Discover trending business ideas and emerging markets in India',
                     links: [
-                      { label: '≡ƒÜÇ Product Hunt ΓÇö Today\'s Launches', url: 'https://www.producthunt.com' },
-                      { label: '≡ƒôè Tracxn ΓÇö India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
+                      { label: '🚀 Product Hunt — Today\'s Launches', url: 'https://www.producthunt.com' },
+                      { label: '≡ƒôè Tracxn — India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
                       { label: '≡ƒî▒ YC Startup Ideas', url: 'https://www.ycombinator.com/rfs' },
                     ]
                   },
@@ -750,18 +735,18 @@ export default function Home() {
                     icon: '≡ƒÅå', title: 'Hackathons', color: '#ef4444',
                     desc: 'Upcoming competitions to validate your idea and win funding',
                     links: [
-                      { label: 'ΓÜí Devpost ΓÇö Active Hackathons', url: 'https://devpost.com/hackathons' },
-                      { label: '≡ƒç«≡ƒç│ Unstop ΓÇö India Competitions', url: 'https://unstop.com/hackathons' },
-                      { label: '≡ƒÆ░ HackerEarth Challenges', url: 'https://www.hackerearth.com/challenges' },
+                      { label: 'ΓÜí Devpost — Active Hackathons', url: 'https://devpost.com/hackathons' },
+                      { label: '≡ƒç«≡ƒç│ Unstop — India Competitions', url: 'https://unstop.com/hackathons' },
+                      { label: '💰 HackerEarth Challenges', url: 'https://www.hackerearth.com/challenges' },
                     ]
                   },
                   {
-                    icon: '≡ƒôû', title: 'Startup Lessons', color: '#2563eb',
+                    icon: '📖', title: 'Startup Lessons', color: '#2563eb',
                     desc: 'Learn from failures and successes of real entrepreneurs',
                     links: [
-                      { label: '≡ƒÆÇ Failory ΓÇö Startup Post-Mortems', url: 'https://www.failory.com' },
-                      { label: '≡ƒô░ Inc42 ΓÇö India Startup News', url: 'https://inc42.com' },
-                      { label: '≡ƒÄÖ∩╕Å The Ken ΓÇö Deep Dives', url: 'https://the-ken.com' },
+                      { label: '💀 Failory — Startup Post-Mortems', url: 'https://www.failory.com' },
+                      { label: '📰 Inc42 — India Startup News', url: 'https://inc42.com' },
+                      { label: '🎙️ The Ken — Deep Dives', url: 'https://the-ken.com' },
                     ]
                   },
                 ].map((hub, i) => (
@@ -785,14 +770,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Why BizScope AI ΓÇö SEO content section */}
+            {/* Why BizScope AI — SEO content section */}
             <div style={{ marginBottom: '64px', maxWidth: '860px', margin: '0 auto 64px' }}>
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                 <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>
                   Why BizScope AI for Market Analysis in India?
                 </h2>
                 <p style={{ color: 'var(--muted)', fontSize: '15px', lineHeight: '1.8', maxWidth: '680px', margin: '0 auto' }}>
-                  India has over 63 million MSMEs ΓÇö and most fail because founders skip market research. BizScope AI gives every Indian entrepreneur free, instant access to the same business intelligence that large corporations pay lakhs for.
+                  India has over 63 million MSMEs — and most fail because founders skip market research. BizScope AI gives every Indian entrepreneur free, instant access to the same business intelligence that large corporations pay lakhs for.
                 </p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
@@ -800,30 +785,30 @@ export default function Home() {
                   {
                     icon: '≡ƒÅ¬',
                     title: 'Competitor Analysis for Any Indian City',
-                    desc: 'Instantly see every competitor within 3 km of your target location ΓÇö from Mumbai\'s Dharavi to Delhi\'s Connaught Place. Our competitor analysis tool pulls real business data from OpenStreetMap, the same database powering Apple Maps and Wikipedia. Know exactly how saturated a market is before you invest a single rupee.',
+                    desc: 'Instantly see every competitor within 3 km of your target location — from Mumbai\'s Dharavi to Delhi\'s Connaught Place. Our competitor analysis tool pulls real business data from OpenStreetMap, the same database powering Apple Maps and Wikipedia. Know exactly how saturated a market is before you invest a single rupee.',
                   },
                   {
                     icon: '≡ƒÄ»',
                     title: 'Find Business Opportunities & Market Gaps',
-                    desc: 'Our business opportunity finder scans local demand signals and competitor density to surface underserved niches. Whether you\'re looking for a gap in Tier-1 metros or Tier-2 cities like Jaipur, Surat, or Lucknow, BizScope AI identifies where demand outpaces supply ΓÇö your next big opportunity.',
+                    desc: 'Our business opportunity finder scans local demand signals and competitor density to surface underserved niches. Whether you\'re looking for a gap in Tier-1 metros or Tier-2 cities like Jaipur, Surat, or Lucknow, BizScope AI identifies where demand outpaces supply — your next big opportunity.',
                   },
                   {
                     icon: '≡ƒôè',
                     title: 'Startup Market Research in Under 10 Seconds',
-                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report ΓÇö competitor count, market saturation score, AI-recommended business types, and nearby property prices ΓÇö in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
+                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report — competitor count, market saturation score, AI-recommended business types, and nearby property prices — in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
                   },
                   {
-                    icon: '≡ƒñû',
+                    icon: '🏪',
                     title: 'AI-Powered Business Intelligence, 100% Free',
                     desc: 'Powered by Google Gemini AI and real-time OpenStreetMap data, BizScope AI provides free business intelligence that was previously only available to funded startups. No subscription, no credit card, no signup. Just enter your city and get actionable insights instantly.',
                   },
                   {
-                    icon: '≡ƒù║∩╕Å',
+                    icon: '≡ƒù║',
                     title: 'Location Intelligence for Indian Markets',
                     desc: 'Location is everything in Indian retail and services. Our location intelligence engine analyzes foot traffic patterns, competitor clustering, and commercial property availability to help you pick the perfect spot. From street-level analysis in Chandni Chowk to suburb mapping in Pune\'s Hinjewadi.',
                   },
                   {
-                    icon: '≡ƒôê',
+                    icon: '📈',
                     title: 'Market Trends & Demand Forecasting',
                     desc: 'Stay ahead of market trends with our real-time business intelligence dashboard. Track which business categories are growing in your city, monitor competitor openings and closures, and get AI-driven demand forecasts tailored to Indian consumer behavior and seasonal patterns.',
                   },
@@ -844,10 +829,10 @@ export default function Home() {
               </div>
               {[
                 { q: 'Is BizScope AI really free?', a: 'Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly.' },
-                { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap ΓÇö the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community.' },
+                { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community.' },
                 { q: 'How often is the data updated?', a: 'OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data.' },
-                { q: 'Can I use this for any city in India?', a: 'Yes ΓÇö any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
-                { q: 'Are the property prices real?', a: 'Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20ΓÇô150% higher depending on location.' },
+                { q: 'Can I use this for any city in India?', a: 'Yes — any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
+                { q: 'Are the property prices real?', a: 'Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20–150% higher depending on location.' },
                 { q: 'How does the AI recommendation work?', a: 'After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area.' },
               ].map((f, i) => (
                 <FAQItem key={i} q={f.q} a={f.a} />
@@ -862,17 +847,17 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '32px', marginBottom: '32px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>≡ƒÜÇ</div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🚀</div>
                   <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
                 </div>
                 <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>AI-powered business intelligence for entrepreneurs.</p>
               </div>
               {[
                 { title: 'Product', links: [
-                  { label: 'Γ£¿ Features', href: '/#features' },
-                  { label: '≡ƒÆ░ Pricing', href: '/pricing' },
-                  { label: 'ΓÜÖ∩╕Å How it Works', href: '/how-it-works' },
-                  { label: '≡ƒôû Docs', href: '/docs' },
+                  { label: '✨ Features', href: '/#features' },
+                  { label: '💰 Pricing', href: '/pricing' },
+                  { label: '⚙️ How it Works', href: '/how-it-works' },
+                  { label: '📖 Docs', href: '/docs' },
                 ]},
                 { title: 'Company', links: [
                   { label: '≡ƒæñ About', href: '/about' },
@@ -881,10 +866,10 @@ export default function Home() {
                   { label: 'Γ₧ò List Business', href: '/register' },
                 ]},
                 { title: 'Data Sources', links: [
-                  { label: '≡ƒù║∩╕Å OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
-                  { label: '≡ƒñû Google Gemini AI', href: 'https://ai.google.dev' },
-                  { label: '≡ƒôì TomTom POI', href: 'https://developer.tomtom.com' },
-                  { label: '≡ƒÅ¢∩╕Å Govt Circle Rates', href: 'https://ngdrs.gov.in' },
+                  { label: '≡ƒù║ OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
+                  { label: '🏪 Google Gemini AI', href: 'https://ai.google.dev' },
+                  { label: '📍 TomTom POI', href: 'https://developer.tomtom.com' },
+                  { label: '≡ƒÅ¢ Govt Circle Rates', href: 'https://ngdrs.gov.in' },
                 ]},
               ].map(col => (
                 <div key={col.title}>
@@ -914,7 +899,7 @@ export default function Home() {
       {/* Theme toggle bottom-left */}
       <button onClick={toggle} title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 200, width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border2)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-        {dark ? 'ΓÿÇ∩╕Å' : '≡ƒîÖ'}
+        {dark ? 'ΓÿÇ' : '≡ƒîÖ'}
       </button>
 
       <SuggestBusiness />
