@@ -412,108 +412,6 @@ export default function Home() {
         <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px 40px' }}>
 
-            {/* ΓöÇΓöÇ WORLD INNOVATION NEWS ΓÇö TOP SECTION ΓöÇΓöÇ */}
-            <div style={{ marginBottom: '56px' }}>
-              {/* Section header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
-                    ≡ƒîì World Innovation News
-                  </h2>
-                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ AI ┬╖ Tech ┬╖ Hackathons ΓÇö updated every 30 min</p>
-                </div>
-                <button onClick={() => router.push('/news')}
-                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
-                  Full News Feed ΓåÆ
-                </button>
-              </div>
-
-              {/* Category filter */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
-                  <button key={cat} onClick={() => setActiveCategory(cat)}
-                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {newsLoading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '14px' }}>
-                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: '160px', borderRadius: '14px' }} />)}
-                </div>
-              ) : (
-                <>
-                  {/* Featured + grid layout */}
-                  {(() => {
-                    const filtered = news.filter(a => {
-                      if (activeCategory === 'All') return true;
-                      const t = (a.title + ' ' + (a.description || '')).toLowerCase();
-                      if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
-                      if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
-                      if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
-                      if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
-                      if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
-                      if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
-                      return true;
-                    });
-                    const featured = filtered[0];
-                    const rest = filtered.slice(1, 7);
-                    return (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
-                        {/* Featured */}
-                        {featured && (
-                          <a href={featured.url} target="_blank" rel="noreferrer"
-                            style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            {featured.urlToImage ? (
-                              <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
-                                <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
-                              </div>
-                            ) : (
-                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>≡ƒÜÇ</div>
-                            )}
-                            <div style={{ padding: '20px' }}>
-                              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
-                                <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
-                              </div>
-                              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
-                              {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
-                            </div>
-                          </a>
-                        )}
-                        {/* Right column ΓÇö list */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          {rest.map((a, i) => (
-                            <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                              style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
-                              {a.urlToImage ? (
-                                <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
-                              ) : (
-                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>≡ƒô░</div>
-                              )}
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
-                                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
-                              </div>
-                            </a>
-                          ))}
-                          <button onClick={() => router.push('/news')}
-                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
-                            ≡ƒô░ View All Innovation News ΓåÆ
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
-            </div>
-
             {/* ΓöÇΓöÇ DIVIDER ΓöÇΓöÇ */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
               <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
@@ -726,64 +624,105 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Live News Grid ΓÇö Google News Style */}
-            <div style={{ marginBottom: '64px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            {/* ΓöÇΓöÇ WORLD INNOVATION NEWS ΓÇö TOP SECTION ΓöÇΓöÇ */}
+            <div style={{ marginBottom: '56px' }}>
+              {/* Section header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h2 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: '800', color: 'var(--text)', marginBottom: '4px' }}>≡ƒîì World Innovation News</h2>
-                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ Tech ┬╖ Hackathons ┬╖ Innovation</p>
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
+                    ≡ƒîì World Innovation News
+                  </h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ AI ┬╖ Tech ┬╖ Hackathons ΓÇö updated every 30 min</p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {['All', 'Startup', 'Tech', 'AI', 'Funding'].map(cat => (
-                    <button key={cat} onClick={() => setActiveCategory(cat)}
-                      style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s' }}>
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+                <button onClick={() => router.push('/news')}
+                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  Full News Feed ΓåÆ
+                </button>
+              </div>
+
+              {/* Category filter */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)}
+                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
+                    {cat}
+                  </button>
+                ))}
               </div>
 
               {newsLoading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
-                  {[1,2,3,4,5,6].map(i => (
-                    <div key={i} className="shimmer" style={{ height: '180px', borderRadius: '16px' }} />
-                  ))}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '14px' }}>
+                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: '160px', borderRadius: '14px' }} />)}
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
-                  {news.filter(a => {
-                    if (activeCategory === 'All') return true;
-                    const t = (a.title + ' ' + (a.description || '')).toLowerCase();
-                    if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
-                    if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('app');
-                    if (activeCategory === 'AI') return t.includes('ai') || t.includes('artificial') || t.includes('machine learning') || t.includes('gemini') || t.includes('openai');
-                    if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('invest') || t.includes('million') || t.includes('billion');
-                    return true;
-                  }).slice(0, 12).map((article, i) => (
-                    <a key={i} href={article.url} target="_blank" rel="noreferrer"
-                      style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(59,130,246,0.1)'; e.currentTarget.style.borderColor = '#3b82f640'; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
-                      {article.urlToImage && (
-                        <div style={{ height: '140px', overflow: 'hidden', background: 'var(--surface2)' }}>
-                          <img src={article.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                <>
+                  {/* Featured + grid layout */}
+                  {(() => {
+                    const filtered = news.filter(a => {
+                      if (activeCategory === 'All') return true;
+                      const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                      if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                      if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
+                      if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
+                      if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
+                      if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
+                      if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
+                      return true;
+                    });
+                    const featured = filtered[0];
+                    const rest = filtered.slice(1, 7);
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
+                        {/* Featured */}
+                        {featured && (
+                          <a href={featured.url} target="_blank" rel="noreferrer"
+                            style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            {featured.urlToImage ? (
+                              <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                                <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                              </div>
+                            ) : (
+                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>≡ƒÜÇ</div>
+                            )}
+                            <div style={{ padding: '20px' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
+                                <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
+                              </div>
+                              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
+                              {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
+                            </div>
+                          </a>
+                        )}
+                        {/* Right column ΓÇö list */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {rest.map((a, i) => (
+                            <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                              style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
+                              {a.urlToImage ? (
+                                <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                              ) : (
+                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>≡ƒô░</div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
+                                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
+                              </div>
+                            </a>
+                          ))}
+                          <button onClick={() => router.push('/news')}
+                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
+                            ≡ƒô░ View All Innovation News ΓåÆ
+                          </button>
                         </div>
-                      )}
-                      <div style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{article.source}</span>
-                          <span style={{ fontSize: '10px', color: 'var(--muted)' }}>
-                            {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
-                          </span>
-                        </div>
-                        <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          {article.title}
-                        </h3>
                       </div>
-                    </a>
-                  ))}
-                </div>
+                    );
+                  })()}
+                </>
               )}
             </div>
 
