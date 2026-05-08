@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -2370,58 +2370,47 @@ Week | Focus | Top 3 Actions | Success Signal
 });
 
 // News API — startup, tech, innovation, hackathon news
-const newsCache = { data: null, time: 0 };
-app.get('/api/news', async (req, res) => {
+const newsCache = { data: null, time: 0, fetching: false };
+
+async function prefetchNews() {
+  const key = process.env.NEWS_API_KEY;
+  if (!key || key === 'your_newsapi_key_here') return;
   try {
-    // Cache for 30 minutes to save API quota
-    if (newsCache.data && Date.now() - newsCache.time < 30 * 60 * 1000) {
-      return res.json(newsCache.data);
+    const queries = ['startup India funding 2026', 'technology innovation AI 2026', 'hackathon entrepreneur India'];
+    const results = await Promise.allSettled(
+      queries.map(q => axios.get('https://newsapi.org/v2/everything', {
+        params: { q, language: 'en', sortBy: 'publishedAt', pageSize: 15, apiKey: key },
+        timeout: 5000,
+      }))
+    );
+    const seen = new Set();
+    const articles = results
+      .filter(r => r.status === 'fulfilled')
+      .flatMap(r => r.value.data.articles || [])
+      .filter(a => {
+        if (!a.title || !a.url || a.title.includes('[Removed]')) return false;
+        if (seen.has(a.url)) return false;
+        seen.add(a.url); return true;
+      })
+      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+      .slice(0, 30)
+      .map(a => ({ title: a.title, url: a.url, source: a.source?.name || 'News', publishedAt: a.publishedAt, urlToImage: a.urlToImage, description: a.description }));
+    if (articles.length > 0) { newsCache.data = { articles }; newsCache.time = Date.now(); console.log(`News pre-warmed: ${articles.length} articles`); }
+  } catch (e) { console.log('News prefetch failed:', e.message); }
+}
+setTimeout(prefetchNews, 3000);
+setInterval(prefetchNews, 25 * 60 * 1000);
+
+app.get('/api/news', async (req, res) => {
+  if (newsCache.data) {
+    if (Date.now() - newsCache.time > 25 * 60 * 1000 && !newsCache.fetching) {
+      newsCache.fetching = true;
+      prefetchNews().finally(() => { newsCache.fetching = false; });
     }
-
-    const key = process.env.NEWS_API_KEY;
-    if (!key || key === 'your_newsapi_key_here') {
-      return res.json({ articles: FALLBACK_NEWS });
-    }
-
-    // Fetch startup + tech + innovation news
-    const queries = [
-      'startup India funding',
-      'technology innovation 2026',
-      'hackathon entrepreneur',
-    ];
-    const q = queries[Math.floor(Date.now() / (30 * 60 * 1000)) % queries.length];
-
-    const response = await axios.get('https://newsapi.org/v2/everything', {
-      params: {
-        q,
-        language: 'en',
-        sortBy: 'publishedAt',
-        pageSize: 20,
-        apiKey: key,
-      },
-      timeout: 8000,
-    });
-
-    const articles = (response.data.articles || [])
-      .filter(a => a.title && a.url && !a.title.includes('[Removed]'))
-      .slice(0, 20)
-      .map(a => ({
-        title: a.title,
-        url: a.url,
-        source: a.source?.name || 'News',
-        publishedAt: a.publishedAt,
-        urlToImage: a.urlToImage,
-        description: a.description,
-      }));
-
-    const result = { articles };
-    newsCache.data = result;
-    newsCache.time = Date.now();
-    res.json(result);
-  } catch (e) {
-    console.log('News API failed:', e.message);
-    res.json({ articles: FALLBACK_NEWS });
+    return res.json(newsCache.data);
   }
+  res.json({ articles: FALLBACK_NEWS });
+  if (!newsCache.fetching) { newsCache.fetching = true; prefetchNews().finally(() => { newsCache.fetching = false; }); }
 });
 
 const FALLBACK_NEWS = [

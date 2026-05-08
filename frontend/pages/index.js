@@ -1,612 +1,982 @@
-﻿
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
+import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
 
-/* ─── Loader overlay ─── */
-const STEPS = ['geocode','fetch','count','score','ai','done'];
-const STEP_LABEL = {
-  geocode: 'Locating your area',
-  fetch:   'Pulling business data',
-  count:   'Counting competitors',
-  score:   'Scoring the market',
-  ai:      'Running AI analysis',
-  done:    'Finishing up',
-};
-
-function Loader({ city, step, message, progress }) {
-  const [dots, setDots] = useState('');
-  useEffect(() => {
-    const t = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 480);
-    return () => clearInterval(t);
-  }, []);
-  const idx = STEPS.indexOf(step);
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'var(--bg)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      gap: 0,
-    }}>
-      <div style={{ width: 320, textAlign: 'center' }}>
-        <p style={{ fontSize: 12, color: 'var(--ink-3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          Analyzing · {city}
-        </p>
-        <p style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink)', marginBottom: 32, minHeight: 52, lineHeight: 1.4 }}>
-          {message || STEP_LABEL[step] || 'Working'}{dots}
-        </p>
-        <div style={{ height: 2, background: 'var(--line)', borderRadius: 1, overflow: 'hidden', marginBottom: 8 }}>
-          <div style={{ height: '100%', background: 'var(--blue)', width: `${progress || 4}%`, transition: 'width 0.5s ease', borderRadius: 1 }} />
-        </div>
-        <p style={{ fontSize: 11, color: 'var(--ink-4)', marginBottom: 28 }}>{progress || 0}%</p>
-        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {STEPS.map((k, i) => (
-            <div key={k} style={{
-              height: 2, borderRadius: 1,
-              width: i === idx ? 20 : 6,
-              background: i <= idx ? 'var(--blue)' : 'var(--line)',
-              transition: 'all 0.3s',
-            }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Ticker ─── */
-function Ticker({ items }) {
-  if (!items?.length) return null;
-  const doubled = [...items, ...items];
-  return (
-    <div style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--line)', height: 32, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
-      <span style={{ background: 'var(--red)', color: '#fff', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', padding: '0 10px', height: '100%', display: 'flex', alignItems: 'center', flexShrink: 0 }}>LIVE</span>
-      <div style={{ overflow: 'hidden', flex: 1 }}>
-        <div className="ticker-track">
-          {doubled.map((h, i) => (
-            <a key={i} href={h.url} target="_blank" rel="noreferrer"
-              style={{ fontSize: 12, color: 'var(--ink-3)', paddingRight: 40, textDecoration: 'none', whiteSpace: 'nowrap' }}
-              onMouseEnter={e => e.target.style.color = 'var(--ink)'}
-              onMouseLeave={e => e.target.style.color = 'var(--ink-3)'}
-            >
-              {h.title}
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── FAQ row ─── */
-function FAQ({ q, a }) {
+function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div onClick={() => setOpen(o => !o)} style={{ borderBottom: '1px solid var(--line)', padding: '16px 0', cursor: 'pointer', userSelect: 'none' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{q}</span>
-        <span style={{ color: 'var(--ink-3)', fontSize: 18, lineHeight: 1, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none', flexShrink: 0 }}>+</span>
+    <div style={{ borderBottom: '1px solid var(--border)', padding: '18px 0', cursor: 'pointer' }} onClick={() => setOpen(o => !o)}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+        <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)' }}>{q}</span>
+        <span style={{ fontSize: '20px', color: '#3b82f6', flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'none' }}>+</span>
       </div>
-      {open && <p style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, marginTop: 10, paddingRight: 24 }}>{a}</p>}
+      {open && <p style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.8', marginTop: '12px', paddingRight: '24px' }}>{a}</p>}
+    </div>
+  );
+}
+
+function NewsTicker({ headlines }) {
+  if (!headlines || headlines.length === 0) return null;
+  const items = [...headlines, ...headlines];
+  return (
+    <div style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(59,130,246,0.2)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#ffffff', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0 }}>LIVE</div>
+        <div style={{ overflow: 'hidden', flex: 1 }}>
+          <div className="ticker-track">
+            {items.map((h, i) => (
+              <a key={i} href={h.url} target="_blank" rel="noreferrer"
+                style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', paddingRight: '60px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                ≡ƒö╡ {h.title}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Real-time steps driven by SSE events
+const STEP_META = {
+  geocode: { icon: '≡ƒôì', label: 'Finding your location...' },
+  fetch:   { icon: '≡ƒöì', label: 'Scanning businesses nearby...' },
+  count:   { icon: '≡ƒÅ¬', label: 'Counting competitors...' },
+  score:   { icon: '≡ƒôè', label: 'Calculating market scores...' },
+  ai:      { icon: '≡ƒñû', label: 'Asking AI for recommendations...' },
+  done:    { icon: 'Γ£¿', label: 'Polishing results...' },
+  cache:   { icon: 'ΓÜí', label: 'Loading from cache...' },
+};
+
+function AnalysisLoader({ city, step, message, sub, progress }) {
+  const [dots, setDots] = useState('');
+  const dotsRef = useRef(null);
+  useEffect(() => {
+    dotsRef.current = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 400);
+    return () => clearInterval(dotsRef.current);
+  }, []);
+
+  const meta = STEP_META[step] || STEP_META.geocode;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,15,10,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
+      <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: '72px', marginBottom: '24px', animation: 'fadeInUp 0.4s ease' }}>{meta.icon}</div>
+
+        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+          Analyzing {city}
+        </div>
+
+        <div style={{ fontSize: '22px', fontWeight: '800', color: '#f1f5f9', marginBottom: '8px', lineHeight: '1.3', minHeight: '60px' }}>
+          {message || meta.label}{dots}
+        </div>
+
+        <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>{sub || ''}</div>
+
+        {/* Real progress bar */}
+        <div style={{ width: '100%', height: '6px', background: '#1c2130', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #3b82f6, #ffffff, #ef4444)', width: `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: '0 0 12px rgba(59,130,246,0.6)' }} />
+        </div>
+
+        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
+
+        {/* Step indicators */}
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
+          {Object.keys(STEP_META).filter(k => k !== 'cache').map((k, i) => (
+            <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#3b82f6' : '#1c2130', transition: 'all 0.3s ease' }} />
+          ))}
+        </div>
+
+        <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+          ≡ƒÆí <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function Home() {
-  const [form, setForm]           = useState({ city: '', address: '', pincode: '' });
-  const [loading, setLoading]     = useState(false);
-  const [ls, setLs]               = useState({ step: 'geocode', message: '', progress: 0 });
-  const [error, setError]         = useState('');
-  const [history, setHistory]     = useState([]);
-  const [news, setNews]           = useState([]);
-  const [newsLoading, setNL]      = useState(true);
-  const [cat, setCat]             = useState('All');
-  const [insights, setInsights]   = useState(null);
-  const [iLoading, setIL]         = useState(false);
-  const timer                     = useRef(null);
-  const router                    = useRouter();
-  const { dark, toggle }          = useTheme();
+  const [form, setForm] = useState({ city: '', address: '', pincode: '' });
+  const [loading, setLoading] = useState(false);
+  const [loadState, setLoadState] = useState({ step: 'geocode', message: '', sub: '', progress: 0 });
+  const [error, setError] = useState('');
+  const [history, setHistory] = useState([]);
+  const [reviews, setReviews] = useState({ reviews: [], avg: 0, total: 0 });
+  const [news, setNews] = useState([
+    { title: 'India startup ecosystem raises $8.9B in 2025', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
+    { title: 'OpenAI launches GPT-5 with advanced reasoning', url: 'https://openai.com', source: 'OpenAI', publishedAt: new Date().toISOString() },
+    { title: 'Zepto raises $350M — quick commerce boom continues', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: new Date().toISOString() },
+    { title: 'Google Gemini 2.0 now free for all developers', url: 'https://ai.google.dev', source: 'Google AI', publishedAt: new Date().toISOString() },
+    { title: 'Y Combinator W26 batch — 40% Indian founders', url: 'https://ycombinator.com', source: 'YC', publishedAt: new Date().toISOString() },
+    { title: 'India becomes 3rd largest startup ecosystem globally', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
+    { title: 'Devpost announces $1M hackathon prize pool for 2026', url: 'https://devpost.com', source: 'Devpost', publishedAt: new Date().toISOString() },
+    { title: 'PhonePe crosses 500M registered users milestone', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
+    { title: 'HealthTech funding up 120% — telemedicine leads growth', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: new Date().toISOString() },
+    { title: 'Meesho hits 150M users — social commerce dominates Tier 2', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
+  ]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [cityInsights, setCityInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const insightsTimer = useRef(null);
+  const router = useRouter();
+  const { dark, toggle } = useTheme();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/news`).then(r => r.json())
-      .then(d => { setNews(d.articles || []); setNL(false); })
-      .catch(() => setNL(false));
-    try { setHistory(JSON.parse(localStorage.getItem('bizscope_history') || '[]').slice(0, 5)); } catch (_) {}
-    const p = new URLSearchParams(window.location.search).get('location');
-    if (p) setForm(f => ({ ...f, city: p }));
+    fetch(`${API_URL}/api/reviews`).then(r => r.json()).then(d => setReviews(d)).catch(() => {});
+    trackEvent('home_viewed');
+    // Fetch real news in background — page already shows fallback instantly
+    fetch(`${API_URL}/api/news`).then(r => r.json()).then(d => {
+      if (d.articles && d.articles.length > 0) setNews(d.articles);
+    }).catch(() => {});
   }, []);
 
-  const saveHistory = loc => {
+  // Load search history from localStorage
+  useEffect(() => {
     try {
       const h = JSON.parse(localStorage.getItem('bizscope_history') || '[]');
-      const u = [loc, ...h.filter(x => x !== loc)].slice(0, 5);
-      localStorage.setItem('bizscope_history', JSON.stringify(u));
-      setHistory(u);
+      setHistory(h.slice(0, 5));
+    } catch (_) {}
+  }, []);
+
+  const saveToHistory = (location) => {
+    try {
+      const h = JSON.parse(localStorage.getItem('bizscope_history') || '[]');
+      const updated = [location, ...h.filter(x => x !== location)].slice(0, 5);
+      localStorage.setItem('bizscope_history', JSON.stringify(updated));
+      setHistory(updated);
     } catch (_) {}
   };
 
-  const onChange = e => {
+  // Handle shared link ΓÇö auto-fill location from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const loc = params.get('location');
+    if (loc) setForm(f => ({ ...f, city: loc }));
+  }, []);
+
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (e.target.name === 'city') {
-      clearTimeout(timer.current);
-      if (e.target.value.trim().length >= 3) {
-        timer.current = setTimeout(() => fetchInsights(e.target.value.trim()), 800);
-      } else { setInsights(null); }
+    // Fetch AI insights when city has 3+ chars
+    if (e.target.name === 'city' && e.target.value.trim().length >= 3) {
+      clearTimeout(insightsTimer.current);
+      insightsTimer.current = setTimeout(() => {
+        fetchCityInsights(e.target.value.trim());
+      }, 800);
+    } else if (e.target.name === 'city' && e.target.value.trim().length < 3) {
+      setCityInsights(null);
     }
   };
 
-  const fetchInsights = async city => {
-    setIL(true);
+  const fetchCityInsights = async (city) => {
+    setInsightsLoading(true);
     try {
-      const d = await fetch(`${API_URL}/api/city-insights?city=${encodeURIComponent(city)}`).then(r => r.json());
-      if (d.insights) setInsights({ city, ...d });
+      const res = await fetch(`${API_URL}/api/city-insights?city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+      if (data.insights) setCityInsights({ city, ...data });
     } catch (_) {}
-    setIL(false);
+    setInsightsLoading(false);
   };
 
-  const onSubmit = async e => {
+  const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');
-    const loc = [form.address, form.city, form.pincode].filter(p => p.trim()).join(', ');
-    setLs({ step: 'geocode', message: '', progress: 8 });
+    const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
+    const location = parts.join(', ');
+    trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
+
+    // Use SSE stream for real-time progress ΓÇö TomTom + OSM + Foursquare hybrid
+    setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
+
     try {
-      const src = new EventSource(`${API_URL}/api/analyze-stream?location=${encodeURIComponent(loc)}`);
-      const timeout = setTimeout(() => { src.close(); }, 90000);
-      await new Promise((res, rej) => {
-        src.onmessage = ev => {
+      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
+      const evtSource = new EventSource(streamUrl);
+
+      // 90s timeout ΓÇö deep analysis takes time
+      const sseTimeout = setTimeout(() => {
+        evtSource.close();
+        reject(new Error('Analysis timed out. Please try again.'));
+      }, 90000);
+
+      await new Promise((resolve, reject) => {
+        evtSource.onmessage = (e) => {
           try {
-            const p = JSON.parse(ev.data);
-            if (p.step === 'result') {
-              src.close(); clearTimeout(timeout);
-              if (p.data.error) { rej(new Error(p.data.error)); return; }
-              setLs({ step: 'done', message: 'Done!', progress: 100 });
-              saveHistory(form.city || form.address);
-              sessionStorage.setItem('analysisData', JSON.stringify(p.data));
+            const payload = JSON.parse(e.data);
+            if (payload.step === 'result') {
+              evtSource.close();
+              clearTimeout(sseTimeout);
+              const data = payload.data;
+              if (data.error) { reject(new Error(data.error)); return; }
+              setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
+              saveToHistory(form.city || form.address);
+              sessionStorage.setItem('analysisData', JSON.stringify(data));
               setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
-              res(p.data);
-            } else if (p.step === 'error') {
-              src.close(); rej(new Error(p.message || 'Analysis failed.'));
+              trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
+              resolve(data);
+            } else if (payload.step === 'error') {
+              evtSource.close();
+              reject(new Error(payload.message || 'Analysis failed. Please try again.'));
             } else {
-              setLs({ step: p.step, message: p.message || '', progress: p.progress || 0 });
+              // Real-time step updates from backend
+              setLoadState({
+                step: payload.step,
+                message: payload.message || '',
+                sub: payload.sub || '',
+                progress: payload.progress || 0,
+              });
             }
           } catch (_) {}
         };
-        src.onerror = () => { src.close(); rej(new Error('Connection lost. Please try again.')); };
+        evtSource.onerror = () => {
+          evtSource.close();
+          reject(new Error('Connection lost. Please try again.'));
+        };
       });
+
       router.push('/analysis');
     } catch (err) {
       setError(err.message || 'Analysis failed. Please try again.');
       setLoading(false);
+      trackEvent('analysis_failed', { reason: err.message });
     }
   };
 
-  const filtered = news.filter(a => {
-    if (cat === 'All') return true;
-    const t = (a.title + ' ' + (a.description || '')).toLowerCase();
-    if (cat === 'Startup') return t.includes('startup') || t.includes('founder');
-    if (cat === 'AI')      return t.includes(' ai ') || t.includes('openai') || t.includes('gemini');
-    if (cat === 'Tech')    return t.includes('tech') || t.includes('software');
-    if (cat === 'Funding') return t.includes('fund') || t.includes('million') || t.includes('billion');
-    if (cat === 'India')   return t.includes('india') || t.includes('indian');
-    return true;
-  });
-
-  /* ─── RENDER ─── */
   return (
     <>
       <Head>
-        <title>BizScope AI — Free Market Analysis for India</title>
-        <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis." />
+        <title>BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India</title>
+        <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
+        <meta name="keywords" content="market analysis India, competitor analysis tool, business opportunity finder, startup market research, free business intelligence, competitor research India, business location finder, market gap analysis" />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app" />
+        <meta property="og:title" content="BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta property="og:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
+        <meta property="og:locale" content="en_IN" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="BizScope AI ΓÇö Free Market Analysis &amp; Competitor Research Tool for India" />
+        <meta name="twitter:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data." />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "BizScope AI",
+              "url": "https://biz-scope-ai.vercel.app",
+              "description": "Free AI-powered market analysis and competitor research tool for Indian entrepreneurs. Analyze competitors, discover market gaps, and find the best business location in India using real OpenStreetMap data.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "INR"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "reviewCount": "500",
+                "bestRating": "5"
+              },
+              "featureList": [
+                "Competitor Analysis",
+                "Market Gap Analysis",
+                "Business Location Finder",
+                "AI Business Recommendations",
+                "Property Price Estimates",
+                "Interactive Competitor Map"
+              ],
+              "screenshot": "https://biz-scope-ai.vercel.app/og-image.png",
+              "softwareVersion": "2.0",
+              "author": {
+                "@type": "Organization",
+                "name": "BizScope AI",
+                "url": "https://biz-scope-ai.vercel.app"
+              }
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "Is BizScope AI really free?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How accurate is the data?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Business data comes from OpenStreetMap ΓÇö the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How often is the data updated?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Can I use this for any city in India?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes ΓÇö any city, town, or area in India (and 195 other countries). Just type the name and we'll find it."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Are the property prices real?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20ΓÇô150% higher depending on location."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How does the AI recommendation work?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area."
+                  }
+                }
+              ]
+            })
+          }}
+        />
       </Head>
 
-      {loading && <Loader city={form.city || form.address || 'your location'} step={ls.step} message={ls.message} progress={ls.progress} />}
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', position: 'relative' }}>
 
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--ink)' }}>
+        {/* Analysis loader overlay */}
+        {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
 
-        <Ticker items={news.slice(0, 10)} />
+        {/* Live news ticker with real headlines */}
+        <NewsTicker headlines={news.slice(0, 10)} />
 
-        {/* ══════════════ NAV ══════════════ */}
-        <header style={{ position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid var(--line)', background: 'var(--nav-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
-          <div className="container" style={{ height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
-            {/* Brand */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2 10 L7 3 L12 10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4.5 10 L7 6.5 L9.5 10" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
-                </svg>
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', letterSpacing: '-0.2px' }}>BizScope</span>
+        {/* Navbar */}
+        <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>≡ƒÜÇ</div>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg, #3b82f6, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
             </div>
-
-            {/* Links */}
-            <nav className="nav-links" style={{ display: 'flex', gap: 4 }}>
+            <div className="nav-links" style={{ display: 'flex', gap: '24px', fontSize: '14px', color: 'var(--muted)' }}>
               {[
-                { label: 'Features',    fn: () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) },
-                { label: 'How it works',fn: () => router.push('/how-it-works') },
-                { label: 'News',        fn: () => router.push('/news') },
-                { label: 'Pricing',     fn: () => router.push('/pricing') },
-              ].map(({ label, fn }) => (
-                <button key={label} onClick={fn} className="btn-ghost" style={{ fontSize: 13, padding: '6px 12px', border: 'none', background: 'transparent' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--panel)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >{label}</button>
+                { label: 'Features', action: () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) },
+                { label: 'How it Works', action: () => router.push('/how-it-works') },
+                { label: '≡ƒô░ News', action: () => router.push('/news') },
+                { label: 'Pricing', action: () => router.push('/pricing') },
+                { label: 'Docs', action: () => router.push('/docs') },
+              ].map(item => (
+                <span key={item.label} onClick={item.action} style={{ cursor: 'pointer', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                  onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{item.label}</span>
               ))}
-            </nav>
-
-            {/* Right */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button onClick={toggle} style={{ width: 32, height: 32, borderRadius: 7, border: '1px solid var(--line)', background: 'var(--panel)', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {dark ? '☀️' : '🌙'}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button onClick={toggle} title="Toggle theme"
+                style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {dark ? 'ΓÿÇ∩╕Å' : '≡ƒîÖ'}
               </button>
-              <button onClick={() => router.push('/analysis')} className="btn-primary" style={{ fontSize: 13, padding: '7px 14px' }}>
-                Open App
+              <button onClick={() => router.push('/analysis')}
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                Get Started ΓåÆ
               </button>
             </div>
           </div>
-        </header>
+        </nav>
 
-        <main style={{ flex: 1 }}>
+        {/* Hero */}
+        <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px 40px' }}>
 
-          {/* ══════════════ HERO ══════════════ */}
-          <section style={{ padding: '80px 0 64px', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'center' }} className="responsive-grid-2">
-
-                {/* Left — copy */}
+            {/* ΓöÇΓöÇ WORLD INNOVATION NEWS ΓÇö TOP SECTION ΓöÇΓöÇ */}
+            <div style={{ marginBottom: '56px' }}>
+              {/* Section header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <div className="badge" style={{ marginBottom: 20, width: 'fit-content' }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-                    Free · No signup · Real data
-                  </div>
-
-                  <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 52px)', fontWeight: 700, lineHeight: 1.08, color: 'var(--ink)', letterSpacing: '-1px', marginBottom: 20 }}>
-                    Know your market<br />
-                    <span style={{ color: 'var(--blue)' }}>before you invest.</span>
-                  </h1>
-
-                  <p style={{ fontSize: 17, color: 'var(--ink-2)', lineHeight: 1.7, maxWidth: 460, marginBottom: 36 }}>
-                    Type any city in India. Get real competitor counts, AI business ideas, property prices, and market scores — in under 10 seconds.
-                  </p>
-
-                  {/* Stats row */}
-                  <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                    {[
-                      { n: '50M+', l: 'Businesses indexed' },
-                      { n: '195',  l: 'Countries' },
-                      { n: '<10s', l: 'Analysis time' },
-                    ].map(s => (
-                      <div key={s.l}>
-                        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{s.n}</div>
-                        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3 }}>{s.l}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Right — form card */}
-                <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--line)', borderRadius: 14, padding: 24 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 16 }}>Analyze a location</p>
-                  <form onSubmit={onSubmit}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
-                      {[
-                        { name: 'city',    ph: 'City or area  e.g. Mumbai',       req: true },
-                        { name: 'address', ph: 'Street address  (optional)' },
-                        { name: 'pincode', ph: 'Pincode  (optional)' },
-                      ].map(f => (
-                        <div key={f.name}>
-                          <input name={f.name} value={form[f.name]} onChange={onChange}
-                            placeholder={f.ph} required={!!f.req} className="input-field"
-                            style={{ fontSize: 13 }}
-                          />
-                          {f.name === 'city' && (iLoading || insights) && (
-                            <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 7 }}>
-                              {iLoading
-                                ? <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: 0 }}>Getting insights…</p>
-                                : insights && <>
-                                    <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>AI snapshot · {insights.city}</p>
-                                    {insights.insights?.slice(0, 3).map((ins, i) => (
-                                      <p key={i} style={{ fontSize: 12, color: 'var(--ink-2)', margin: '0 0 3px', lineHeight: 1.5 }}>· {ins}</p>
-                                    ))}
-                                  </>
-                              }
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {error && <p style={{ fontSize: 13, color: 'var(--red)', marginBottom: 10 }}>{error}</p>}
-
-                    {history.length > 0 && (
-                      <div style={{ marginBottom: 10 }}>
-                        <p style={{ fontSize: 11, color: 'var(--ink-4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Recent</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                          {history.map(h => (
-                            <button key={h} type="button" onClick={() => setForm(f => ({ ...f, city: h }))} className="btn-secondary" style={{ fontSize: 12, padding: '3px 9px' }}>{h}</button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px 0', fontSize: 14 }}>
-                      {loading ? 'Analyzing…' : 'Analyze Market →'}
-                    </button>
-                  </form>
-
-                  {/* Quick picks */}
-                  <div style={{ marginTop: 12, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    {['Mumbai', 'Delhi', 'Bangalore', 'Jaipur', 'Pune'].map(c => (
-                      <button key={c} onClick={() => setForm(f => ({ ...f, city: c }))} className="btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }}>{c}</button>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </section>
-
-          {/* ══════════════ FEATURES ══════════════ */}
-          <section id="features" style={{ padding: '72px 0', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ marginBottom: 48 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Features</p>
-                <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px', marginBottom: 12 }}>
-                  Everything you need to decide
-                </h2>
-                <p style={{ fontSize: 16, color: 'var(--ink-2)', maxWidth: 480 }}>
-                  Real data, not guesses. Every insight is backed by live OpenStreetMap and Gemini AI.
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'var(--line)', borderRadius: 12, overflow: 'hidden' }} className="responsive-grid-3">
-                {[
-                  { icon: '◎', title: 'Competitor Analysis',  desc: 'See every business within 5 km. Know exactly how crowded the market is before you commit a rupee.' },
-                  { icon: '◈', title: 'Market Scoring',       desc: 'Each category gets a saturation score. Low = open opportunity. High = think twice.' },
-                  { icon: '⬡', title: 'Property Finder',      desc: 'Commercial spaces for rent or sale near your location, with government circle rate estimates.' },
-                  { icon: '◇', title: 'AI Recommendations',   desc: 'Gemini AI reads your local market data and suggests the 5 best businesses to start there.' },
-                  { icon: '◉', title: 'Interactive Map',      desc: 'Every competitor and property plotted on a live map. Spot clusters and gaps instantly.' },
-                  { icon: '◌', title: 'Profit Estimates',     desc: 'Revenue projections based on local demand, competition density, and category benchmarks.' },
-                ].map((f) => (
-                  <div key={f.title} style={{ background: 'var(--bg)', padding: '28px 24px', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg)'}
-                  >
-                    <div style={{ fontSize: 20, color: 'var(--blue)', marginBottom: 14, lineHeight: 1 }}>{f.icon}</div>
-                    <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>{f.title}</h3>
-                    <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.65 }}>{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ══════════════ HOW IT WORKS ══════════════ */}
-          <section style={{ padding: '72px 0', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ marginBottom: 48 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Process</p>
-                <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px' }}>
-                  Three steps. Under 10 seconds.
-                </h2>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }} className="responsive-grid-3">
-                {[
-                  { n: '01', title: 'Enter a location',   desc: 'City, address, or pincode — anything works. We geocode it precisely.' },
-                  { n: '02', title: 'We fetch real data', desc: 'TomTom + OpenStreetMap + Gemini AI run in parallel to build your report.' },
-                  { n: '03', title: 'You get insights',   desc: 'Competitors, properties, market scores, and AI tips — all in one clean report.' },
-                ].map((s, i) => (
-                  <div key={s.n} style={{ position: 'relative' }}>
-                    {i < 2 && (
-                      <div style={{ position: 'absolute', top: 20, left: 'calc(100% + 12px)', width: 24, height: 1, background: 'var(--line)' }} className="hide-mobile" />
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 9, border: '1px solid var(--line)', background: 'var(--panel)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', flexShrink: 0 }}>{s.n}</div>
-                      <div style={{ height: 1, flex: 1, background: 'var(--line)' }} />
-                    </div>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>{s.title}</h3>
-                    <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.65 }}>{s.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ══════════════ TESTIMONIALS ══════════════ */}
-          <section style={{ padding: '72px 0', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ marginBottom: 48 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Reviews</p>
-                <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px' }}>
-                  What entrepreneurs say
-                </h2>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="responsive-grid-2">
-                {[
-                  { name: 'Rahul Sharma',  city: 'Mumbai',    role: 'Restaurant owner',    initials: 'RS', text: 'I was about to open in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad — much better. Saved me lakhs.' },
-                  { name: 'Priya Gupta',   city: 'Jaipur',    role: 'Salon entrepreneur',  initials: 'PG', text: 'The AI suggestions were spot on. It pointed me to a salon near a college area. 200+ customers in the first month.' },
-                  { name: 'Amit Verma',    city: 'Delhi',     role: 'Grocery store owner', initials: 'AV', text: 'The property price data helped me negotiate rent. I showed the circle rates to my landlord and got 15% off.' },
-                  { name: 'Sunita Patel',  city: 'Ahmedabad', role: 'Clothing boutique',   initials: 'SP', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it.' },
-                ].map((t) => (
-                  <div key={t.name} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--line)', borderRadius: 12, padding: '22px 24px' }}>
-                    <div style={{ display: 'flex', gap: 2, marginBottom: 14 }}>
-                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: 12, color: 'var(--amber)' }}>★</span>)}
-                    </div>
-                    <p style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, marginBottom: 18 }}>"{t.text}"</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--panel)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--ink-2)', flexShrink: 0 }}>{t.initials}</div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{t.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{t.role} · {t.city}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ══════════════ NEWS ══════════════ */}
-          <section style={{ padding: '72px 0', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Innovation News</p>
-                  <h2 style={{ fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px' }}>
-                    What's happening in tech
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,26px)', fontWeight: '900', color: 'var(--text)', marginBottom: '4px', letterSpacing: '-0.5px' }}>
+                    ≡ƒîì World Innovation News
                   </h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ AI ┬╖ Tech ┬╖ Hackathons ΓÇö updated every 30 min</p>
                 </div>
-                <button onClick={() => router.push('/news')} className="btn-ghost">View all →</button>
+                <button onClick={() => router.push('/news')}
+                  style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#3b82f6', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  Full News Feed ΓåÆ
+                </button>
               </div>
 
-              {/* Category tabs */}
-              <div style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 2 }}>
-                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'India'].map(c => (
-                  <button key={c} onClick={() => setCat(c)} style={{
-                    padding: '5px 13px', borderRadius: 6, border: '1px solid var(--line)',
-                    cursor: 'pointer', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
-                    background: cat === c ? 'var(--blue)' : 'var(--panel)',
-                    color: cat === c ? '#fff' : 'var(--ink-3)',
-                    fontFamily: 'inherit', transition: 'all 0.15s',
-                  }}>{c}</button>
+              {/* Category filter */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {['All', 'Startup', 'AI', 'Tech', 'Funding', 'Hackathon', 'India'].map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)}
+                    style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s', flexShrink: 0 }}>
+                    {cat}
+                  </button>
                 ))}
               </div>
 
               {newsLoading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: 140, borderRadius: 10 }} />)}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '14px' }}>
+                  {[1,2,3,4,5,6].map(i => <div key={i} className="shimmer" style={{ height: '160px', borderRadius: '14px' }} />)}
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-                  {filtered.slice(0, 9).map((a, i) => (
-                    <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                      style={{ display: 'block', background: 'var(--bg-elevated)', border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', transition: 'border-color 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--line-strong)'}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
-                    >
-                      {a.urlToImage && (
-                        <div style={{ height: 110, overflow: 'hidden', background: 'var(--panel)' }}>
-                          <img src={a.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                <>
+                  {/* Featured + grid layout */}
+                  {(() => {
+                    const filtered = news.filter(a => {
+                      if (activeCategory === 'All') return true;
+                      const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                      if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                      if (activeCategory === 'AI') return t.includes(' ai ') || t.includes('artificial') || t.includes('gemini') || t.includes('openai');
+                      if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('platform');
+                      if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('million') || t.includes('billion');
+                      if (activeCategory === 'Hackathon') return t.includes('hackathon') || t.includes('competition') || t.includes('challenge');
+                      if (activeCategory === 'India') return t.includes('india') || t.includes('indian');
+                      return true;
+                    });
+                    const featured = filtered[0];
+                    const rest = filtered.slice(1, 7);
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }} className="responsive-grid-2">
+                        {/* Featured */}
+                        {featured && (
+                          <a href={featured.url} target="_blank" rel="noreferrer"
+                            style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = '#3b82f650'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(59,130,246,0.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            {featured.urlToImage ? (
+                              <div style={{ height: '200px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                                <img src={featured.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                              </div>
+                            ) : (
+                              <div style={{ height: '140px', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(239,68,68,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>≡ƒÜÇ</div>
+                            )}
+                            <div style={{ padding: '20px' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{featured.source}</span>
+                                <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{featured.publishedAt ? new Date(featured.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}</span>
+                              </div>
+                              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: '1.4', marginBottom: '8px' }}>{featured.title}</h3>
+                              {featured.description && <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{featured.description}</p>}
+                            </div>
+                          </a>
+                        )}
+                        {/* Right column ΓÇö list */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {rest.map((a, i) => (
+                            <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                              style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', textDecoration: 'none', transition: 'all 0.15s', alignItems: 'flex-start' }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = 'var(--surface2)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}>
+                              {a.urlToImage ? (
+                                <img src={a.urlToImage} alt="" style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.style.display = 'none'; }} />
+                              ) : (
+                                <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>≡ƒô░</div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>{a.source}</div>
+                                <p style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.4', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</p>
+                              </div>
+                            </a>
+                          ))}
+                          <button onClick={() => router.push('/news')}
+                            style={{ padding: '12px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', background: 'rgba(59,130,246,0.06)', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: '700', textAlign: 'center' }}>
+                            ≡ƒô░ View All Innovation News ΓåÆ
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+
+            {/* ΓöÇΓöÇ DIVIDER ΓöÇΓöÇ */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#3b82f615,#ef444410)', border: '1px solid #3b82f630' }}>
+                <span style={{ fontSize: '16px' }}>≡ƒÜÇ</span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI ΓÇö Market Analysis</span>
+              </div>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+            </div>
+
+            {/* Badge */}
+            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#4f8ef7' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                Free for Indian entrepreneurs ┬╖ No signup needed
+              </div>
+            </div>
+
+            {/* Headline */}
+            <h1 className="anim-fade-up delay-1" style={{ textAlign: 'center', fontSize: 'clamp(34px, 6vw, 66px)', fontWeight: '900', lineHeight: '1.06', marginBottom: '22px', color: 'var(--text)', letterSpacing: '-2px' }}>
+              Know your market<br />
+              <span className="gradient-text-animated">before you invest.</span>
+            </h1>
+            <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '520px', margin: '0 auto 32px', lineHeight: '1.75', fontWeight: '400' }}>
+              Type any city in India. Get real competitor counts, AI business ideas, available properties, and market scores ΓÇö in under 10 seconds.
+            </p>
+
+            {/* Star rating social proof */}
+            {reviews.total > 0 && (
+              <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} style={{ fontSize: '16px', filter: parseFloat(reviews.avg) >= s ? 'none' : 'grayscale(1) opacity(0.3)' }}>Γ¡É</span>
+                  ))}
+                </div>
+                <span style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px' }}>{reviews.avg}</span>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>{reviews.total} reviews</span>
+              </div>
+            )}
+
+            {/* Trust pills */}
+            <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '44px' }}>
+              {['TomTom + OSM data', 'Gemini AI', 'Under 10 sec', 'No signup', 'PDF export'].map(s => (
+                <div key={s} style={{ padding: '5px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--muted)', fontWeight: '500' }}>{s}</div>
+              ))}
+            </div>
+
+            {/* Form Card */}
+            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', boxShadow: dark ? '0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)' : '0 8px 40px rgba(0,0,0,0.06)' }}>
+              <form onSubmit={handleAnalyze}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                  {[
+                    { name: 'city', label: 'City or area', placeholder: 'Mumbai, Connaught Place, Lajpat NagarΓÇª' },
+                    { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
+                    { name: 'pincode', label: 'Pincode', placeholder: '400001 (optional)' },
+                  ].map(f => (
+                    <div key={f.name}>
+                      <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>{f.label}</label>
+                      <input name={f.name} value={form[f.name]} onChange={handleChange} placeholder={f.placeholder} required={f.name === 'city'} className="input-field" />
+                      {/* AI insights below city field */}
+                      {f.name === 'city' && (insightsLoading || cityInsights) && (
+                        <div style={{ marginTop: '8px', background: 'var(--surface2)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '12px', padding: '12px 14px', animation: 'fadeInUp 0.3s ease' }}>
+                          {insightsLoading ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--muted)' }}>
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 1s infinite' }} />
+                              Getting insights for {form.city}ΓÇª
+                            </div>
+                          ) : cityInsights && (
+                            <>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: '#4f8ef7', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>AI snapshot ┬╖ {cityInsights.city}</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                {cityInsights.insights?.map((insight, i) => (
+                                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'var(--text2)', lineHeight: '1.5' }}>
+                                    <span style={{ color: '#4f8ef7', flexShrink: 0, marginTop: '1px' }}>ΓåÆ</span>
+                                    <span>{insight}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {cityInsights.topOpportunity && (
+                                <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(79,142,247,0.08)', borderRadius: '8px', fontSize: '11px', color: '#4f8ef7', fontWeight: '600' }}>
+                                  Top opportunity: {cityInsights.topOpportunity}
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
-                      <div style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue)', background: 'var(--blue-dim)', padding: '2px 6px', borderRadius: 4 }}>{a.source}</span>
-                          <span style={{ fontSize: 10, color: 'var(--ink-4)' }}>
-                            {a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
+                    </div>
+                  ))}
+                </div>
+                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>ΓÜá {error}</p>}
+                {history.length > 0 && !loading && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--muted2)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>Recent</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {history.map(h => (
+                        <button key={h} type="button" onClick={() => setForm(f => ({ ...f, city: h }))}
+                          style={{ padding: '4px 12px', borderRadius: '100px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {h}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em' }}>
+                  {loading ? 'AnalyzingΓÇª' : 'Analyze market ΓåÆ'}
+                </button>
+              </form>
+            </div>
+
+            {/* Try it live CTA */}
+            <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '36px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>≡ƒÄ»</div>
+                <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed ΓÇö just try it</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>
+                  Type any Indian city above and see real competitor data, AI insights, and property prices in under 10 seconds. No signup, no credit card.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {['Mumbai', 'Delhi', 'Mathura', 'Jaipur', 'Bangalore'].map(city => (
+                    <button key={city} onClick={() => { setForm(f => ({ ...f, city })); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#2563eb', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                      ≡ƒôì {city}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats bar */}
+            <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '48px', marginBottom: '72px' }}>
+              {[
+                { value: '50M+', label: 'Businesses indexed' },
+                { value: '195',  label: 'Countries covered' },
+                { value: '100%', label: 'Free forever' },
+                { value: '<10s', label: 'Analysis time' },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', fontWeight: '500' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Feature cards */}
+            <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '72px' }}>
+              {[
+                { title: 'Competitor Analysis', desc: 'Real businesses from TomTom + OpenStreetMap within 5 km. See exactly how crowded your market is.', color: '#4f8ef7' },
+                { title: 'Market Scoring', desc: 'Each category gets a competition score. Low score = open opportunity. High score = think twice.', color: '#ef4444' },
+                { title: 'Property Finder', desc: 'Commercial spaces for rent or sale near your location, with government circle rate estimates.', color: '#a78bfa' },
+                { title: 'AI Recommendations', desc: 'Gemini AI reads your local market data and suggests the 5 best businesses to start there.', color: '#34d399' },
+                { title: 'Interactive Map', desc: 'Every competitor and property plotted on a live map. Spot clusters and gaps at a glance.', color: '#f59e0b' },
+                { title: 'Profit Estimates', desc: 'Revenue projections based on local demand, competition density, and category benchmarks.', color: '#4f8ef7' },
+              ].map((f, i) => (
+                <div key={f.title} className={`card anim-fade-up delay-${i + 1}`} style={{ padding: '24px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: f.color, marginBottom: '16px', boxShadow: `0 0 8px ${f.color}60` }} />
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.3px' }}>{f.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.65', margin: 0 }}>{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* How it works */}
+            <div id="how-it-works" style={{ textAlign: 'center', marginBottom: '72px' }}>
+              <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px', letterSpacing: '-0.5px' }}>How it works</h2>
+              <p style={{ color: 'var(--muted)', marginBottom: '48px', fontSize: '15px' }}>Three steps. Under 10 seconds.</p>
+              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0' }}>
+                {[
+                  { step: '1', title: 'Enter a location', desc: 'City, address, or pincode ΓÇö anything works.' },
+                  { step: '2', title: 'We fetch real data', desc: 'TomTom + OpenStreetMap + AI run in parallel.' },
+                  { step: '3', title: 'You get insights', desc: 'Competitors, properties, scores, and AI tips.' },
+                ].map((s, i) => (
+                  <div key={s.step} style={{ flex: '1', minWidth: '200px', maxWidth: '280px', padding: '32px 24px', position: 'relative' }}>
+                    {i < 2 && <div style={{ position: 'absolute', top: '44px', right: '-1px', width: '2px', height: '24px', background: 'var(--border)', display: 'none' }} className="hide-mobile" />}
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: 'var(--text)', margin: '0 auto 16px', letterSpacing: '-0.5px' }}>{s.step}</div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.3px' }}>{s.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6', margin: 0 }}>{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Testimonials */}
+            <div style={{ marginBottom: '72px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '800', color: 'var(--text)', marginBottom: '8px', letterSpacing: '-0.5px' }}>What entrepreneurs say</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Real people, real decisions made with BizScope</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                {[
+                  { name: 'Rahul Sharma', city: 'Mumbai', role: 'Restaurant owner', initials: 'RS', color: '#4f8ef7', text: 'I was about to open in Andheri. BizScope showed me 47 restaurants already there. I shifted to Malad ΓÇö much better. Saved me lakhs.' },
+                  { name: 'Priya Gupta', city: 'Jaipur', role: 'Salon entrepreneur', initials: 'PG', color: '#a78bfa', text: 'The AI suggestions were accurate. It pointed me to a salon near a college area. 200+ customers in the first month.' },
+                  { name: 'Amit Verma', city: 'Delhi', role: 'Grocery store owner', initials: 'AV', color: '#34d399', text: 'The property price data helped me negotiate rent. I showed the circle rates to my landlord and got 15% off.' },
+                  { name: 'Sunita Patel', city: 'Ahmedabad', role: 'Clothing boutique', initials: 'SP', color: '#f59e0b', text: 'Free tool with data quality I expected to pay thousands for. The competitor map alone is worth it.' },
+                ].map((t, i) => (
+                  <div key={i} className="card" style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', gap: '2px', marginBottom: '16px' }}>
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '13px' }}>Γÿà</span>)}
+                    </div>
+                    <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '20px', margin: '0 0 20px' }}>"{t.text}"</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${t.color}18`, border: `1px solid ${t.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: t.color, flexShrink: 0 }}>{t.initials}</div>
+                      <div>
+                        <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '13px' }}>{t.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{t.role} ┬╖ {t.city}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Live News Grid ΓÇö Google News Style */}
+            <div style={{ marginBottom: '64px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: '800', color: 'var(--text)', marginBottom: '4px' }}>≡ƒîì World Innovation News</h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Startups ┬╖ Tech ┬╖ Hackathons ┬╖ Innovation</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['All', 'Startup', 'Tech', 'AI', 'Funding'].map(cat => (
+                    <button key={cat} onClick={() => setActiveCategory(cat)}
+                      style={{ padding: '6px 16px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: activeCategory === cat ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'var(--surface2)', color: activeCategory === cat ? '#ffffff' : 'var(--muted)', transition: 'all 0.2s' }}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {newsLoading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
+                  {[1,2,3,4,5,6].map(i => (
+                    <div key={i} className="shimmer" style={{ height: '180px', borderRadius: '16px' }} />
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '16px' }}>
+                  {news.filter(a => {
+                    if (activeCategory === 'All') return true;
+                    const t = (a.title + ' ' + (a.description || '')).toLowerCase();
+                    if (activeCategory === 'Startup') return t.includes('startup') || t.includes('founder') || t.includes('venture');
+                    if (activeCategory === 'Tech') return t.includes('tech') || t.includes('software') || t.includes('app');
+                    if (activeCategory === 'AI') return t.includes('ai') || t.includes('artificial') || t.includes('machine learning') || t.includes('gemini') || t.includes('openai');
+                    if (activeCategory === 'Funding') return t.includes('fund') || t.includes('raise') || t.includes('invest') || t.includes('million') || t.includes('billion');
+                    return true;
+                  }).slice(0, 12).map((article, i) => (
+                    <a key={i} href={article.url} target="_blank" rel="noreferrer"
+                      style={{ display: 'block', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(59,130,246,0.1)'; e.currentTarget.style.borderColor = '#3b82f640'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                      {article.urlToImage && (
+                        <div style={{ height: '140px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                          <img src={article.urlToImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={e => { e.target.parentElement.style.display = 'none'; }} />
+                        </div>
+                      )}
+                      <div style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', background: '#3b82f615', padding: '2px 8px', borderRadius: '100px' }}>{article.source}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--muted)' }}>
+                            {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
                           </span>
                         </div>
-                        <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          {a.title}
-                        </p>
+                        <h3 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', lineHeight: '1.5', margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {article.title}
+                        </h3>
                       </div>
                     </a>
                   ))}
                 </div>
               )}
             </div>
-          </section>
 
-          {/* ══════════════ FAQ ══════════════ */}
-          <section style={{ padding: '72px 0', borderBottom: '1px solid var(--line)' }}>
-            <div className="container">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'start' }} className="responsive-grid-2">
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>FAQ</p>
-                  <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px', marginBottom: 16 }}>
-                    Common questions
-                  </h2>
-                  <p style={{ fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.7 }}>
-                    Everything you need to know about BizScope AI. Can't find an answer? Reach out to us.
-                  </p>
+            {/* Resource Hub */}
+            <div style={{ marginBottom: '64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', color: '#3b82f6', marginBottom: '14px' }}>
+                  ≡ƒîÉ Entrepreneur Resource Hub
                 </div>
-                <div>
-                  {[
-                    { q: 'Is BizScope AI really free?', a: 'Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly.' },
-                    { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide.' },
-                    { q: 'How often is the data updated?', a: 'OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours.' },
-                    { q: 'Can I use this for any city in India?', a: 'Yes — any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
-                    { q: 'How does the AI recommendation work?', a: 'After fetching real competitor data, we send the market statistics to Google Gemini AI which suggests the 5 best businesses to start in your area.' },
-                  ].map((f, i) => <FAQ key={i} q={f.q} a={f.a} />)}
-                </div>
+                <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Stay Ahead of the Market</h2>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Curated resources for Indian entrepreneurs</p>
               </div>
-            </div>
-          </section>
-
-          {/* ══════════════ CTA BANNER ══════════════ */}
-          <section style={{ padding: '72px 0' }}>
-            <div className="container">
-              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--line)', borderRadius: 16, padding: '48px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
-                <div>
-                  <h2 style={{ fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px', marginBottom: 8 }}>
-                    Ready to find your opportunity?
-                  </h2>
-                  <p style={{ fontSize: 15, color: 'var(--ink-2)' }}>Free. No signup. Results in under 10 seconds.</p>
-                </div>
-                <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="btn-primary" style={{ fontSize: 14, padding: '11px 24px' }}>
-                  Analyze a city →
-                </button>
-              </div>
-            </div>
-          </section>
-
-        </main>
-
-        {/* ══════════════ FOOTER ══════════════ */}
-        <footer style={{ borderTop: '1px solid var(--line)', background: 'var(--bg-elevated)' }}>
-          <div className="container" style={{ padding: '40px 24px 28px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 32, marginBottom: 32 }} className="responsive-grid-2">
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                      <path d="M2 10 L7 3 L12 10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: '20px' }}>
+                {[
+                  {
+                    icon: '≡ƒÆí', title: 'New Ideas', color: '#3b82f6',
+                    desc: 'Discover trending business ideas and emerging markets in India',
+                    links: [
+                      { label: '≡ƒÜÇ Product Hunt ΓÇö Today\'s Launches', url: 'https://www.producthunt.com' },
+                      { label: '≡ƒôè Tracxn ΓÇö India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
+                      { label: '≡ƒî▒ YC Startup Ideas', url: 'https://www.ycombinator.com/rfs' },
+                    ]
+                  },
+                  {
+                    icon: '≡ƒÅå', title: 'Hackathons', color: '#ef4444',
+                    desc: 'Upcoming competitions to validate your idea and win funding',
+                    links: [
+                      { label: 'ΓÜí Devpost ΓÇö Active Hackathons', url: 'https://devpost.com/hackathons' },
+                      { label: '≡ƒç«≡ƒç│ Unstop ΓÇö India Competitions', url: 'https://unstop.com/hackathons' },
+                      { label: '≡ƒÆ░ HackerEarth Challenges', url: 'https://www.hackerearth.com/challenges' },
+                    ]
+                  },
+                  {
+                    icon: '≡ƒôû', title: 'Startup Lessons', color: '#2563eb',
+                    desc: 'Learn from failures and successes of real entrepreneurs',
+                    links: [
+                      { label: '≡ƒÆÇ Failory ΓÇö Startup Post-Mortems', url: 'https://www.failory.com' },
+                      { label: '≡ƒô░ Inc42 ΓÇö India Startup News', url: 'https://inc42.com' },
+                      { label: '≡ƒÄÖ∩╕Å The Ken ΓÇö Deep Dives', url: 'https://the-ken.com' },
+                    ]
+                  },
+                ].map((hub, i) => (
+                  <div key={i} className="glass-card" style={{ padding: '28px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${hub.color}, transparent)` }} />
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>{hub.icon}</div>
+                    <h3 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>{hub.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '18px', lineHeight: '1.6' }}>{hub.desc}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {hub.links.map((link, j) => (
+                        <a key={j} href={link.url} target="_blank" rel="noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 14px', borderRadius: '10px', background: 'var(--surface2)', border: `1px solid ${hub.color}20`, color: 'var(--text2)', fontSize: '13px', textDecoration: 'none', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = hub.color + '60'; e.currentTarget.style.background = hub.color + '10'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = hub.color + '20'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>BizScope AI</span>
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.7, maxWidth: 240 }}>
-                  AI-powered business intelligence for Indian entrepreneurs. Free forever.
+                ))}
+              </div>
+            </div>
+
+            {/* Why BizScope AI ΓÇö SEO content section */}
+            <div style={{ marginBottom: '64px', maxWidth: '860px', margin: '0 auto 64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: '800', color: 'var(--text)', marginBottom: '12px' }}>
+                  Why BizScope AI for Market Analysis in India?
+                </h2>
+                <p style={{ color: 'var(--muted)', fontSize: '15px', lineHeight: '1.8', maxWidth: '680px', margin: '0 auto' }}>
+                  India has over 63 million MSMEs ΓÇö and most fail because founders skip market research. BizScope AI gives every Indian entrepreneur free, instant access to the same business intelligence that large corporations pay lakhs for.
                 </p>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+                {[
+                  {
+                    icon: '≡ƒÅ¬',
+                    title: 'Competitor Analysis for Any Indian City',
+                    desc: 'Instantly see every competitor within 3 km of your target location ΓÇö from Mumbai\'s Dharavi to Delhi\'s Connaught Place. Our competitor analysis tool pulls real business data from OpenStreetMap, the same database powering Apple Maps and Wikipedia. Know exactly how saturated a market is before you invest a single rupee.',
+                  },
+                  {
+                    icon: '≡ƒÄ»',
+                    title: 'Find Business Opportunities & Market Gaps',
+                    desc: 'Our business opportunity finder scans local demand signals and competitor density to surface underserved niches. Whether you\'re looking for a gap in Tier-1 metros or Tier-2 cities like Jaipur, Surat, or Lucknow, BizScope AI identifies where demand outpaces supply ΓÇö your next big opportunity.',
+                  },
+                  {
+                    icon: '≡ƒôè',
+                    title: 'Startup Market Research in Under 10 Seconds',
+                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report ΓÇö competitor count, market saturation score, AI-recommended business types, and nearby property prices ΓÇö in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
+                  },
+                  {
+                    icon: '≡ƒñû',
+                    title: 'AI-Powered Business Intelligence, 100% Free',
+                    desc: 'Powered by Google Gemini AI and real-time OpenStreetMap data, BizScope AI provides free business intelligence that was previously only available to funded startups. No subscription, no credit card, no signup. Just enter your city and get actionable insights instantly.',
+                  },
+                  {
+                    icon: '≡ƒù║∩╕Å',
+                    title: 'Location Intelligence for Indian Markets',
+                    desc: 'Location is everything in Indian retail and services. Our location intelligence engine analyzes foot traffic patterns, competitor clustering, and commercial property availability to help you pick the perfect spot. From street-level analysis in Chandni Chowk to suburb mapping in Pune\'s Hinjewadi.',
+                  },
+                  {
+                    icon: '≡ƒôê',
+                    title: 'Market Trends & Demand Forecasting',
+                    desc: 'Stay ahead of market trends with our real-time business intelligence dashboard. Track which business categories are growing in your city, monitor competitor openings and closures, and get AI-driven demand forecasts tailored to Indian consumer behavior and seasonal patterns.',
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="card" style={{ padding: '24px' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>{item.icon}</div>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '10px', lineHeight: '1.4' }}>{item.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FAQ */}
+            <div id="faq" style={{ marginBottom: '64px', maxWidth: '720px', margin: '0 auto 64px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Frequently Asked Questions</h2>
+              </div>
               {[
-                { title: 'Product', links: [{ l: 'Features', h: '/#features' }, { l: 'Pricing', h: '/pricing' }, { l: 'How it Works', h: '/how-it-works' }, { l: 'Docs', h: '/docs' }] },
-                { title: 'Company', links: [{ l: 'About', h: '/about' }, { l: 'Privacy', h: '/privacy' }, { l: 'Terms', h: '/terms' }, { l: 'List Business', h: '/register' }] },
-                { title: 'Data', links: [{ l: 'OpenStreetMap', h: 'https://www.openstreetmap.org/copyright' }, { l: 'Google Gemini', h: 'https://ai.google.dev' }, { l: 'TomTom POI', h: 'https://developer.tomtom.com' }] },
+                { q: 'Is BizScope AI really free?', a: 'Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly.' },
+                { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap ΓÇö the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community.' },
+                { q: 'How often is the data updated?', a: 'OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data.' },
+                { q: 'Can I use this for any city in India?', a: 'Yes ΓÇö any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
+                { q: 'Are the property prices real?', a: 'Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20ΓÇô150% higher depending on location.' },
+                { q: 'How does the AI recommendation work?', a: 'After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area.' },
+              ].map((f, i) => (
+                <FAQItem key={i} q={f.q} a={f.a} />
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)', background: 'var(--bg2)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px 28px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '32px', marginBottom: '32px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>≡ƒÜÇ</div>
+                  <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>AI-powered business intelligence for entrepreneurs.</p>
+              </div>
+              {[
+                { title: 'Product', links: [
+                  { label: 'Γ£¿ Features', href: '/#features' },
+                  { label: '≡ƒÆ░ Pricing', href: '/pricing' },
+                  { label: 'ΓÜÖ∩╕Å How it Works', href: '/how-it-works' },
+                  { label: '≡ƒôû Docs', href: '/docs' },
+                ]},
+                { title: 'Company', links: [
+                  { label: '≡ƒæñ About', href: '/about' },
+                  { label: '≡ƒöÆ Privacy Policy', href: '/privacy' },
+                  { label: '≡ƒôï Terms of Service', href: '/terms' },
+                  { label: 'Γ₧ò List Business', href: '/register' },
+                ]},
+                { title: 'Data Sources', links: [
+                  { label: '≡ƒù║∩╕Å OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
+                  { label: '≡ƒñû Google Gemini AI', href: 'https://ai.google.dev' },
+                  { label: '≡ƒôì TomTom POI', href: 'https://developer.tomtom.com' },
+                  { label: '≡ƒÅ¢∩╕Å Govt Circle Rates', href: 'https://ngdrs.gov.in' },
+                ]},
               ].map(col => (
                 <div key={col.title}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>{col.title}</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <h4 style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text2)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.title}</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {col.links.map(link => (
-                      <span key={link.l} onClick={() => link.h.startsWith('http') ? window.open(link.h, '_blank') : router.push(link.h)}
-                        style={{ fontSize: 13, color: 'var(--ink-3)', cursor: 'pointer', transition: 'color 0.15s' }}
-                        onMouseEnter={e => e.target.style.color = 'var(--ink)'}
-                        onMouseLeave={e => e.target.style.color = 'var(--ink-3)'}
-                      >{link.l}</span>
+                      <span key={link.label} onClick={() => link.href.startsWith('http') ? window.open(link.href, '_blank') : router.push(link.href)}
+                        style={{ fontSize: '13px', color: 'var(--muted)', cursor: 'pointer', transition: 'color 0.2s' }}
+                        onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                        onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{link.label}</span>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-              <p style={{ fontSize: 12, color: 'var(--ink-4)' }}>© 2026 BizScope AI. All rights reserved.</p>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)' }} />
-                <span style={{ fontSize: 12, color: 'var(--ink-4)' }}>All systems operational</span>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--muted3)' }}>┬⌐ 2026 BizScope AI. All rights reserved.</p>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6' }} />
+                <span onClick={() => router.push('/status')} style={{ fontSize: '12px', color: 'var(--muted)', cursor: 'pointer' }}>All systems operational</span>
               </div>
             </div>
           </div>
         </footer>
-
       </div>
+
+      {/* Theme toggle bottom-left */}
+      <button onClick={toggle} title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 200, width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border2)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+        {dark ? 'ΓÿÇ∩╕Å' : '≡ƒîÖ'}
+      </button>
 
       <SuggestBusiness />
     </>
