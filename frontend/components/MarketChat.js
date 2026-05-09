@@ -155,6 +155,13 @@ export default function MarketChat({ data, defaultOpen = false }) {
           history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
         }),
       });
+
+      // Guard: backend might return HTML on cold start or 404
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Backend is starting up (Render cold start). Wait 30 seconds and try again.');
+      }
+
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setMessages(prev => [...prev, {
