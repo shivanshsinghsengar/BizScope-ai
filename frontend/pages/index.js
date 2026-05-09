@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
+import ParticleBackground from '../components/ParticleBackground';
 
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
@@ -369,6 +370,16 @@ export default function Home() {
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', position: 'relative' }}>
 
+        {/* Particle canvas background */}
+        <ParticleBackground count={50} />
+
+        {/* Ambient orbs */}
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          <div className="particle-orb" style={{ top: '10%', left: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(79,142,247,0.09) 0%, transparent 70%)', animation: 'orbFloat1 18s ease-in-out infinite' }} />
+          <div className="particle-orb" style={{ bottom: '15%', right: '8%', width: '420px', height: '420px', background: 'radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)', animation: 'orbFloat2 22s ease-in-out infinite' }} />
+          <div className="particle-orb" style={{ top: '50%', right: '20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.05) 0%, transparent 70%)', animation: 'orbFloat3 26s ease-in-out infinite' }} />
+        </div>
+
         {/* Analysis loader overlay */}
         {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
 
@@ -511,8 +522,7 @@ export default function Home() {
 
             {/* Badge */}
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '100px', padding: '6px 16px', fontSize: '13px', color: '#4f8ef7' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              <div className="badge-live" style={{ fontSize: '13px' }}>
                 Free for Indian entrepreneurs · No signup needed
               </div>
             </div>
@@ -547,7 +557,8 @@ export default function Home() {
             </div>
 
             {/* Form Card */}
-            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', boxShadow: dark ? '0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)' : '0 8px 40px rgba(0,0,0,0.06)' }}>
+            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px' }}>
+              <div className="glass-card border-glow-anim" style={{ padding: '32px', boxShadow: dark ? '0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)' : '0 12px 48px rgba(37,99,235,0.1)' }}>
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                   {[
@@ -608,10 +619,11 @@ export default function Home() {
                 </button>
               </form>
             </div>
+            </div>
 
             {/* Try it live CTA */}
             <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
-              <div style={{ background: 'var(--surface)', border: '1px solid #3b82f630', borderRadius: '24px', padding: '36px' }}>
+              <div className="glass-card" style={{ padding: '40px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>≡ƒÄ»</div>
                 <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed — just try it</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>

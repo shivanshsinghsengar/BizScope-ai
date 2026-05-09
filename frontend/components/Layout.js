@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import SuggestBusiness from './SuggestBusiness';
 import Logo from './Logo';
+import CommandPalette from './CommandPalette';
 
 const navItems = [
   { href: '/analysis',      label: 'Dashboard' },
@@ -27,11 +28,25 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
 
-  const v = (d, l) => dark ? d : l;
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdOpen(o => !o);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Command Palette */}
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
 
       {/* Ambient blobs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
@@ -61,6 +76,18 @@ export default function Layout({ children }) {
 
         {/* Right side */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          {/* Cmd+K search trigger */}
+          <button
+            onClick={() => setCmdOpen(true)}
+            className="hide-mobile"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--muted)', padding: '7px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.color = 'var(--muted)'; }}
+          >
+            <span>🔍</span>
+            <span>Search</span>
+            <kbd style={{ fontSize: '10px', background: 'var(--surface3)', padding: '1px 5px', borderRadius: '4px', border: '1px solid var(--border3)', fontFamily: 'monospace' }}>⌘K</kbd>
+          </button>
           {user ? (
             <>
               <div className="hide-mobile" style={{ fontSize: '13px', color: 'var(--muted)' }}>👤 {user.name}</div>
@@ -140,8 +167,7 @@ export default function Layout({ children }) {
             {/* Brand */}
             <div style={{ maxWidth: '260px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #4f8ef7, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>B</div>
-                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI</span>
+                <Logo size={28} textSize={15} />
               </div>
               <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7', margin: 0 }}>
                 Free market intelligence for Indian entrepreneurs. Know your market before you invest.
