@@ -10,6 +10,7 @@ import { PageSkeleton } from '../components/Skeleton';
 import ExportPDF from '../components/ExportPDF';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../utils/analytics';
+import MarketChat from '../components/MarketChat';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const categoryColors = {
@@ -415,6 +416,10 @@ export default function Dashboard() {
         </div>
 
       </div>{/* end outer flex */}
+
+      {/* AI Market Chat — floating assistant with full market context */}
+      <MarketChat data={{ ...data, viabilityScore }} />
+
     </Layout>
   );
 }
