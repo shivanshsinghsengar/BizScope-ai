@@ -1,4 +1,4 @@
-﻿import API_URL from '../utils/api';
+import API_URL from '../utils/api';
 import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
@@ -32,7 +32,7 @@ function NewsTicker({ headlines }) {
             {items.map((h, i) => (
               <a key={i} href={h.url} target="_blank" rel="noreferrer"
                 style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', paddingRight: '60px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                ≡ƒö╡ {h.title}
+                📰 {h.title}
               </a>
             ))}
           </div>
@@ -45,12 +45,12 @@ function NewsTicker({ headlines }) {
 // Real-time steps driven by SSE events
 const STEP_META = {
   geocode: { icon: '📍', label: 'Finding your location...' },
-  fetch:   { icon: '≡ƒöì', label: 'Scanning businesses nearby...' },
-  count:   { icon: '≡ƒÅ¬', label: 'Counting competitors...' },
-  score:   { icon: '≡ƒôè', label: 'Calculating market scores...' },
+  fetch:   { icon: '🔍', label: 'Scanning businesses nearby...' },
+  count:   { icon: '🏆', label: 'Counting competitors...' },
+  score:   { icon: '📈', label: 'Calculating market scores...' },
   ai:      { icon: '🏪', label: 'Asking AI for recommendations...' },
   done:    { icon: '✨', label: 'Polishing results...' },
-  cache:   { icon: 'ΓÜí', label: 'Loading from cache...' },
+  cache:   { icon: '⚡', label: 'Loading from cache...' },
 };
 
 function AnalysisLoader({ city, step, message, sub, progress }) {
@@ -96,7 +96,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
         </div>
 
         <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-          ≡ƒÆí <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.
+          💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.
         </div>
       </div>
     </div>
@@ -409,7 +409,7 @@ export default function Home() {
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button onClick={toggle} title="Toggle theme"
                 style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {dark ? 'ΓÿÇ' : '≡ƒîÖ'}
+                {dark ? '☀️' : '🌙'}
               </button>
               <button onClick={() => router.push('/analysis')}
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
@@ -562,7 +562,7 @@ export default function Home() {
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                   {[
-                    { name: 'city', label: 'City or area', placeholder: 'Mumbai, Connaught Place, Lajpat NagarΓÇª' },
+                    { name: 'city', label: 'City or area', placeholder: 'Mumbai, Connaught Place, Lajpat Nagar...' },
                     { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
                     { name: 'pincode', label: 'Pincode', placeholder: '400001 (optional)' },
                   ].map(f => (
@@ -575,7 +575,7 @@ export default function Home() {
                           {insightsLoading ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--muted)' }}>
                               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 1s infinite' }} />
-                              Getting insights for {form.city}ΓÇª
+                              Getting insights for {form.city}...
                             </div>
                           ) : cityInsights && (
                             <>
@@ -615,7 +615,7 @@ export default function Home() {
                   </div>
                 )}
                 <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em' }}>
-                  {loading ? 'AnalyzingΓÇª' : 'Analyze market →'}
+                  {loading ? 'Analyzing...' : 'Analyze market →'}
                 </button>
               </form>
             </div>
@@ -624,7 +624,7 @@ export default function Home() {
             {/* Try it live CTA */}
             <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
               <div className="glass-card" style={{ padding: '40px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>≡ƒÄ»</div>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
                 <h2 style={{ fontSize: 'clamp(18px,3vw,24px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>No demo needed — just try it</h2>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.7' }}>
                   Type any Indian city above and see real competitor data, AI insights, and property prices in under 10 seconds. No signup, no credit card.
@@ -708,7 +708,7 @@ export default function Home() {
                 ].map((t, i) => (
                   <div key={i} className="card" style={{ padding: '24px' }}>
                     <div style={{ display: 'flex', gap: '2px', marginBottom: '16px' }}>
-                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '13px' }}>Γÿà</span>)}
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '13px' }}>⭐</span>)}
                     </div>
                     <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '20px', margin: '0 0 20px' }}>"{t.text}"</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -735,20 +735,20 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: '20px' }}>
                 {[
                   {
-                    icon: '≡ƒÆí', title: 'New Ideas', color: '#3b82f6',
+                    icon: '💡', title: 'New Ideas', color: '#3b82f6',
                     desc: 'Discover trending business ideas and emerging markets in India',
                     links: [
                       { label: '🚀 Product Hunt — Today\'s Launches', url: 'https://www.producthunt.com' },
-                      { label: '≡ƒôè Tracxn — India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
-                      { label: '≡ƒî▒ YC Startup Ideas', url: 'https://www.ycombinator.com/rfs' },
+                      { label: '📈 Tracxn — India Startup Trends', url: 'https://tracxn.com/d/trending-themes' },
+                      { label: '🌱 YC Startup Ideas', url: 'https://www.ycombinator.com/rfs' },
                     ]
                   },
                   {
-                    icon: '≡ƒÅå', title: 'Hackathons', color: '#ef4444',
+                    icon: '🏅', title: 'Hackathons', color: '#ef4444',
                     desc: 'Upcoming competitions to validate your idea and win funding',
                     links: [
-                      { label: 'ΓÜí Devpost — Active Hackathons', url: 'https://devpost.com/hackathons' },
-                      { label: '≡ƒç«≡ƒç│ Unstop — India Competitions', url: 'https://unstop.com/hackathons' },
+                      { label: '⚡ Devpost — Active Hackathons', url: 'https://devpost.com/hackathons' },
+                      { label: '🇮🇳 Unstop — India Competitions', url: 'https://unstop.com/hackathons' },
                       { label: '💰 HackerEarth Challenges', url: 'https://www.hackerearth.com/challenges' },
                     ]
                   },
@@ -795,17 +795,17 @@ export default function Home() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
                 {[
                   {
-                    icon: '≡ƒÅ¬',
+                    icon: '🏆',
                     title: 'Competitor Analysis for Any Indian City',
                     desc: 'Instantly see every competitor within 3 km of your target location — from Mumbai\'s Dharavi to Delhi\'s Connaught Place. Our competitor analysis tool pulls real business data from OpenStreetMap, the same database powering Apple Maps and Wikipedia. Know exactly how saturated a market is before you invest a single rupee.',
                   },
                   {
-                    icon: '≡ƒÄ»',
+                    icon: '🎯',
                     title: 'Find Business Opportunities & Market Gaps',
                     desc: 'Our business opportunity finder scans local demand signals and competitor density to surface underserved niches. Whether you\'re looking for a gap in Tier-1 metros or Tier-2 cities like Jaipur, Surat, or Lucknow, BizScope AI identifies where demand outpaces supply — your next big opportunity.',
                   },
                   {
-                    icon: '≡ƒôè',
+                    icon: '📈',
                     title: 'Startup Market Research in Under 10 Seconds',
                     desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report — competitor count, market saturation score, AI-recommended business types, and nearby property prices — in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
                   },
@@ -815,7 +815,7 @@ export default function Home() {
                     desc: 'Powered by Google Gemini AI and real-time OpenStreetMap data, BizScope AI provides free business intelligence that was previously only available to funded startups. No subscription, no credit card, no signup. Just enter your city and get actionable insights instantly.',
                   },
                   {
-                    icon: '≡ƒù║',
+                    icon: '🗺️',
                     title: 'Location Intelligence for Indian Markets',
                     desc: 'Location is everything in Indian retail and services. Our location intelligence engine analyzes foot traffic patterns, competitor clustering, and commercial property availability to help you pick the perfect spot. From street-level analysis in Chandni Chowk to suburb mapping in Pune\'s Hinjewadi.',
                   },
@@ -872,16 +872,16 @@ export default function Home() {
                   { label: '📖 Docs', href: '/docs' },
                 ]},
                 { title: 'Company', links: [
-                  { label: '≡ƒæñ About', href: '/about' },
-                  { label: '≡ƒöÆ Privacy Policy', href: '/privacy' },
-                  { label: '≡ƒôï Terms of Service', href: '/terms' },
-                  { label: 'Γ₧ò List Business', href: '/register' },
+                  { label: '👤 About', href: '/about' },
+                  { label: '🔒 Privacy Policy', href: '/privacy' },
+                  { label: '📋 Terms of Service', href: '/terms' },
+                  { label: '➕ List Business', href: '/register' },
                 ]},
                 { title: 'Data Sources', links: [
-                  { label: '≡ƒù║ OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
+                  { label: '🗺️ OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' },
                   { label: '🏪 Google Gemini AI', href: 'https://ai.google.dev' },
                   { label: '📍 TomTom POI', href: 'https://developer.tomtom.com' },
-                  { label: '≡ƒÅ¢ Govt Circle Rates', href: 'https://ngdrs.gov.in' },
+                  { label: '📊 Govt Circle Rates', href: 'https://ngdrs.gov.in' },
                 ]},
               ].map(col => (
                 <div key={col.title}>
@@ -911,7 +911,7 @@ export default function Home() {
       {/* Theme toggle bottom-left */}
       <button onClick={toggle} title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 200, width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border2)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-        {dark ? 'ΓÿÇ' : '≡ƒîÖ'}
+        {dark ? '☀️' : '🌙'}
       </button>
 
       <SuggestBusiness />

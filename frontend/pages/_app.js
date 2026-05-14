@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 
-// ΓöÇΓöÇ Route progress bar ΓöÇΓöÇ
+// ── Route progress bar ──
 function RouteProgressBar() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
