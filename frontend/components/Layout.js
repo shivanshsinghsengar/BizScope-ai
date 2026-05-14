@@ -86,7 +86,7 @@ export default function Layout({ children }) {
           >
             <span>🔍</span>
             <span>Search</span>
-            <kbd style={{ fontSize: '10px', background: 'var(--surface3)', padding: '1px 5px', borderRadius: '4px', border: '1px solid var(--border3)', fontFamily: 'monospace' }}>⌘K</kbd>
+            <kbd style={{ fontSize: '10px', background: 'var(--surface3)', padding: '1px 5px', borderRadius: '4px', border: '1px solid var(--border3)', fontFamily: 'monospace' }}>Ctrl+K</kbd>
           </button>
           {user ? (
             <>

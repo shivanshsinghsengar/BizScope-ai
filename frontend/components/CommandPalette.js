@@ -119,7 +119,7 @@ export default function CommandPalette({ open, onClose }) {
           <span>↑↓ navigate</span>
           <span>↵ open</span>
           <span>ESC close</span>
-          <span style={{ marginLeft: 'auto' }}>⌘K to open anytime</span>
+          <span style={{ marginLeft: 'auto' }}>Ctrl+K to open anytime</span>
         </div>
       </div>
     </div>
