@@ -252,19 +252,19 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India</title>
-        <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
-        <meta name="keywords" content="market analysis India, competitor analysis tool, business opportunity finder, startup market research, free business intelligence, competitor research India, business location finder, market gap analysis" />
+        <title>BizScope AI — Free Market Analysis & Competitor Research Tool</title>
+        <meta name="description" content="Analyze competitors, discover market gaps, and find the best business location anywhere in the world. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
+        <meta name="keywords" content="market analysis tool, competitor analysis, business opportunity finder, startup market research, free business intelligence, business location finder, market gap analysis, global market research" />
         <link rel="canonical" href="https://biz-scope-ai.vercel.app" />
-        <meta property="og:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
-        <meta property="og:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
+        <meta property="og:title" content="BizScope AI — Free Market Analysis & Competitor Research Tool" />
+        <meta property="og:description" content="Analyze competitors, discover market gaps, and find the best business location anywhere in the world. Free AI-powered market analysis using real OpenStreetMap data. Get results in under 10 seconds." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://biz-scope-ai.vercel.app" />
         <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta property="og:locale" content="en_IN" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="BizScope AI — Free Market Analysis &amp; Competitor Research Tool for India" />
-        <meta name="twitter:description" content="Analyze competitors, discover market gaps, and find the best business location in India. Free AI-powered market analysis using real OpenStreetMap data." />
+        <meta name="twitter:title" content="BizScope AI — Free Market Analysis & Competitor Research Tool" />
+        <meta name="twitter:description" content="Analyze competitors, discover market gaps, and find the best business location anywhere in the world. Free AI-powered market analysis using real OpenStreetMap data." />
         <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.png" />
         <meta name="robots" content="index, follow" />
         <script
@@ -340,10 +340,10 @@ export default function Home() {
                 },
                 {
                   "@type": "Question",
-                  "name": "Can I use this for any city in India?",
+                  "name": "Can I use this for any city in the world?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes — any city, town, or area in India (and 195 other countries). Just type the name and we'll find it."
+                    "text": "Yes — any city, town, or area in 195 countries. Just type the name and we'll find it."
                   }
                 },
                 {
@@ -523,7 +523,7 @@ export default function Home() {
             {/* Badge */}
             <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
               <div className="badge-live" style={{ fontSize: '13px' }}>
-                Free for Indian entrepreneurs · No signup needed
+                Free for entrepreneurs worldwide · No signup needed
               </div>
             </div>
 
@@ -533,7 +533,7 @@ export default function Home() {
               <span className="gradient-text-animated">before you invest.</span>
             </h1>
             <p className="anim-fade-up delay-2" style={{ textAlign: 'center', fontSize: 'clamp(15px, 2vw, 18px)', color: 'var(--muted)', maxWidth: '520px', margin: '0 auto 32px', lineHeight: '1.75', fontWeight: '400' }}>
-              Type any city in India. Get real competitor counts, AI business ideas, available properties, and market scores — in under 10 seconds.
+              Type any city in the world. Get real competitor counts, AI business ideas, available properties, and market scores — in under 10 seconds.
             </p>
 
             {/* Star rating social proof */}
@@ -562,7 +562,7 @@ export default function Home() {
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                   {[
-                    { name: 'city', label: 'City or area', placeholder: 'Mumbai, Connaught Place, Lajpat Nagar...' },
+                    { name: 'city', label: 'City or area', placeholder: 'New York, London, Mumbai, Dubai, Lagos...' },
                     { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
                     { name: 'pincode', label: 'Pincode', placeholder: '400001 (optional)' },
                   ].map(f => (
@@ -630,7 +630,7 @@ export default function Home() {
                   Type any Indian city above and see real competitor data, AI insights, and property prices in under 10 seconds. No signup, no credit card.
                 </p>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  {['Mumbai', 'Delhi', 'Mathura', 'Jaipur', 'Bangalore'].map(city => (
+                  {['New York', 'London', 'Dubai', 'Mumbai', 'Singapore'].map(city => (
                     <button key={city} onClick={() => { setForm(f => ({ ...f, city })); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                       style={{ padding: '8px 18px', borderRadius: '100px', border: '1px solid #3b82f640', background: '#3b82f610', color: '#2563eb', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
                       📍 {city}
@@ -644,7 +644,7 @@ export default function Home() {
             <div className="anim-fade-up delay-4" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '48px', marginBottom: '72px' }}>
               {[
                 { value: '50M+', label: 'Businesses indexed' },
-                { value: '195',  label: 'Countries covered' },
+                { value: '195+', label: 'Countries covered' },
                 { value: '100%', label: 'Free forever' },
                 { value: '<10s', label: 'Analysis time' },
               ].map(s => (
@@ -730,7 +730,7 @@ export default function Home() {
                   🌐 Entrepreneur Resource Hub
                 </div>
                 <h2 style={{ fontSize: 'clamp(22px,4vw,34px)', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>Stay Ahead of the Market</h2>
-                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Curated resources for Indian entrepreneurs</p>
+                <p style={{ color: 'var(--muted)', fontSize: '14px' }}>Curated resources for entrepreneurs worldwide</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: '20px' }}>
                 {[
@@ -807,7 +807,7 @@ export default function Home() {
                   {
                     icon: '📈',
                     title: 'Startup Market Research in Under 10 Seconds',
-                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report — competitor count, market saturation score, AI-recommended business types, and nearby property prices — in under 10 seconds. Built specifically for Indian entrepreneurs, students, and first-time founders.',
+                    desc: 'Traditional startup market research takes weeks and costs thousands. BizScope AI delivers a full market intelligence report — competitor count, market saturation score, AI-recommended business types, and nearby property prices — in under 10 seconds. Built for entrepreneurs, students, and first-time founders worldwide.',
                   },
                   {
                     icon: '🏪',
@@ -843,7 +843,7 @@ export default function Home() {
                 { q: 'Is BizScope AI really free?', a: 'Yes, completely free. No credit card, no signup required for basic analysis. Just enter a city and get results instantly.' },
                 { q: 'How accurate is the data?', a: 'Business data comes from OpenStreetMap — the same source used by Apple Maps, Wikipedia, and Uber. It covers 50M+ businesses worldwide and is updated continuously by a global community.' },
                 { q: 'How often is the data updated?', a: 'OpenStreetMap data is updated in real-time by contributors. Our cache refreshes every 2 hours, so you always get fresh data.' },
-                { q: 'Can I use this for any city in India?', a: 'Yes — any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
+                { q: 'Can I use this for any city in the world?', a: 'Yes — any city, town, or area in India (and 195 other countries). Just type the name and we\'ll find it.' },
                 { q: 'Are the property prices real?', a: 'Property prices are estimates based on official government circle rates from State Registration & Stamps Departments. Actual market prices may be 20–150% higher depending on location.' },
                 { q: 'How does the AI recommendation work?', a: 'After fetching real competitor data, we send the market statistics to Google Gemini AI which analyzes the competition landscape and suggests the 5 best businesses to start in your area.' },
               ].map((f, i) => (
