@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -2517,7 +2517,7 @@ app.get('/api/analyze-stream', async (req, res) => {
   try {
     // Step 1: Geocode FIRST to get coordinates, then create cache key with lat/lon
     send('geocode', 'Finding your location on the map...', 'Geocoding your area', 10);
-    const geo = await geocodeLocation(location);
+    const geo = await geocodeLocation(location, countryCode);
     if (!geo) {
       res.write(`data: ${JSON.stringify({ step: 'error', message: 'Location not found. Please check the spelling.' })}\n\n`);
       return res.end();
@@ -2658,7 +2658,8 @@ app.post('/api/analyze-location', async (req, res) => {
     if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
 
     // Geocode first to get coordinates for cache key
-    const geo = await geocodeLocation(location);
+    const countryCodePost = (req.body.country || req.query.country || "").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || null;
+    const geo = await geocodeLocation(location, countryCodePost);
     if (!geo) return res.status(400).json({ error: 'Location not found. Please check the spelling.' });
     const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
 
