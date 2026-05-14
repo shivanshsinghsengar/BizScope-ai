@@ -132,7 +132,11 @@ export default function MarketChat({ data, defaultOpen = false }) {
   }, [messages, loading]);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+      // Ping backend to wake it up from Render cold start
+      fetch(`${API_URL}/api/health`).catch(() => {});
+    }
   }, [open]);
 
   const sendMessage = async (text) => {
@@ -145,34 +149,52 @@ export default function MarketChat({ data, defaultOpen = false }) {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
-    try {
-      const res = await fetch(`${API_URL}/api/market-chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: msg,
-          marketContext,
-          history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
+    const attemptSend = async (attemptsLeft = 3) => {
+      try {
+        const res = await fetch(`${API_URL}/api/market-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: msg,
+            marketContext,
+            history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
+          }),
+        });
 
-      // Guard: backend might return HTML on cold start or 404
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Backend is starting up (Render cold start). Wait 30 seconds and try again.');
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          // Backend cold start — auto retry with countdown
+          if (attemptsLeft > 1) {
+            setError('⏳ Backend waking up... retrying in 15s');
+            await new Promise(r => setTimeout(r, 15000));
+            setError('⏳ Almost ready... retrying now');
+            await new Promise(r => setTimeout(r, 5000));
+            setError('');
+            return attemptSend(attemptsLeft - 1);
+          }
+          throw new Error('Backend took too long to start. Please try again in 30 seconds.');
+        }
+
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        setError('');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: json.reply,
+          timestamp: json.timestamp || new Date().toISOString(),
+        }]);
+      } catch (e) {
+        if (attemptsLeft > 1 && (e.message.includes('fetch') || e.message.includes('network'))) {
+          setError('⏳ Reconnecting...');
+          await new Promise(r => setTimeout(r, 10000));
+          return attemptSend(attemptsLeft - 1);
+        }
+        setError(e.message || 'Failed to get response. Try again.');
       }
+      setLoading(false);
+    };
 
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: json.reply,
-        timestamp: json.timestamp || new Date().toISOString(),
-      }]);
-    } catch (e) {
-      setError(e.message || 'Failed to get response. Try again.');
-    }
-    setLoading(false);
+    await attemptSend();
   };
 
   const handleKey = (e) => {
