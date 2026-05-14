@@ -7,6 +7,39 @@ import SuggestBusiness from '../components/SuggestBusiness';
 import { useTheme } from '../context/ThemeContext';
 import ParticleBackground from '../components/ParticleBackground';
 
+const COUNTRIES = [
+  { code: 'IN', name: 'India', flag: '🇮🇳' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' },
+  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'AE', name: 'UAE', flag: '🇦🇪' },
+  { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+  { code: 'FR', name: 'France', flag: '🇫🇷' },
+  { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
+  { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+  { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+  { code: 'ID', name: 'Indonesia', flag: '🇮🇩' },
+  { code: 'PK', name: 'Pakistan', flag: '🇵🇰' },
+  { code: 'BD', name: 'Bangladesh', flag: '🇧🇩' },
+  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
+  { code: 'KE', name: 'Kenya', flag: '🇰🇪' },
+  { code: 'EG', name: 'Egypt', flag: '🇪🇬' },
+  { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
+  { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+  { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
+  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+  { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+  { code: 'VN', name: 'Vietnam', flag: '🇻🇳' },
+  { code: 'GH', name: 'Ghana', flag: '🇬🇭' },
+  { code: 'TZ', name: 'Tanzania', flag: '🇹🇿' },
+];
+
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -104,7 +137,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
 }
 
 export default function Home() {
-  const [form, setForm] = useState({ city: '', address: '', pincode: '' });
+  const [form, setForm] = useState({ country: 'IN', city: '', address: '', pincode: '' });
   const [loading, setLoading] = useState(false);
   const [loadState, setLoadState] = useState({ step: 'geocode', message: '', sub: '', progress: 0 });
   const [error, setError] = useState('');
@@ -190,14 +223,16 @@ export default function Home() {
     e.preventDefault();
     setLoading(true); setError('');
     const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
-    const location = parts.join(', ');
+    // Append country name for accurate global geocoding
+    const countryName = COUNTRIES.find(c => c.code === form.country)?.name || '';
+    const location = [...parts, countryName].filter(Boolean).join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
     // Use SSE stream for real-time progress — TomTom + OSM + Foursquare hybrid
     setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
 
     try {
-      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}`;
+      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}`;
       const evtSource = new EventSource(streamUrl);
 
       // 90s timeout — deep analysis takes time
@@ -561,6 +596,28 @@ export default function Home() {
               <div className="glass-card border-glow-anim" style={{ padding: '32px', boxShadow: dark ? '0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)' : '0 12px 48px rgba(37,99,235,0.1)' }}>
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+
+                  {/* Country selector */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>Country</label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', pointerEvents: 'none', zIndex: 1 }}>
+                        {COUNTRIES.find(c => c.code === form.country)?.flag || '🌍'}
+                      </span>
+                      <select
+                        value={form.country}
+                        onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                        className="input-field"
+                        style={{ paddingLeft: '42px', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                        ))}
+                      </select>
+                      <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', color: 'var(--muted)', pointerEvents: 'none' }}>▼</span>
+                    </div>
+                  </div>
+
                   {[
                     { name: 'city', label: 'City or area', placeholder: 'New York, London, Mumbai, Dubai, Lagos...' },
                     { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
