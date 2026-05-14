@@ -2499,6 +2499,7 @@ app.get('/api/admin/events', adminAuth, async (req, res) => {
 // 0. Real-time streaming analysis via SSE
 app.get('/api/analyze-stream', async (req, res) => {
   const location = sanitizeLocationInput(req.query.location || '');
+  const countryCode = (req.query.country || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || null;
   if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
 
   // SSE headers
