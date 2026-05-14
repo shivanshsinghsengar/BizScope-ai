@@ -222,26 +222,23 @@ export default function Home() {
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');
+    // Only use city + address + pincode — country is sent separately as code
     const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
-    // Append country name for accurate global geocoding
-    const countryName = COUNTRIES.find(c => c.code === form.country)?.name || '';
-    const location = [...parts, countryName].filter(Boolean).join(', ');
+    const location = parts.join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
-    // Use SSE stream for real-time progress — TomTom + OSM + Foursquare hybrid
     setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
 
     try {
       const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}`;
       const evtSource = new EventSource(streamUrl);
 
-      // 90s timeout — deep analysis takes time
-      const sseTimeout = setTimeout(() => {
-        evtSource.close();
-        reject(new Error('Analysis timed out. Please try again.'));
-      }, 90000);
-
       await new Promise((resolve, reject) => {
+        // 90s timeout
+        const sseTimeout = setTimeout(() => {
+          evtSource.close();
+          reject(new Error('Analysis timed out. Please try again.'));
+        }, 90000);
         evtSource.onmessage = (e) => {
           try {
             const payload = JSON.parse(e.data);
