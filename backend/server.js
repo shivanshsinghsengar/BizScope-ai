@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -898,13 +898,16 @@ const geocodeCache = new Map();
 
 // Free geocoding via OpenStreetMap Nominatim — with typo fallback
 const geocodeLocation = async (location) => {
-  const key = location.toLowerCase().trim().replace(/\s+/g, ' ');
+const geocodeLocation = async (location, countryCode = null) => {
+  const key = (location + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(key)) return geocodeCache.get(key);
 
-  const tryGeocode = async (query) => {
+  const tryGeocode = async (query, cc = null) => {
     const url = `https://nominatim.openstreetmap.org/search`;
+    const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
+    if (cc) params.countrycodes = cc.toLowerCase();
     const res = await axios.get(url, {
-      params: { q: query, format: 'json', limit: 1, countrycodes: 'in', addressdetails: 1 },
+      params,
       headers: { 'User-Agent': 'BizScopeAI/1.0' },
       timeout: 6000,
     });
@@ -915,15 +918,21 @@ const geocodeLocation = async (location) => {
   let matchedQuery = location;
   let partialMatch = false;
 
-  // Try full query first
-  result = await tryGeocode(location);
+  // Try full query with country code first
+  result = await tryGeocode(location, countryCode);
+
+  // Fall back to global only if no country was explicitly specified
+  if (!result && !countryCode) {
+    result = await tryGeocode(location, null);
+  }
 
   // If not found, try progressively simpler queries (strip parts from left)
   if (!result) {
     const parts = location.split(',').map(p => p.trim()).filter(Boolean);
     for (let i = 1; i < parts.length; i++) {
       const simpler = parts.slice(i).join(', ');
-      result = await tryGeocode(simpler);
+      result = await tryGeocode(simpler, countryCode);
+      if (!result && !countryCode) result = await tryGeocode(simpler, null);
       if (result) { matchedQuery = simpler; partialMatch = true; break; }
     }
   }
@@ -931,7 +940,8 @@ const geocodeLocation = async (location) => {
   // Last resort: try just the first word
   if (!result) {
     const firstWord = location.split(',')[0].trim();
-    result = await tryGeocode(firstWord);
+    result = await tryGeocode(firstWord, countryCode);
+    if (!result && !countryCode) result = await tryGeocode(firstWord, null);
     if (result) { matchedQuery = firstWord; partialMatch = true; }
   }
 
