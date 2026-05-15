@@ -618,11 +618,21 @@ export default function Home() {
                   {[
                     { name: 'city', label: 'City or area', placeholder: 'New York, London, Mumbai, Dubai, Lagos...' },
                     { name: 'address', label: 'Street address', placeholder: 'MG Road, Sector 18 (optional)' },
-                    { name: 'pincode', label: 'Pincode', placeholder: '400001 (optional)' },
+                    { name: 'pincode', label: 'Pincode / ZIP', placeholder: '400001, 10001 (optional)' },
                   ].map(f => (
                     <div key={f.name}>
                       <label style={{ display: 'block', fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>{f.label}</label>
                       <input name={f.name} value={form[f.name]} onChange={handleChange} placeholder={f.placeholder} required={f.name === 'city'} className="input-field" />
+
+                      {/* Country reminder below city field */}
+                      {f.name === 'city' && form.city.trim().length > 0 && (
+                        <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)', padding: '5px 10px', background: 'var(--surface2)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                          <span>{COUNTRIES.find(c => c.code === form.country)?.flag || '🌍'}</span>
+                          <span>Searching in <strong style={{ color: 'var(--text)' }}>{COUNTRIES.find(c => c.code === form.country)?.name || form.country}</strong></span>
+                          <span style={{ color: 'var(--muted)', marginLeft: 'auto', fontSize: '11px' }}>← change above if wrong</span>
+                        </div>
+                      )}
+
                       {/* AI insights below city field */}
                       {f.name === 'city' && (insightsLoading || cityInsights) && (
                         <div style={{ marginTop: '8px', background: 'var(--surface2)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '12px', padding: '12px 14px', animation: 'fadeInUp 0.3s ease' }}>
@@ -654,7 +664,7 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>ΓÜá {error}</p>}
+                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
                 {history.length > 0 && !loading && (
                   <div style={{ marginBottom: '14px' }}>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>Recent</div>

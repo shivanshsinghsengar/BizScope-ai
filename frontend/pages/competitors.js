@@ -5,6 +5,20 @@ import Layout from '../components/Layout';
 import useAnalysis from '../hooks/useAnalysis';
 import { PageSkeleton } from '../components/Skeleton';
 
+// Country code → official company registry
+const REGISTRIES = {
+  IN: { name: 'MCA India', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' MCA company registration India')}`, flag: '🇮🇳' },
+  GB: { name: 'Companies House', search: (n) => `https://find-and-update.company-information.service.gov.uk/search?q=${encodeURIComponent(n)}`, flag: '🇬🇧' },
+  US: { name: 'SEC EDGAR', search: (n) => `https://www.sec.gov/cgi-bin/browse-edgar?company=${encodeURIComponent(n)}&action=getcompany`, flag: '🇺🇸' },
+  AU: { name: 'ASIC', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' ASIC company registration Australia')}`, flag: '🇦🇺' },
+  SG: { name: 'ACRA', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' ACRA company Singapore')}`, flag: '🇸🇬' },
+  CA: { name: 'Corporations Canada', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' Corporations Canada registration')}`, flag: '🇨🇦' },
+  DE: { name: 'Handelsregister', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' Handelsregister Germany')}`, flag: '🇩🇪' },
+  AE: { name: 'UAE Registry', search: (n) => `https://www.google.com/search?q=${encodeURIComponent(n + ' UAE company registration')}`, flag: '🇦🇪' },
+  NZ: { name: 'Companies Office NZ', search: (n) => `https://app.companiesoffice.govt.nz/companies/app/ui/pages/companies/search?q=${encodeURIComponent(n)}`, flag: '🇳🇿' },
+};
+const DEFAULT_REGISTRY = { name: 'OpenCorporates', search: (n) => `https://opencorporates.com/companies?q=${encodeURIComponent(n)}`, flag: '🌍' };
+
 const categoryColors = {
   Restaurant: '#f59e0b', Cafe: '#8b5cf6', Grocery: '#3b82f6', Gym: '#3b82f6',
   Salon: '#ec4899', Pharmacy: '#06b6d4', Bakery: '#f97316', Laundry: '#6366f1',
@@ -24,16 +38,19 @@ const categoryIcons = {
   Office: '🏢', Other: '🏪',
 };
 
-function BusinessDialog({ b, onClose }) {
+function BusinessDialog({ b, onClose, countryCode }) {
   const color = categoryColors[b.category] || '#6366f1';
-  const stars = Array.from({ length: 5 }, (_, i) => i < Math.round(b.rating) ? '⭐' : '☆').join('');
+  const [showResearch, setShowResearch] = useState(false);
+
+  const registry = REGISTRIES[countryCode] || DEFAULT_REGISTRY;
+  const q = encodeURIComponent(b.name);
+  const addr = encodeURIComponent((b.address || '').split(',').slice(-2).join(',').trim());
 
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: 'var(--surface)', borderRadius: '24px', width: '100%', maxWidth: '520px', border: `1px solid ${color}40`, position: 'relative', overflow: 'hidden', boxShadow: `0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px ${color}20` }}>
+      <div style={{ background: 'var(--surface)', borderRadius: '24px', width: '100%', maxWidth: '520px', border: `1px solid ${color}40`, position: 'relative', overflow: 'hidden', boxShadow: `0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px ${color}20`, maxHeight: '90vh', overflowY: 'auto' }}>
 
-        {/* Top accent */}
         <div style={{ height: '4px', background: `linear-gradient(90deg, ${color}, ${color}60, transparent)` }} />
 
         <div style={{ padding: '28px' }}>
@@ -51,7 +68,7 @@ function BusinessDialog({ b, onClose }) {
             </div>
           </div>
 
-          {/* Details grid */}
+          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             <div style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '14px' }}>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Rating</div>
@@ -60,9 +77,7 @@ function BusinessDialog({ b, onClose }) {
             </div>
             <div style={{ background: 'var(--surface2)', borderRadius: '14px', padding: '14px' }}>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Category</div>
-              <div style={{ fontSize: '15px', fontWeight: '700', color }}>
-                {categoryIcons[b.category]} {b.category}
-              </div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color }}>{categoryIcons[b.category]} {b.category}</div>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Business type</div>
             </div>
           </div>
@@ -107,7 +122,78 @@ function BusinessDialog({ b, onClose }) {
             )}
           </div>
 
-          {/* Actions */}
+          {/* ── Company Research Panel ── */}
+          <div style={{ marginBottom: '20px' }}>
+            <button onClick={() => setShowResearch(v => !v)}
+              style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #6366f140', background: showResearch ? '#6366f118' : '#6366f110', color: '#818cf8', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
+              🏛️ Research This Company {showResearch ? '▲' : '▼'}
+            </button>
+
+            {showResearch && (
+              <div style={{ marginTop: '12px', borderRadius: '14px', border: '1px solid #6366f125', overflow: 'hidden' }}>
+                <div style={{ padding: '10px 14px', background: '#6366f112', fontSize: '11px', fontWeight: '800', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  🔍 Research Links — Opens in new tab
+                </div>
+                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+                  {/* Official Registry */}
+                  <a href={registry.search(b.name)} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--surface2)', borderRadius: '10px', textDecoration: 'none', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f140'; e.currentTarget.style.background = '#6366f110'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                    <span style={{ fontSize: '22px' }}>{registry.flag}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>{registry.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Official government company registry</div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: '600' }}>Open →</span>
+                  </a>
+
+                  {/* Google Search */}
+                  <a href={`https://www.google.com/search?q=${q}+company+registration+${addr}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--surface2)', borderRadius: '10px', textDecoration: 'none', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f640'; e.currentTarget.style.background = '#3b82f610'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                    <span style={{ fontSize: '22px' }}>🔍</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>Google Search</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>News, reviews, ownership info</div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>Open →</span>
+                  </a>
+
+                  {/* LinkedIn */}
+                  <a href={`https://www.linkedin.com/search/results/companies/?keywords=${q}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--surface2)', borderRadius: '10px', textDecoration: 'none', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#0ea5e940'; e.currentTarget.style.background = '#0ea5e910'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                    <span style={{ fontSize: '22px' }}>💼</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>LinkedIn</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Company profile, employees, size</div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#0ea5e9', fontWeight: '600' }}>Open →</span>
+                  </a>
+
+                  {/* OpenCorporates */}
+                  <a href={`https://opencorporates.com/companies?q=${q}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--surface2)', borderRadius: '10px', textDecoration: 'none', border: '1px solid transparent', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b40'; e.currentTarget.style.background = '#f59e0b10'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'var(--surface2)'; }}>
+                    <span style={{ fontSize: '22px' }}>🌐</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>OpenCorporates</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>200M+ companies, 140 countries</div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>Open →</span>
+                  </a>
+
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <a href={`https://www.google.com/maps/search/${encodeURIComponent(b.name + ' ' + (b.address || ''))}/@${b.latitude},${b.longitude},17z`}
               target="_blank" rel="noreferrer"
@@ -148,9 +234,9 @@ export default function Competitors() {
 
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
+  const countryCode = data.countryCode || 'IN';
   const categories = ['All', ...new Set(data.businesses?.map(b => b.category) || [])];
 
-  // Distance filter using haversine approximation
   const userLat = data.userLat;
   const userLng = data.userLng;
   const withinDist = (b) => {
@@ -161,7 +247,7 @@ export default function Competitors() {
   };
 
   const filtered = (data.businesses || [])
-    .filter(b => !b.isMock) // never show estimated/mock businesses in competitor list
+    .filter(b => !b.isMock)
     .filter(b => (filter === 'All' || b.category === filter) && b.name.toLowerCase().includes(search.toLowerCase()) && withinDist(b))
     .sort((a, b) => sort === 'rating' ? b.rating - a.rating : b.reviewCount - a.reviewCount);
 
@@ -169,7 +255,7 @@ export default function Competitors() {
     <Layout>
       <Head><title>Competitors — BizScope AI</title></Head>
 
-      {selected && <BusinessDialog b={selected} onClose={() => setSelected(null)} />}
+      {selected && <BusinessDialog b={selected} countryCode={countryCode} onClose={() => setSelected(null)} />}
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
