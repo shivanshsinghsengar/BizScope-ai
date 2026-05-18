@@ -5,11 +5,13 @@ const organizationSchema = {
   "@type": "Organization",
   "name": "BizScope AI",
   "url": "https://biz-scope-ai.vercel.app",
-  "logo": "https://biz-scope-ai.vercel.app/logo.png",
-  "description": "Free AI-powered market analysis and competitor research tool for Indian entrepreneurs.",
+  "logo": "https://biz-scope-ai.vercel.app/logo.svg",
+  "description": "Free AI-powered market analysis and competitor research tool. Analyze competitors, discover market gaps, and find the best business location anywhere in the world.",
   "foundingDate": "2024",
-  "areaServed": "IN",
-  "sameAs": [],
+  "areaServed": "Worldwide",
+  "sameAs": [
+    "https://github.com/shivanshsinghsengar/BizScope-ai"
+  ],
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer support",
@@ -21,9 +23,10 @@ const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "BizScope AI",
+  "alternateName": "BizScope",
   "url": "https://biz-scope-ai.vercel.app",
-  "description": "Free AI-powered market analysis and competitor research tool for Indian entrepreneurs. Analyze competitors, discover market gaps, and find the best business location in India.",
-  "inLanguage": "en-IN",
+  "description": "Free AI-powered market analysis and competitor research tool. Analyze competitors, discover market gaps, and find the best business location in any city worldwide. Get results in under 10 seconds.",
+  "inLanguage": "en",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {

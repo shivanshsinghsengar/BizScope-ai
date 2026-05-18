@@ -1,20 +1,21 @@
 User-agent: *
 Allow: /
-Disallow: /admin/login
+Disallow: /admin/
 Disallow: /api/
 Disallow: /_next/
 Disallow: /404
 
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
-Allow: /
-
-User-agent: Slurp
 Allow: /
 
 User-agent: DuckDuckBot
 Allow: /
 
-Sitemap: https://bizscope-og.vercel.app/sitemap.xml
+User-agent: Slurp
+Allow: /
+
+Sitemap: https://biz-scope-ai.vercel.app/sitemap.xml
