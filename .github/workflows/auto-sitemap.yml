@@ -1,0 +1,45 @@
+name: Auto Update Sitemap
+
+on:
+  schedule:
+    # Every day at midnight IST (6:30 PM UTC)
+    - cron: '30 18 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/pages/**'
+  workflow_dispatch:
+
+jobs:
+  update-sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate sitemap with today's date
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          echo "Updating sitemap lastmod to $TODAY"
+          sed -i "s/<lastmod>[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}<\/lastmod>/<lastmod>$TODAY<\/lastmod>/g" frontend/public/sitemap.xml
+          echo "✅ Sitemap updated"
+
+      - name: Check if sitemap changed
+        id: diff
+        run: |
+          if git diff --quiet frontend/public/sitemap.xml; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated sitemap
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "BizScope Bot"
+          git config user.email "bot@bizscope.ai"
+          git add frontend/public/sitemap.xml
+          git commit -m "chore: auto-update sitemap lastmod [skip ci]"
+          git push

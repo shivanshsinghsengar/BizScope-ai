@@ -1,0 +1,31 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    # Every 14 minutes — prevents Render free tier from sleeping
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/health)
+          echo "Backend responded with HTTP $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "⚠️ Backend returned $STATUS — may be starting up"
+          else
+            echo "✅ Backend is alive"
+          fi
+
+      - name: Warm up cofounder endpoint
+        run: |
+          curl -s --max-time 30 https://bizscope-ai-og.onrender.com/api/cofounder > /dev/null
+          echo "✅ Cofounder endpoint warmed"
+
+      - name: Warm up news endpoint
+        run: |
+          curl -s --max-time 30 https://bizscope-ai-og.onrender.com/api/news > /dev/null
+          echo "✅ News endpoint warmed"

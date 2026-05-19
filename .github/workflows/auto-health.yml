@@ -1,0 +1,64 @@
+name: Weekly Health & Security Audit
+
+on:
+  schedule:
+    # Every Monday at 9 AM IST (3:30 AM UTC)
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend security audit
+        working-directory: backend
+        run: |
+          npm ci
+          echo "=== BACKEND AUDIT ==="
+          npm audit --audit-level=high || echo "⚠️ High severity vulnerabilities found in backend"
+
+      - name: Frontend security audit
+        working-directory: frontend
+        run: |
+          npm ci
+          echo "=== FRONTEND AUDIT ==="
+          npm audit --audit-level=high || echo "⚠️ High severity vulnerabilities found in frontend"
+
+      - name: Backend syntax check
+        working-directory: backend
+        run: node --check server.js && echo "✅ Backend syntax OK"
+
+  backend-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Full backend smoke test
+        run: |
+          echo "Testing all critical endpoints..."
+
+          # Health check
+          STATUS=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/health)
+          echo "Health: HTTP $STATUS"
+          cat /tmp/health.json
+
+          # Cofounder endpoint
+          STATUS2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/cofounder)
+          echo "Cofounder: HTTP $STATUS2"
+
+          # News endpoint
+          STATUS3=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/news)
+          echo "News: HTTP $STATUS3"
+
+          if [ "$STATUS" = "200" ] && [ "$STATUS2" = "200" ] && [ "$STATUS3" = "200" ]; then
+            echo "✅ All endpoints healthy"
+          else
+            echo "❌ Some endpoints failed — check Render dashboard"
+            exit 1
+          fi
