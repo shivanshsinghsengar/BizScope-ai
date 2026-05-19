@@ -10,17 +10,6 @@ const IDEA_STAGES = ['Just an idea', 'Validated concept', 'MVP built', 'Early re
 const COMMITMENT_LEVELS = ['Part-time (weekends)', 'Part-time (evenings)', 'Full-time ready', 'Full-time (already quit job)'];
 const CITIES = ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow', 'Kochi', 'Chandigarh', 'Indore', 'Bhopal', 'Remote / Anywhere'];
 
-// Generate or retrieve a persistent session id for this browser
-function getSessionId() {
-  if (typeof window === 'undefined') return 'ssr';
-  let sid = localStorage.getItem('bizscope_chat_sid');
-  if (!sid) {
-    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('bizscope_chat_sid', sid);
-  }
-  return sid;
-}
-
 // ── Chat Panel Component ──────────────────────────────────────────────────────
 function ChatPanel({ profile, onClose }) {
   const [messages, setMessages] = useState([]);
@@ -29,30 +18,49 @@ function ChatPanel({ profile, onClose }) {
   const [nameSet, setNameSet] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sendError, setSendError] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const bottomRef = useRef(null);
-  const sessionId = getSessionId();
 
-  // Load existing messages
+  // Init sessionId on client only
   useEffect(() => {
-    if (!profile) return;
+    let sid = localStorage.getItem('bizscope_chat_sid');
+    if (!sid) {
+      sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('bizscope_chat_sid', sid);
+    }
+    setSessionId(sid);
+  }, []);
+
+  // Load existing messages once sessionId is ready
+  useEffect(() => {
+    if (!profile || !sessionId) return;
     setLoading(true);
     fetch(`${API_URL}/api/cofounder/${profile.id}/messages?sessionId=${sessionId}`)
-      .then(r => r.json())
+      .then(r => {
+        const ct = r.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('non-json');
+        return r.json();
+      })
       .then(data => { setMessages(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [profile]);
+  }, [profile, sessionId]);
 
-  // Poll for new messages every 5s
+  // Poll for new messages every 5s after name is set
   useEffect(() => {
-    if (!profile || !nameSet) return;
+    if (!profile || !nameSet || !sessionId) return;
     const interval = setInterval(() => {
       fetch(`${API_URL}/api/cofounder/${profile.id}/messages?sessionId=${sessionId}`)
-        .then(r => r.json())
+        .then(r => {
+          const ct = r.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) throw new Error('non-json');
+          return r.json();
+        })
         .then(data => { if (Array.isArray(data)) setMessages(data); })
         .catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
-  }, [profile, nameSet]);
+  }, [profile, nameSet, sessionId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -61,7 +69,7 @@ function ChatPanel({ profile, onClose }) {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!text.trim() || !senderName.trim()) return;
+    if (!text.trim() || !senderName.trim() || !sessionId) return;
     setSending(true);
     try {
       const res = await fetch(`${API_URL}/api/cofounder/${profile.id}/messages`, {
@@ -69,12 +77,24 @@ function ChatPanel({ profile, onClose }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senderName: senderName.trim(), text: text.trim(), sessionId }),
       });
+      // Guard against HTML error pages (Render cold start / 404)
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        setSendError('Backend is starting up — please wait 30 seconds and try again.');
+        setSending(false);
+        return;
+      }
       const msg = await res.json();
       if (msg.id) {
         setMessages(prev => [...prev, msg]);
         setText('');
+        setSendError('');
+      } else {
+        setSendError(msg.error || 'Failed to send. Try again.');
       }
-    } catch (_) {}
+    } catch (err) {
+      setSendError('Connection error. Backend may be starting up — try again in 30s.');
+    }
     setSending(false);
   };
 
@@ -164,20 +184,27 @@ function ChatPanel({ profile, onClose }) {
           </div>
 
           {/* Input */}
-          <form onSubmit={sendMessage} style={{ padding: '12px 16px', borderTop: '1px solid #1e2535', display: 'flex', gap: '8px', background: '#0d1117' }}>
-            <input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              placeholder={`Message ${profile.name}...`}
-              className="input-field"
-              style={{ flex: 1, fontSize: '14px' }}
-              disabled={sending}
-              autoFocus
-            />
-            <button type="submit" disabled={sending || !text.trim()}
-              style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', cursor: 'pointer', fontSize: '18px', opacity: (!text.trim() || sending) ? 0.5 : 1 }}>
-              ➤
-            </button>
+          <form onSubmit={sendMessage} style={{ padding: '12px 16px', borderTop: '1px solid #1e2535', display: 'flex', flexDirection: 'column', gap: '8px', background: '#0d1117' }}>
+            {sendError && (
+              <div style={{ fontSize: '12px', color: '#f87171', background: '#ef444415', border: '1px solid #ef444430', borderRadius: '8px', padding: '8px 12px' }}>
+                ⚠️ {sendError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder={`Message ${profile.name}...`}
+                className="input-field"
+                style={{ flex: 1, fontSize: '14px' }}
+                disabled={sending}
+                autoFocus
+              />
+              <button type="submit" disabled={sending || !text.trim()}
+                style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', cursor: 'pointer', fontSize: '18px', opacity: (!text.trim() || sending) ? 0.5 : 1 }}>
+                {sending ? '⏳' : '➤'}
+              </button>
+            </div>
           </form>
         </>
       )}
