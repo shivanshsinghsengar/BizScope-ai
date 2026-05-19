@@ -144,16 +144,16 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [reviews, setReviews] = useState({ reviews: [], avg: 0, total: 0 });
   const [news, setNews] = useState([
-    { title: 'India startup ecosystem raises $8.9B in 2025', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
-    { title: 'OpenAI launches GPT-5 with advanced reasoning', url: 'https://openai.com', source: 'OpenAI', publishedAt: new Date().toISOString() },
-    { title: 'Zepto raises $350M — quick commerce boom continues', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: new Date().toISOString() },
-    { title: 'Google Gemini 2.0 now free for all developers', url: 'https://ai.google.dev', source: 'Google AI', publishedAt: new Date().toISOString() },
-    { title: 'Y Combinator W26 batch — 40% Indian founders', url: 'https://ycombinator.com', source: 'YC', publishedAt: new Date().toISOString() },
-    { title: 'India becomes 3rd largest startup ecosystem globally', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
-    { title: 'Devpost announces $1M hackathon prize pool for 2026', url: 'https://devpost.com', source: 'Devpost', publishedAt: new Date().toISOString() },
-    { title: 'PhonePe crosses 500M registered users milestone', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
-    { title: 'HealthTech funding up 120% — telemedicine leads growth', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: new Date().toISOString() },
-    { title: 'Meesho hits 150M users — social commerce dominates Tier 2', url: 'https://inc42.com', source: 'Inc42', publishedAt: new Date().toISOString() },
+    { title: 'India startup ecosystem raises $8.9B in 2025', url: 'https://inc42.com', source: 'Inc42', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'OpenAI launches GPT-5 with advanced reasoning', url: 'https://openai.com', source: 'OpenAI', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'Zepto raises $350M — quick commerce boom continues', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'Google Gemini 2.0 now free for all developers', url: 'https://ai.google.dev', source: 'Google AI', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'Y Combinator W26 batch — 40% Indian founders', url: 'https://ycombinator.com', source: 'YC', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'India becomes 3rd largest startup ecosystem globally', url: 'https://inc42.com', source: 'Inc42', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'Devpost announces $1M hackathon prize pool for 2026', url: 'https://devpost.com', source: 'Devpost', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'PhonePe crosses 500M registered users milestone', url: 'https://inc42.com', source: 'Inc42', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'HealthTech funding up 120% — telemedicine leads growth', url: 'https://techcrunch.com', source: 'TechCrunch', publishedAt: '2025-05-18T00:00:00.000Z' },
+    { title: 'Meesho hits 150M users — social commerce dominates Tier 2', url: 'https://inc42.com', source: 'Inc42', publishedAt: '2025-05-18T00:00:00.000Z' },
   ]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
