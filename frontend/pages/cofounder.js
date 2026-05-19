@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Layout from '../components/Layout';
 import API_URL from '../utils/api';
@@ -8,8 +8,182 @@ const SKILLS_OPTIONS = ['Tech / Engineering', 'Business Development', 'Marketing
 const LOOKING_FOR_OPTIONS = ['Tech Co-founder', 'Business Co-founder', 'Marketing Co-founder', 'Design Co-founder', 'Operations Co-founder'];
 const IDEA_STAGES = ['Just an idea', 'Validated concept', 'MVP built', 'Early revenue', 'Scaling'];
 const COMMITMENT_LEVELS = ['Part-time (weekends)', 'Part-time (evenings)', 'Full-time ready', 'Full-time (already quit job)'];
-
 const CITIES = ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow', 'Kochi', 'Chandigarh', 'Indore', 'Bhopal', 'Remote / Anywhere'];
+
+// Generate or retrieve a persistent session id for this browser
+function getSessionId() {
+  if (typeof window === 'undefined') return 'ssr';
+  let sid = localStorage.getItem('bizscope_chat_sid');
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('bizscope_chat_sid', sid);
+  }
+  return sid;
+}
+
+// ── Chat Panel Component ──────────────────────────────────────────────────────
+function ChatPanel({ profile, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [text, setText] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [nameSet, setNameSet] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const bottomRef = useRef(null);
+  const sessionId = getSessionId();
+
+  // Load existing messages
+  useEffect(() => {
+    if (!profile) return;
+    setLoading(true);
+    fetch(`${API_URL}/api/cofounder/${profile.id}/messages?sessionId=${sessionId}`)
+      .then(r => r.json())
+      .then(data => { setMessages(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [profile]);
+
+  // Poll for new messages every 5s
+  useEffect(() => {
+    if (!profile || !nameSet) return;
+    const interval = setInterval(() => {
+      fetch(`${API_URL}/api/cofounder/${profile.id}/messages?sessionId=${sessionId}`)
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setMessages(data); })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [profile, nameSet]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!text.trim() || !senderName.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch(`${API_URL}/api/cofounder/${profile.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senderName: senderName.trim(), text: text.trim(), sessionId }),
+      });
+      const msg = await res.json();
+      if (msg.id) {
+        setMessages(prev => [...prev, msg]);
+        setText('');
+      }
+    } catch (_) {}
+    setSending(false);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', right: 0, top: 0, bottom: 0, width: '380px', maxWidth: '100vw',
+      background: '#0f1117', borderLeft: '1px solid #1e2535',
+      display: 'flex', flexDirection: 'column', zIndex: 1000,
+      boxShadow: '-8px 0 40px rgba(0,0,0,0.5)',
+      animation: 'slideInRight 0.25s ease',
+    }}>
+      <style>{`
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e2535', display: 'flex', alignItems: 'center', gap: '12px', background: '#0d1117' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+          {profile.name?.[0]?.toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: '#f3f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.name}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280' }}>📍 {profile.city} · {profile.lookingFor}</div>
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '20px', padding: '4px', lineHeight: 1 }}>✕</button>
+      </div>
+
+      {/* Name setup screen */}
+      {!nameSet ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', gap: '16px' }}>
+          <div style={{ fontSize: '40px' }}>👋</div>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#f3f4f6', textAlign: 'center' }}>Introduce yourself to {profile.name}</div>
+          <div style={{ fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Your name will be shown in the message</div>
+          <input
+            value={senderName}
+            onChange={e => setSenderName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && senderName.trim()) setNameSet(true); }}
+            placeholder="Your name..."
+            className="input-field"
+            style={{ width: '100%', fontSize: '15px' }}
+            autoFocus
+          />
+          <button
+            onClick={() => { if (senderName.trim()) setNameSet(true); }}
+            disabled={!senderName.trim()}
+            className="btn-primary"
+            style={{ width: '100%', fontSize: '14px' }}
+          >
+            Start Chat →
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {loading ? (
+              <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '13px', marginTop: '40px' }}>Loading messages...</div>
+            ) : messages.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>💬</div>
+                <div style={{ color: '#9ca3af', fontSize: '13px' }}>No messages yet. Say hi to {profile.name}!</div>
+              </div>
+            ) : (
+              messages.map(msg => {
+                const isMe = msg.senderName === senderName;
+                return (
+                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '3px', paddingLeft: isMe ? 0 : '4px', paddingRight: isMe ? '4px' : 0 }}>
+                      {msg.senderName}
+                    </div>
+                    <div style={{
+                      maxWidth: '80%', padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: isMe ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#1c2130',
+                      color: isMe ? '#fff' : '#e2e8f0',
+                      fontSize: '14px', lineHeight: '1.5',
+                    }}>
+                      {msg.text}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#4b5563', marginTop: '3px', paddingLeft: isMe ? 0 : '4px', paddingRight: isMe ? '4px' : 0 }}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={sendMessage} style={{ padding: '12px 16px', borderTop: '1px solid #1e2535', display: 'flex', gap: '8px', background: '#0d1117' }}>
+            <input
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder={`Message ${profile.name}...`}
+              className="input-field"
+              style={{ flex: 1, fontSize: '14px' }}
+              disabled={sending}
+              autoFocus
+            />
+            <button type="submit" disabled={sending || !text.trim()}
+              style={{ padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#fff', cursor: 'pointer', fontSize: '18px', opacity: (!text.trim() || sending) ? 0.5 : 1 }}>
+              ➤
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function CofounderPage() {
   const { user, token } = useAuth();
@@ -20,6 +194,7 @@ export default function CofounderPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ city: 'all', commitment: 'all', lookingFor: 'all' });
+  const [chatProfile, setChatProfile] = useState(null); // currently open chat
 
   const [form, setForm] = useState({
     name: '',
@@ -84,15 +259,7 @@ export default function CofounderPage() {
   };
 
   const handleConnect = (profile) => {
-    const msg = encodeURIComponent(
-      `Hi ${profile.name}! I found your co-founder profile on BizScope AI. I'm looking for a ${profile.lookingFor} co-founder too. Would love to connect and explore if we're a good fit! 🚀`
-    );
-    const phone = profile.whatsapp?.replace(/[^0-9]/g, '');
-    if (phone) {
-      window.open(`https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}?text=${msg}`, '_blank');
-    } else {
-      alert('This person hasn\'t shared their WhatsApp. Try reaching out through other means.');
-    }
+    setChatProfile(profile);
   };
 
   const filteredProfiles = profiles.filter(p => {
@@ -116,6 +283,15 @@ export default function CofounderPage() {
         <title>Co-founder Matcher — BizScope AI</title>
         <meta name="description" content="Find your perfect co-founder. Browse profiles and connect with entrepreneurs in your city." />
       </Head>
+
+      {/* Chat panel — slides in from right */}
+      {chatProfile && (
+        <>
+          {/* Backdrop */}
+          <div onClick={() => setChatProfile(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999, backdropFilter: 'blur(2px)' }} />
+          <ChatPanel profile={chatProfile} onClose={() => setChatProfile(null)} />
+        </>
+      )}
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px' }}>
         {/* Header */}
