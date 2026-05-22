@@ -1,4 +1,4 @@
-import Head from 'next/head';
+﻿import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useTheme } from '../context/ThemeContext';
@@ -136,7 +136,7 @@ Default password is set during setup.
 
 export default function Docs() {
   const router = useRouter();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
   const [active, setActive] = useState('getting-started');
 
   const current = sections.find(s => s.id === active);
@@ -175,7 +175,7 @@ export default function Docs() {
             <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#c8f03a,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{dark ? '☀️' : '🌙'}</button>
+            <button onClick={toggle} suppressHydrationWarning style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{mounted ? (dark ? '☀️' : '🌙') : '��'}</button>
             <button onClick={() => router.push('/')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px' }}>← Back</button>
           </div>
         </nav>

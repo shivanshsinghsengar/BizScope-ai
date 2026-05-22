@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
@@ -13,7 +13,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
   const router = useRouter();
 
   const handleLogin = async (e) => {
@@ -97,8 +97,8 @@ export default function Auth() {
 
           {/* Top bar */}
           <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
-            <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {dark ? '☀️' : '🌙'}
+            <button onClick={toggle} suppressHydrationWarning style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {mounted ? (dark ? '☀️' : '🌙') : '��'}
             </button>
             <button onClick={() => router.push('/')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px' }}>
               ← Home

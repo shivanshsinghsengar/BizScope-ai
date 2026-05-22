@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -32,7 +32,7 @@ function timeAgo(dateStr) {
 
 export default function NewsPage() {
   const router = useRouter();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
@@ -89,9 +89,8 @@ export default function NewsPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={toggle}
-              style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {dark ? '☀️' : '🌙'}
+            <button onClick={toggle} suppressHydrationWarning style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {mounted ? (dark ? '☀️' : '🌙') : '��'}
             </button>
             {/* CTA */}
             <button onClick={() => router.push('/')}

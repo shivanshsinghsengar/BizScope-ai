@@ -39,7 +39,7 @@ const websiteSchema = {
 
 export default function Document() {
   return (
-    <Html lang="en-IN">
+    <Html lang="en-IN" suppressHydrationWarning>
       <Head>
         {/* Google Search Console Verification */}
         <meta name="google-site-verification" content="Wo1NiAa7zCKJdSwepk7OP9ecr5klp4Z5_HtfsGMyQc0" />

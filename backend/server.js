@@ -7,6 +7,7 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const { scorecardHandler, competitorAlertHandler, revenueEstimateHandler, compareCitiesHandler } = require('./routes_new_features');
 
 dotenv.config();
 
@@ -3259,6 +3260,12 @@ app.delete('/api/cofounder/:id', async (req, res) => {
 });
 
 // Start server immediately — don't wait for DB sync
+// NEW FEATURE ROUTES
+app.post('/api/scorecard', scorecardHandler);
+app.post('/api/competitor-alert', competitorAlertHandler);
+app.post('/api/revenue-estimate', revenueEstimateHandler);
+app.post('/api/compare-cities', compareCitiesHandler);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 

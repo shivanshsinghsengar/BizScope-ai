@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function StatusPage() {
   const router = useRouter();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
   const [health, setHealth] = useState(null);
   const [error, setError] = useState('');
 
@@ -40,7 +40,7 @@ export default function StatusPage() {
             <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>BizScope AI</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{dark ? '☀️' : '🌙'}</button>
+            <button onClick={toggle} suppressHydrationWarning style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>{mounted ? (dark ? '☀️' : '🌙') : '��'}</button>
             <button onClick={() => router.push('/')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px' }}>← Back</button>
           </div>
         </nav>

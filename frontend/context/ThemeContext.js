@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext({ dark: true, toggle: () => {} });
+const ThemeContext = createContext({ dark: false, toggle: () => {} });
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(false);
@@ -9,7 +9,10 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('theme');
-    if (saved) setDark(saved === 'dark');
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    const isDark = saved ? saved === 'dark' : prefersDark;
+    setDark(isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, []);
 
   useEffect(() => {
@@ -25,11 +28,28 @@ export function ThemeProvider({ children }) {
     });
   };
 
+  // Always expose dark=false until mounted so SSR and client first-render match
   return (
-    <ThemeContext.Provider value={{ dark, toggle }}>
+    <ThemeContext.Provider value={{ dark: mounted ? dark : false, mounted, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export const useTheme = () => useContext(ThemeContext);
+
+// Drop-in toggle button — renders nothing on server, correct emoji after mount
+export function ThemeToggleButton({ style, className }) {
+  const { dark, mounted, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      title="Toggle theme"
+      suppressHydrationWarning
+      className={className}
+      style={style}
+    >
+      {mounted ? (dark ? '☀️' : '🌙') : '🌙'}
+    </button>
+  );
+}

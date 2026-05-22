@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
@@ -15,7 +15,7 @@ const PAGES = ['Homepage', 'Analysis Dashboard', 'Competitors', 'Properties', 'A
 
 export default function FeedbackPage() {
   const router = useRouter();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
   const [form, setForm] = useState({ type: 'general', page: 'Homepage', title: '', message: '', email: '', rating: 0 });
   const [hover, setHover] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -56,7 +56,7 @@ export default function FeedbackPage() {
             <span style={{ fontWeight: '700', fontSize: '18px', color: 'var(--text)' }}>Biz<span style={{ background: 'linear-gradient(135deg,#3b82f6,#ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scope</span> AI</span>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={toggle} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{dark ? '☀️' : '🌙'}</button>
+            <button onClick={toggle} suppressHydrationWarning style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{mounted ? (dark ? '☀️' : '🌙') : '��'}</button>
             <button onClick={() => router.push('/')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px' }}>← Back</button>
           </div>
         </nav>

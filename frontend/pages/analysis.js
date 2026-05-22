@@ -11,6 +11,7 @@ import ExportPDF from '../components/ExportPDF';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../utils/analytics';
 import MarketChat from '../components/MarketChat';
+import RecommendedActions from '../components/RecommendedActions';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const categoryColors = {
@@ -40,7 +41,6 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false);
   if (!data) return <Layout><PageSkeleton /></Layout>;
 
-  // Business Viability Score: avg of (100 - riskScore) weighted by demand
   const viabilityScore = data.categoryStats?.length
     ? Math.round(
         data.categoryStats.reduce((sum, s) => sum + (100 - s.riskScore) * (s.demandScore / 10), 0) /
@@ -88,338 +88,251 @@ export default function Dashboard() {
         <title>Dashboard — BizScope AI</title>
         <meta name="description" content={`Market analysis for ${data.location?.displayName?.split(',')[0]} — ${data.businesses?.length} businesses analyzed`} />
       </Head>
-      <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '32px', display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
 
-        {/* ── Left Sidebar ── */}
-        <div className="hide-mobile" style={{ width: '200px', flexShrink: 0, position: 'sticky', top: '84px' }}>
-          {/* City illustration card */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #3b82f6, #ef4444)' }} />
-            {/* unDraw city illustration */}
-            <img
-              src="https://undraw.co/api/illustrations/undraw_city_life_gnpr.svg"
-              alt="City"
-              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-              style={{ width: '100%', height: '90px', objectFit: 'contain', marginBottom: '10px' }}
-            />
-            {/* Emoji fallback */}
-            <div style={{ display: 'none', fontSize: '56px', marginBottom: '8px', lineHeight: 1 }}>🏙️</div>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
-              {data.location?.displayName?.split(',')[0]}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{data.businesses?.length} businesses found</div>
-          </div>
+      <div style={{ padding: '0 20px 32px', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
 
-          {/* Quick nav */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Quick Nav</div>
-            {[
-              { icon: '📊', label: 'Dashboard',   href: '/analysis' },
-              { icon: '🏪', label: 'Competitors', href: '/competitors' },
-              { icon: '🤖', label: 'AI Insights', href: '/insights' },
-              { icon: '🏠', label: 'Properties',  href: '/properties' },
-              { icon: '📈', label: 'Trends',      href: '/trends' },
-              { icon: '🗺️', label: 'Map View',    href: `/map?lat=${data.userLat}&lng=${data.userLng}` },
-            ].map(n => (
-              <div key={n.href} onClick={() => router.push(n.href)}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: 'var(--muted)', marginBottom: '2px', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; }}>
-                <span style={{ fontSize: '18px' }}>{n.icon}</span>
-                <span>{n.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Risk legend */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Risk Legend</div>
-            {[
-              { color: '#3b82f6', emoji: '🟢', label: 'Low Risk',    desc: '0–34 score' },
-              { color: '#f59e0b', emoji: '🟡', label: 'Medium Risk', desc: '35–69 score' },
-              { color: '#ef4444', emoji: '🔴', label: 'High Risk',   desc: '70–100 score' },
-            ].map(r => (
-              <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <span style={{ fontSize: '18px' }}>{r.emoji}</span>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{r.label}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{r.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Main Content ── */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-
-        {/* Estimated data warning */}
-        {data.estimatedData && (
-          <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '12px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>⚠️</span>
-            <div>
-              <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '13px' }}>Estimated Data</span>
-              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>{data.estimatedData}</div>
-            </div>
-            <button onClick={() => { sessionStorage.removeItem('analysisData'); router.push('/'); }}
-              style={{ marginLeft: 'auto', padding: '6px 14px', borderRadius: '8px', border: '1px solid #f59e0b40', background: 'transparent', color: '#fbbf24', cursor: 'pointer', fontSize: '12px', fontWeight: '600', flexShrink: 0 }}>
-              🔄 Retry
-            </button>
-          </div>
-        )}
-
-        {/* Partial match warning */}
-        {data.partialMatch && (
-          <div style={{ background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: '12px', padding: '12px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px' }}>⚠️</span>
-            <div>
-              <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '13px' }}>{data.partialMatch}</span>
-              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px' }}>The street address or pincode may have a typo — results are based on the city/area found.</div>
-            </div>
-          </div>
-        )}
-
-        {/* Location banner */}
-        <div style={{ background: 'linear-gradient(135deg, #3b82f615, #ef444410)', border: '1px solid #3b82f630', borderRadius: '16px', padding: '16px 24px', marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        {/* ── Location Banner ── */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(239,68,68,0.05) 100%)',
+          border: '1px solid rgba(59,130,246,0.18)',
+          borderRadius: '14px',
+          padding: '14px 20px',
+          margin: '16px 0 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ fontSize: '40px', lineHeight: 1 }}>📍</div>
+            <div style={{ fontSize: '32px', lineHeight: 1 }}>📍</div>
             <div>
-              <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Analyzing</div>
-              <div style={{ fontSize: '16px', color: 'var(--text)', fontWeight: '700' }}>{data.location?.displayName?.split(',').slice(0, 3).join(', ')}</div>
+              <div style={{ fontSize: '10px', color: '#4f8ef7', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Analyzing</div>
+              <div style={{ fontSize: '15px', color: '#eef0f8', fontWeight: '700', letterSpacing: '-0.02em' }}>
+                {data.location?.displayName?.split(',').slice(0, 3).join(', ')}
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} /> {data.businesses?.length} businesses</span>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#3a4560', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block' }} />
+              {data.businesses?.length} businesses
+            </span>
             <span>📂 {data.categoryStats?.length} categories</span>
-            <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', padding: '3px 8px', borderRadius: '100px', background: '#3b82f615', border: '1px solid #3b82f630' }}>
+            <span style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: '600', padding: '2px 8px', borderRadius: '100px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
               {(() => {
                 const sources = data.dataQuality?.sourceCounts ? Object.keys(data.dataQuality.sourceCounts) : [];
-                const hasTomTom = sources.includes('tomtom');
-                const hasOsm = sources.includes('osm');
-                const hasFoursquare = sources.includes('foursquare');
-                if (hasTomTom && hasOsm) return '✅ TomTom + OSM Hybrid';
-                if (hasTomTom && hasFoursquare) return '✅ TomTom + Foursquare';
-                if (hasTomTom) return '✅ TomTom Data';
-                if (hasOsm) return '✅ Live OSM Data';
-                if (hasFoursquare) return '✅ Foursquare Data';
+                if (sources.includes('tomtom') && sources.includes('osm')) return '✅ TomTom + OSM Hybrid';
+                if (sources.includes('tomtom') && sources.includes('foursquare')) return '✅ TomTom + Foursquare';
+                if (sources.includes('tomtom')) return '✅ TomTom Data';
+                if (sources.includes('osm')) return '✅ Live OSM Data';
                 return '✅ Live Data';
               })()}
             </span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #3b82f640', background: copied ? '#3b82f615' : 'transparent', color: copied ? '#3b82f6' : '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+              style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid #1e2438', background: copied ? 'rgba(79,142,247,0.1)' : 'transparent', color: copied ? '#4f8ef7' : '#3a4560', cursor: 'pointer', fontSize: '11.5px', fontWeight: '600', transition: 'all 0.15s' }}>
               {copied ? '✅ Copied!' : '🔗 Share'}
             </button>
             {user && (
               <button onClick={saveSearch} disabled={saved}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '12px', border: '1px solid #3b82f640', background: saved ? '#3b82f615' : 'transparent', color: saved ? '#34d399' : '#64748b', cursor: saved ? 'default' : 'pointer', fontSize: '13px', fontWeight: '600' }}>
-                {saved ? '✅ Saved' : '🔖 Save Search'}
+                style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid #1e2438', background: saved ? 'rgba(52,211,153,0.1)' : 'transparent', color: saved ? '#34d399' : '#3a4560', cursor: saved ? 'default' : 'pointer', fontSize: '11.5px', fontWeight: '600' }}>
+                {saved ? '✅ Saved' : '🔖 Save'}
               </button>
             )}
           </div>
         </div>
 
-        {/* Data quality disclosure */}
+        {/* Data quality notice */}
         {(data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics || data.dataQuality?.warnings?.length) && (
-          <div style={{ background: '#f59e0b12', border: '1px solid #f59e0b40', borderRadius: '14px', padding: '12px 16px', marginBottom: '24px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Data Quality Notice</div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.7' }}>
+          <details style={{ marginBottom: '14px' }}>
+            <summary style={{
+              background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: '10px', padding: '10px 14px',
+              fontSize: '11.5px', fontWeight: '700', color: '#f59e0b',
+              cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase',
+              listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span>⚠️ Data Quality Notice</span>
+              <span style={{ fontSize: '10px' }}>▼</span>
+            </summary>
+            <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '12px 14px', fontSize: '12px', color: '#3a4560', lineHeight: '1.7' }}>
               {data.dataQuality?.usesMockData && <div>Some records are fallback data because live providers returned no results for this location.</div>}
               {data.dataQuality?.hasEstimatedMetrics && <div>Ratings and review counts may include estimates where source APIs do not provide them.</div>}
-              {(data.dataQuality?.sourceCounts && Object.keys(data.dataQuality.sourceCounts).length > 0) && (
-                <div>
-                  Sources: {Object.entries(data.dataQuality.sourceCounts).map(([k, v]) => {
-                    const icon = k === 'tomtom' ? '🗺️' : k === 'osm' ? '🌍' : k === 'foursquare' ? '📍' : k === 'manual' ? '✏️' : '📊';
-                    return `${icon} ${k.charAt(0).toUpperCase() + k.slice(1)} (${v})`;
-                  }).join('  ·  ')}
-                </div>
-              )}
             </div>
+          </details>
+        )}
+
+        {data.estimatedData && (
+          <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '10px', padding: '10px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>⚠️</span>
+            <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '12px' }}>Estimated Data — {data.estimatedData}</span>
+            <button onClick={() => { sessionStorage.removeItem('analysisData'); router.push('/'); }}
+              style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', border: '1px solid #f59e0b40', background: 'transparent', color: '#fbbf24', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>
+              🔄 Retry
+            </button>
+          </div>
+        )}
+        {data.partialMatch && (
+          <div style={{ background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: '10px', padding: '10px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>⚠️</span>
+            <span style={{ color: '#fbbf24', fontWeight: '600', fontSize: '12px' }}>{data.partialMatch}</span>
           </div>
         )}
 
-        {/* Next Steps card */}
-        <div style={{ background: 'linear-gradient(135deg, #3b82f612, #ef444408)', border: '1px solid #3b82f625', borderRadius: '20px', padding: '24px', marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ fontSize: '36px' }}>🎯</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text)', marginBottom: '10px' }}>What to do next</div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        {/* ── RECOMMENDED ACTIONS ── */}
+        <RecommendedActions />
+
+        {/* ── OVERVIEW GRID LABEL ── */}
+        <div style={{ fontSize: '10px', fontWeight: '700', color: '#2a3350', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+          Overview Grid
+        </div>
+
+        {/* ── MAIN CONTENT + RIGHT PANEL ── */}
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }} className="analysis-body">
+
+          {/* Left main column */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Stat cards */}
+            <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' }}>
               {[
-                { step: '1', text: `Visit top ${data.categoryStats?.[0]?.category || ''} competitors nearby`, href: '/competitors', icon: '🏪' },
-                { step: '2', text: 'Check AI business recommendations', href: '/insights', icon: '🤖' },
-                { step: '3', text: 'Browse available commercial properties', href: '/properties', icon: '🏠' },
-                { step: '4', text: 'Export PDF report to share with partners', href: null, icon: '📄' },
-              ].map(s => (
-                <div key={s.step} onClick={() => s.href && router.push(s.href)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border2)', fontSize: '12px', color: 'var(--text2)', cursor: s.href ? 'pointer' : 'default', fontWeight: '500', transition: 'all 0.15s' }}
-                  onMouseEnter={e => s.href && (e.currentTarget.style.borderColor = '#3b82f660')}
-                  onMouseLeave={e => s.href && (e.currentTarget.style.borderColor = 'var(--border2)')}>
-                  <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#3b82f6', color: '#ffffff', fontSize: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
-                  <span>{s.icon} {s.text}</span>
+                { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#4f8ef7', href: '/competitors' },
+                { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
+                { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
+                { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#22c55e', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
+                { icon: '🎯', label: `Viability: ${viabilityLabel}`, value: `${viabilityScore}/100`, color: viabilityColor, href: '/insights' },
+              ].map((s, i) => (
+                <div key={i} onClick={() => router.push(s.href)}
+                  style={{ background: '#161b27', border: `1px solid ${s.color}20`, borderRadius: '12px', padding: '16px', position: 'relative', overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = s.color + '50'; e.currentTarget.style.boxShadow = `0 8px 24px ${s.color}15`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = s.color + '20'; e.currentTarget.style.boxShadow = 'none'; }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
+                  <div style={{ fontSize: '22px', marginBottom: '8px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#eef0f8', lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', color: '#3a4560', marginTop: '5px' }}>{s.label}</div>
+                  <div style={{ fontSize: '10.5px', color: s.color, fontWeight: '600', marginTop: '6px' }}>View details →</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Charts */}
+            <div className="chart-grid" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '20px' }}>
+                <div style={{ fontWeight: '700', color: '#eef0f8', marginBottom: '3px', fontSize: '13.5px' }}>📊 Competitor Score by Category</div>
+                <div style={{ fontSize: '11.5px', color: '#3a4560', marginBottom: '16px' }}>Higher = more competition. Lower = better opportunity.</div>
+                <div style={{ height: '220px' }}>
+                  <Bar data={chartBar} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#3a4560', font: { size: 10 } }, grid: { color: '#1a1d28' } }, y: { beginAtZero: true, ticks: { color: '#3a4560', font: { size: 10 } }, grid: { color: '#1a1d28' } } } }} />
+                </div>
+              </div>
+              <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '20px' }}>
+                <div style={{ fontWeight: '700', color: '#eef0f8', marginBottom: '3px', fontSize: '13.5px' }}>🥧 Market Share</div>
+                <div style={{ fontSize: '11.5px', color: '#3a4560', marginBottom: '12px' }}>Distribution by category</div>
+                <div style={{ height: '200px' }}>
+                  <Doughnut data={chartDoughnut} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#3a4560', font: { size: 10 }, boxWidth: 10 } } }, cutout: '65%' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Category cards */}
+            <div className="cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              {data.categoryStats?.map((s, i) => (
+                <div key={i}
+                  onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
+                  style={{ background: '#161b27', border: `1px solid ${(categoryColors[s.category] || '#4f8ef7')}20`, borderRadius: '12px', padding: '16px', transition: 'all 0.2s', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#4f8ef7') + '50'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#4f8ef7') + '20'; }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</span>
+                      <span style={{ fontWeight: '600', color: '#eef0f8', fontSize: '13px' }}>{s.category}</span>
+                    </div>
+                    <span style={{ fontSize: '20px', fontWeight: '800', color: categoryColors[s.category] || '#4f8ef7' }}>{s.count}</span>
+                  </div>
+                  <div style={{ height: '3px', background: '#1e2438', borderRadius: '2px', marginBottom: '10px' }}>
+                    <div style={{ height: '100%', borderRadius: '2px', background: categoryColors[s.category] || '#4f8ef7', width: `${Math.min((s.count / (data.businesses?.length || 1)) * 300, 100)}%` }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#3a4560' }}>
+                    <span>⭐ {s.avgRating} avg</span>
+                    <span style={{ color: categoryColors[s.category] || '#4f8ef7', fontWeight: '600' }}>Score: {s.competitorScore?.toFixed(1)}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Stat cards */}
-        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
-          {[
-            { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#3b82f6', href: '/competitors' },
-            { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
-            { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
-            { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#3b82f6', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
-            { icon: '🎯', label: `Viability: ${viabilityLabel}`, value: `${viabilityScore}/100`, color: viabilityColor, href: '/insights' },
-          ].map((s, i) => (
-            <div key={i} onClick={() => router.push(s.href)}
-              style={{ background: 'var(--surface)', border: `1px solid ${s.color}25`, borderRadius: '20px', padding: '22px', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${s.color}20`; e.currentTarget.style.borderColor = s.color + '60'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = s.color + '25'; }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
-              <div style={{ fontSize: '26px', marginBottom: '10px' }}>{s.icon}</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px' }}>{s.label}</div>
-              <div style={{ fontSize: '11px', color: s.color, fontWeight: '600', marginTop: '8px' }}>View details →</div>
+          {/* ── Right Panel ── */}
+          <div className="right-panel" style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '100px' }}>
+
+            {/* Viability gauge */}
+            <div style={{ background: '#161b27', border: `1px solid ${viabilityColor}25`, borderRadius: '14px', padding: '18px', marginBottom: '14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Market Viability</div>
+              <svg width="90" height="90" viewBox="0 0 100 100" style={{ margin: '0 auto 10px', display: 'block' }}>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#1e2438" strokeWidth="10" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke={viabilityColor} strokeWidth="10"
+                  strokeDasharray={`${(viabilityScore / 100) * 251} 251`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)" />
+                <text x="50" y="46" textAnchor="middle" fill="#eef0f8" fontSize="18" fontWeight="800">{viabilityScore}</text>
+                <text x="50" y="60" textAnchor="middle" fill="#3a4560" fontSize="9">/100</text>
+              </svg>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: viabilityColor }}>{viabilityLabel}</div>
+              <div style={{ fontSize: '10.5px', color: '#2a3350', marginTop: '3px' }}>Overall market score</div>
             </div>
-          ))}
-        </div>
 
-        {/* Charts */}
-        <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px', marginBottom: '24px' }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
-            <div style={{ fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>📊 Competitor Score by Category</div>
-            <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '20px' }}>Higher = more competition. Lower = better opportunity.</div>
-            <div style={{ height: '240px' }}>
-              <Bar data={chartBar} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'var(--muted)' }, grid: { color: 'var(--border)' } }, y: { beginAtZero: true, ticks: { color: 'var(--muted)' }, grid: { color: 'var(--border)' } } } }} />
+            {/* Top Opportunities */}
+            <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
+              {[...data.categoryStats].reverse().slice(0, 4).map((s, i) => (
+                <div key={i} onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 3 ? '1px solid #1a1d28' : 'none', cursor: 'pointer' }}>
+                  <span style={{ fontSize: '16px' }}>{categoryIcons[s.category] || '🏪'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '11.5px', fontWeight: '600', color: '#eef0f8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
+                    <div style={{ fontSize: '10px', color: '#2a3350' }}>{s.count} competitors</div>
+                  </div>
+                  <span style={{ fontSize: '9.5px', padding: '2px 5px', borderRadius: '100px', background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontWeight: '700', flexShrink: 0 }}>Low</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '14px' }}>
+              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>⚡ Quick Actions</div>
+              {[
+                { icon: '📄', label: 'Export PDF',   action: () => document.getElementById('export-pdf-btn')?.click() },
+                { icon: '🔗', label: 'Share Report', action: handleShare },
+                { icon: '🔍', label: 'New Analysis', action: () => router.push('/') },
+              ].map(a => (
+                <button key={a.label} onClick={a.action}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '7px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#3a4560', background: 'transparent', marginBottom: '2px', textAlign: 'left', transition: 'all 0.14s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#eef0f8'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#3a4560'; }}>
+                  <span style={{ fontSize: '15px' }}>{a.icon}</span>
+                  <span>{a.label}</span>
+                </button>
+              ))}
             </div>
           </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
-            <div style={{ fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>🥧 Market Share</div>
-            <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>Distribution by category</div>
-            <div style={{ height: '220px' }}>
-              <Doughnut data={chartDoughnut} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#64748b', font: { size: 11 }, boxWidth: 12 } } }, cutout: '65%' }} />
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Category cards */}
-        <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-          {data.categoryStats?.map((s, i) => (
-            <div key={i}
-              onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
-              style={{ background: 'var(--surface)', border: `1px solid ${(categoryColors[s.category] || '#3b82f6')}25`, borderRadius: '16px', padding: '20px', transition: 'transform 0.2s', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${(categoryColors[s.category] || '#3b82f6')}20`; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#3b82f6') + '60'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#3b82f6') + '25'; }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '22px' }}>{categoryIcons[s.category] || '🏪'}</span>
-                  <span style={{ fontWeight: '600', color: 'var(--text)', fontSize: '14px' }}>{s.category}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '22px', fontWeight: '800', color: categoryColors[s.category] || '#3b82f6' }}>{s.count}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>→</span>
-                </div>
-              </div>
-              <div style={{ height: '4px', background: 'var(--surface2)', borderRadius: '2px', marginBottom: '12px' }}>
-                <div style={{ height: '100%', borderRadius: '2px', background: categoryColors[s.category] || '#3b82f6', width: `${Math.min((s.count / (data.businesses?.length || 1)) * 300, 100)}%` }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)' }}>
-                <span>⭐ {s.avgRating} avg rating</span>
-                <span>Score: <span style={{ color: categoryColors[s.category] || '#3b82f6', fontWeight: '600' }}>{s.competitorScore?.toFixed(1)}</span></span>
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '11px', color: categoryColors[s.category] || '#3b82f6', fontWeight: '600' }}>View competitors →</div>
-            </div>
-          ))}
-        </div>
-        </div>{/* end main content */}
-
-        {/* ── Right Sidebar ── */}
-        <div className="hide-mobile" style={{ width: '220px', flexShrink: 0, position: 'sticky', top: '84px' }}>
-
-          {/* Viability gauge */}
-          <div style={{ background: 'var(--surface)', border: `1px solid ${viabilityColor}30`, borderRadius: '20px', padding: '20px', marginBottom: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Market Viability</div>
-            <svg width="100" height="100" viewBox="0 0 100 100" style={{ margin: '0 auto 12px', display: 'block' }}>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--surface2)" strokeWidth="10" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke={viabilityColor} strokeWidth="10"
-                strokeDasharray={`${(viabilityScore / 100) * 251} 251`}
-                strokeLinecap="round"
-                transform="rotate(-90 50 50)" />
-              <text x="50" y="46" textAnchor="middle" fill="var(--text)" fontSize="18" fontWeight="800">{viabilityScore}</text>
-              <text x="50" y="60" textAnchor="middle" fill="var(--muted)" fontSize="9">/100</text>
-            </svg>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: viabilityColor }}>{viabilityLabel}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Overall market score</div>
-          </div>
-
-          {/* Illustration — business opportunity */}
-          <div style={{ background: 'var(--surface)', border: '1px solid #3b82f625', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
-            <img
-              src="https://undraw.co/api/illustrations/undraw_business_deal_cpi9.svg"
-              alt="Opportunity"
-              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-              style={{ width: '100%', height: '80px', objectFit: 'contain', marginBottom: '10px' }}
-            />
-            <div style={{ display: 'none', textAlign: 'center', fontSize: '40px', marginBottom: '8px' }}>💼</div>
-            <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
-            {[...data.categoryStats].reverse().slice(0, 4).map((s, i) => (
-              <div key={i} onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
-                <span style={{ fontSize: '18px' }}>{categoryIcons[s.category] || '🏪'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.count} competitors</div>
-                </div>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '100px', background: '#3b82f615', color: '#34d399', fontWeight: '700', flexShrink: 0 }}>Low</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Saturated markets */}
-          <div style={{ background: 'var(--surface)', border: '1px solid #ef444425', borderRadius: '20px', padding: '16px', marginBottom: '16px' }}>
-            <img
-              src="https://undraw.co/api/illustrations/undraw_warning_re_eoyh.svg"
-              alt="Warning"
-              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-              style={{ width: '100%', height: '60px', objectFit: 'contain', marginBottom: '10px' }}
-            />
-            <div style={{ display: 'none', textAlign: 'center', fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
-            <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>🔴 Most Saturated</div>
-            {data.categoryStats.slice(0, 3).map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ fontSize: '18px' }}>{categoryIcons[s.category] || '🏪'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.count} competitors</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>⚡ Actions</div>
-            {[
-              { icon: '📄', label: 'Export PDF',    action: () => document.getElementById('export-pdf-btn')?.click() },
-              { icon: '🔗', label: 'Share Report',  action: handleShare },
-              { icon: '🔍', label: 'New Analysis',  action: () => router.push('/') },
-            ].map(a => (
-              <button key={a.label} onClick={a.action}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '9px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--muted)', background: 'transparent', marginBottom: '2px', textAlign: 'left', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface2)'; e.currentTarget.style.color = 'var(--text)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; }}>
-                <span style={{ fontSize: '18px' }}>{a.icon}</span>
-                <span>{a.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-      </div>{/* end outer flex */}
-
-      {/* AI Market Chat — floating assistant with full market context */}
+      {/* AI Market Chat */}
       <MarketChat data={{ ...data, viabilityScore }} />
 
+      <style>{`
+        @media (max-width: 1100px) {
+          .stat-grid  { grid-template-columns: repeat(3, 1fr) !important; }
+          .chart-grid { grid-template-columns: 1fr !important; }
+          .cat-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+          .right-panel { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .analysis-body { flex-direction: column !important; }
+          .stat-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+          .cat-grid   { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

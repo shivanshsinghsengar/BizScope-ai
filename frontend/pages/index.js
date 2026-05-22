@@ -1,4 +1,4 @@
-import API_URL from '../utils/api';
+﻿import API_URL from '../utils/api';
 import { trackEvent } from '../utils/analytics';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
@@ -161,7 +161,7 @@ export default function Home() {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const insightsTimer = useRef(null);
   const router = useRouter();
-  const { dark, toggle } = useTheme();
+  const { dark, mounted, toggle } = useTheme();
 
   useEffect(() => {
     fetch(`${API_URL}/api/reviews`).then(r => r.json()).then(d => setReviews(d)).catch(() => {});
@@ -440,8 +440,9 @@ export default function Home() {
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button onClick={toggle} title="Toggle theme"
+                suppressHydrationWarning
                 style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {dark ? '☀️' : '🌙'}
+                {mounted ? (dark ? '☀️' : '🌙') : '��'}
               </button>
               <button onClick={() => router.push('/analysis')}
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
@@ -973,9 +974,10 @@ export default function Home() {
       </div>
 
       {/* Theme toggle bottom-left */}
-      <button onClick={toggle} title={dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      <button onClick={toggle} title="Toggle theme"
+        suppressHydrationWarning
         style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 200, width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border2)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-        {dark ? '☀️' : '🌙'}
+        {mounted ? (dark ? '☀️' : '🌙') : '��'}
       </button>
 
       <SuggestBusiness />
