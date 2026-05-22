@@ -898,14 +898,17 @@ setTimeout(() => { runHealthChecks().catch(() => {}); }, 60000);
 const geocodeCache = new Map();
 
 // Free geocoding via OpenStreetMap Nominatim — with typo fallback
-const geocodeLocation = async (location) => {
-  const key = location.toLowerCase().trim().replace(/\s+/g, ' ');
+const geocodeLocation = async (location, countryCode = null) => {
+  const key = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(key)) return geocodeCache.get(key);
 
-  const tryGeocode = async (query) => {
+  const tryGeocode = async (query, cc) => {
     const url = `https://nominatim.openstreetmap.org/search`;
+    const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
+    // Only restrict by country if a valid 2-letter code is provided
+    if (cc && /^[A-Z]{2}$/.test(cc)) params.countrycodes = cc.toLowerCase();
     const res = await axios.get(url, {
-      params: { q: query, format: 'json', limit: 1, countrycodes: 'in', addressdetails: 1 },
+      params,
       headers: { 'User-Agent': 'BizScopeAI/1.0' },
       timeout: 6000,
     });
@@ -917,14 +920,14 @@ const geocodeLocation = async (location) => {
   let partialMatch = false;
 
   // Try full query first
-  result = await tryGeocode(location);
+  result = await tryGeocode(location, countryCode);
 
   // If not found, try progressively simpler queries (strip parts from left)
   if (!result) {
     const parts = location.split(',').map(p => p.trim()).filter(Boolean);
     for (let i = 1; i < parts.length; i++) {
       const simpler = parts.slice(i).join(', ');
-      result = await tryGeocode(simpler);
+      result = await tryGeocode(simpler, countryCode);
       if (result) { matchedQuery = simpler; partialMatch = true; break; }
     }
   }
@@ -932,7 +935,7 @@ const geocodeLocation = async (location) => {
   // Last resort: try just the first word
   if (!result) {
     const firstWord = location.split(',')[0].trim();
-    result = await tryGeocode(firstWord);
+    result = await tryGeocode(firstWord, countryCode);
     if (result) { matchedQuery = firstWord; partialMatch = true; }
   }
 
@@ -2541,12 +2544,12 @@ app.get('/api/analyze-stream', async (req, res) => {
     // Step 2: Fetch businesses — TomTom + OSM + Manual all in parallel
     send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchTomTomBusinesses(latitude, longitude, 8000),
-      fetchRealBusinesses(latitude, longitude, 8000),
+      fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
+      fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
-      )),
+      )).catch(() => []),
     ]);
 
     send('fetch', `Found ${tomtomBusinesses.length + osmBusinesses.length} raw businesses, analyzing...`, 'Processing data', 45);
@@ -2646,9 +2649,11 @@ app.get('/api/analyze-stream', async (req, res) => {
     res.write(`data: ${JSON.stringify({ step: 'result', data: result })}\n\n`);
     res.end();
   } catch (error) {
-    console.error('[SSE CRASH]', error?.message, error?.stack?.split('\n').slice(0,3).join(' | '));
-    res.write(`data: ${JSON.stringify({ step: 'error', message: 'Analysis failed. Please try again.' })}\n\n`);
-    res.end();
+    console.error('[SSE CRASH]', error?.message, error?.stack?.split('\n').slice(0, 5).join(' | '));
+    try {
+      res.write(`data: ${JSON.stringify({ step: 'error', message: 'Analysis failed. Please try again.' })}\n\n`);
+      res.end();
+    } catch (_) {}
   }
 });
 
@@ -2681,12 +2686,12 @@ app.post('/api/analyze-location', async (req, res) => {
 
     // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
-      fetchTomTomBusinesses(latitude, longitude, 8000),
-      fetchRealBusinesses(latitude, longitude, 8000),
+      fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
+      fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
-      )),
+      )).catch(() => []),
     ]);
 
     // Track raw source counts BEFORE dedup — OSM entries get deduped out by TomTom
