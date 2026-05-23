@@ -15,6 +15,7 @@ const DASHBOARD_ROUTES = [
   '/revenue-calculator', '/scorecard', '/compare', '/alerts', '/strategy',
   '/map', '/saved', '/sparks', '/business-plan', '/track', '/franchises',
   '/loans', '/cofounder', '/list-business', '/admin',
+  '/interior', '/news', '/suggestions',
 ];
 
 const SIDEBAR_WIDTH = 200;
