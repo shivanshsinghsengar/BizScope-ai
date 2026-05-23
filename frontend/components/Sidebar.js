@@ -296,35 +296,22 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        {/* Pro nudge */}
+        {/* Free access banner */}
         <div style={{ padding: '8px 8px 16px' }}>
           <div style={{
             background: 'rgba(79,142,247,0.08)',
             border: '1px solid rgba(79,142,247,0.15)',
             borderRadius: '10px',
             padding: '12px',
+            textAlign: 'center',
           }}>
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>🎉</div>
             <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#eef0f8', marginBottom: '3px' }}>
-              ⚡ Unlock Pro
+              All Features Free
             </div>
-            <div style={{ fontSize: '10.5px', color: '#3a4560', lineHeight: '1.5', marginBottom: '9px' }}>
-              AI strategy, unlimited reports & priority data.
+            <div style={{ fontSize: '10.5px', color: '#3a4560', lineHeight: '1.5' }}>
+              Early access — no credit card needed.
             </div>
-            <button
-              onClick={() => router.push('/upgrade')}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, #4f8ef7, #6366f1)',
-                color: '#fff', border: 'none',
-                borderRadius: '7px', padding: '6px',
-                fontSize: '11px', fontWeight: '700',
-                cursor: 'pointer', transition: 'opacity 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-            >
-              Go Pro →
-            </button>
           </div>
         </div>
       </aside>

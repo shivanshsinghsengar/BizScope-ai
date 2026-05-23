@@ -176,9 +176,9 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
             </svg>
           </button>
 
-          {/* Go Pro */}
+          {/* Free badge */}
           <button
-            onClick={() => router.push('/upgrade')}
+            onClick={() => router.push('/pricing')}
             style={{
               background: 'linear-gradient(135deg, #4f8ef7 0%, #6366f1 100%)',
               color: '#fff', border: 'none',
@@ -192,8 +192,8 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
             onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            <span style={{ fontSize: '11px' }}>⚡</span>
-            <span className="hide-on-mobile">Go Pro</span>
+            <span style={{ fontSize: '11px' }}>🎉</span>
+            <span className="hide-on-mobile">All Free</span>
           </button>
         </div>
       </header>
