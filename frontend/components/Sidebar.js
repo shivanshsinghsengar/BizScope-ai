@@ -294,7 +294,7 @@ export default function Sidebar({ open, onClose }) {
           onClick={onClose}
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'var(--overlay-bg)',
             backdropFilter: 'blur(3px)',
             zIndex: 148,
           }}
@@ -309,14 +309,14 @@ export default function Sidebar({ open, onClose }) {
           left: 0,
           bottom: 0,
           width: '200px',
-          background: '#0d0e12',
-          borderRight: '1px solid #1a1d28',
+          background: 'var(--sidebar-bg)',
+          borderRight: '1px solid var(--sidebar-border)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 149,
           overflowY: 'auto',
           overflowX: 'hidden',
-          transition: 'transform 0.26s cubic-bezier(.16,1,.3,1)',
+          transition: 'transform 0.26s cubic-bezier(.16,1,.3,1), background 0.3s, border-color 0.3s',
         }}
       >
         <nav style={{ padding: '14px 8px 8px', flex: 1 }}>
@@ -326,7 +326,7 @@ export default function Sidebar({ open, onClose }) {
               <div style={{
                 fontSize: '9.5px',
                 fontWeight: '700',
-                color: '#2a3350',
+                color: 'var(--muted-label)',
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 padding: '0 8px',
@@ -340,7 +340,7 @@ export default function Sidebar({ open, onClose }) {
                 <div style={{
                   padding: '6px 8px',
                   fontSize: '11px',
-                  color: '#2a3350',
+                  color: 'var(--muted-label)',
                   fontStyle: 'italic',
                 }}>
                   Coming soon…
@@ -366,10 +366,8 @@ export default function Sidebar({ open, onClose }) {
                       cursor: 'pointer',
                       fontSize: '12.5px',
                       fontWeight: active ? '600' : '500',
-                      color: active ? '#eef0f8' : '#4e5870',
-                      background: active
-                        ? 'rgba(79,142,247,0.12)'
-                        : 'transparent',
+                      color: active ? 'var(--text)' : 'var(--muted)',
+                      background: active ? 'var(--active-bg)' : 'transparent',
                       transition: 'all 0.14s',
                       textAlign: 'left',
                       position: 'relative',
@@ -377,14 +375,14 @@ export default function Sidebar({ open, onClose }) {
                     }}
                     onMouseEnter={e => {
                       if (!active) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.color = '#c8cfe0';
+                        e.currentTarget.style.background = 'var(--hover-bg)';
+                        e.currentTarget.style.color = 'var(--text2)';
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
                         e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#4e5870';
+                        e.currentTarget.style.color = 'var(--muted)';
                       }
                     }}
                   >
@@ -395,13 +393,13 @@ export default function Sidebar({ open, onClose }) {
                         left: 0, top: '18%', bottom: '18%',
                         width: '3px',
                         borderRadius: '0 3px 3px 0',
-                        background: 'linear-gradient(180deg, #4f8ef7, #6366f1)',
-                        boxShadow: '0 0 6px rgba(79,142,247,0.5)',
+                        background: 'linear-gradient(180deg, var(--active-color), var(--accent2))',
+                        boxShadow: '0 0 6px rgba(79,142,247,0.4)',
                       }} />
                     )}
 
                     <span style={{
-                      color: active ? '#4f8ef7' : 'inherit',
+                      color: active ? 'var(--active-color)' : 'inherit',
                       display: 'flex', alignItems: 'center', flexShrink: 0,
                     }}>
                       <Icon size={15} color="currentColor" />
@@ -436,17 +434,17 @@ export default function Sidebar({ open, onClose }) {
         {/* Free access banner */}
         <div style={{ padding: '8px 8px 16px' }}>
           <div style={{
-            background: 'rgba(79,142,247,0.08)',
-            border: '1px solid rgba(79,142,247,0.15)',
+            background: 'var(--active-bg)',
+            border: '1px solid var(--border2)',
             borderRadius: '10px',
             padding: '12px',
             textAlign: 'center',
           }}>
             <div style={{ fontSize: '18px', marginBottom: '4px' }}>🎉</div>
-            <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#eef0f8', marginBottom: '3px' }}>
+            <div style={{ fontSize: '11.5px', fontWeight: '700', color: 'var(--text)', marginBottom: '3px' }}>
               All Features Free
             </div>
-            <div style={{ fontSize: '10.5px', color: '#3a4560', lineHeight: '1.5' }}>
+            <div style={{ fontSize: '10.5px', color: 'var(--muted)', lineHeight: '1.5' }}>
               Early access — no credit card needed.
             </div>
           </div>

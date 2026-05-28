@@ -29,6 +29,7 @@ const CAT_COLORS = {
 function ConceptCard({ concept, onClick }) {
   const color = CAT_COLORS[concept.category] || '#3b82f6';
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   return (
     <div onClick={() => onClick(concept)}
       style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -36,20 +37,46 @@ function ConceptCard({ concept, onClick }) {
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}>
       {/* Image — tall for visual impact */}
       <div style={{ height: '220px', background: 'var(--surface2)', position: 'relative', overflow: 'hidden' }}>
-        {!imgLoaded && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: `linear-gradient(135deg, ${color}15, var(--surface2))` }}>
-            <div style={{ fontSize: '36px' }}>{concept.emoji}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Loading...</div>
+        {/* Shimmer skeleton while loading */}
+        {!imgLoaded && !imgError && (
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${color}18, var(--surface2))` }}>
+            {/* Shimmer sweep */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.4s infinite',
+            }} />
+            {/* Center emoji + label */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ fontSize: '36px' }}>{concept.emoji}</div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Generating image...</div>
+              <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                {[0,1,2].map(i => (
+                  <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, opacity: 0.7, animation: `pulse 1.2s ${i * 0.2}s infinite` }} />
+                ))}
+              </div>
+            </div>
           </div>
         )}
-        <img src={concept.imageUrl} alt={concept.themeName}
-          loading="eager"
+        {/* Error fallback */}
+        {imgError && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', background: `linear-gradient(135deg, ${color}15, var(--surface2))` }}>
+            <div style={{ fontSize: '40px' }}>{concept.emoji}</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{concept.themeName}</div>
+          </div>
+        )}
+        <img
+          src={concept.imageUrl}
+          alt={concept.themeName}
+          loading="lazy"
           decoding="async"
           onLoad={() => setImgLoaded(true)}
-          onError={e => { e.target.style.display = 'none'; }}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }} />
+          onError={() => setImgError(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.4s ease', position: 'absolute', inset: 0 }}
+        />
         {/* Gradient overlay */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)', pointerEvents: 'none' }} />
         {/* Badges */}
         <div style={{ position: 'absolute', top: '10px', left: '10px', background: color + 'ee', color: 'white', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700' }}>
           {concept.emoji} {concept.category}
@@ -79,6 +106,7 @@ function ConceptCard({ concept, onClick }) {
 
 function DetailModal({ concept, onClose }) {
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const color = CAT_COLORS[concept.category] || '#3b82f6';
   return (
     <>
@@ -89,17 +117,32 @@ function DetailModal({ concept, onClose }) {
 
         {/* AI Image */}
         <div style={{ height: '260px', background: 'var(--surface2)', position: 'relative', overflow: 'hidden' }}>
-          {!imgLoaded && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '32px', animation: 'pulse 1.5s infinite' }}>🎨</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Rendering visualization...</div>
+          {/* Shimmer while loading */}
+          {!imgLoaded && !imgError && (
+            <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${color}18, var(--surface2))` }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '40px', animation: 'pulse 2s infinite' }}>{concept.emoji}</div>
+                <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>Generating visualization...</div>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  {[0,1,2].map(i => (
+                    <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, opacity: 0.8, animation: `pulse 1.2s ${i * 0.2}s infinite` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {imgError && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', background: `linear-gradient(135deg, ${color}15, var(--surface2))` }}>
+              <div style={{ fontSize: '48px' }}>{concept.emoji}</div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{concept.themeName}</div>
             </div>
           )}
           <img src={concept.imageUrl} alt={concept.themeName}
             onLoad={() => setImgLoaded(true)}
-            onError={e => { e.target.style.display = 'none'; }}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: imgLoaded ? 'block' : 'none' }} />
-          <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            onError={() => setImgError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: imgLoaded ? 1 : 0, transition: 'opacity 0.4s ease', position: 'absolute', inset: 0 }} />
+          <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>✕</button>
         </div>
 
         <div style={{ padding: '24px' }}>
@@ -134,10 +177,10 @@ function DetailModal({ concept, onClose }) {
 
           {/* Action buttons */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <a href={`https://image.pollinations.ai/prompt/${encodeURIComponent(concept.imageKeywords + ', photorealistic, 8k, cinematic')}?width=1200&height=800&nologo=true`}
+            <a href={`https://lexica.art/?q=${encodeURIComponent(concept.imageKeywords + ' interior design')}`}
               target="_blank" rel="noreferrer"
               style={{ flex: 1, padding: '10px', borderRadius: '12px', background: `linear-gradient(135deg, ${color}, ${color}99)`, color: 'white', textAlign: 'center', textDecoration: 'none', fontSize: '13px', fontWeight: '700' }}>
-              🖼️ Generate Full Image
+              🖼️ Find More Images
             </a>
             <button onClick={onClose}
               style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid var(--border2)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px' }}>
@@ -254,12 +297,12 @@ export default function InteriorPage() {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Loading state */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗️</div>
             <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>Designing 10 concepts...</div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' }}>AI is creating unique themes from Biophilic to Tech Modern</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' }}>AI is creating unique themes — images will load progressively</div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {['🌿 Biophilic', '🏗️ Industrial', '🎨 Dopamine', '☕ Minimalist', '⚡ Tech'].map(t => (
                 <span key={t} style={{ padding: '4px 10px', borderRadius: '100px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '11px', color: 'var(--muted)' }}>{t}</span>
@@ -267,11 +310,6 @@ export default function InteriorPage() {
             </div>
           </div>
         )}
-
-        {/* Preload all images for faster display */}
-        {result && result.concepts.map(c => (
-          <link key={c.id} rel="preload" as="image" href={c.imageUrl} />
-        ))}
 
         {/* Results */}
         {result && (

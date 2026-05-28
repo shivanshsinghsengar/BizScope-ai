@@ -897,15 +897,84 @@ setTimeout(() => { runHealthChecks().catch(() => {}); }, 60000);
 // Geocode cache (in-memory, no expiry — city coords don't change)
 const geocodeCache = new Map();
 
-// Free geocoding via OpenStreetMap Nominatim — with typo fallback
-const geocodeLocation = async (location, countryCode = null) => {
+// AI-powered location normalizer — fixes spelling, transliterates Hindi area names,
+// and suggests the closest known locality when the input doesn't match OSM data.
+// Returns: { normalized: string, corrected: bool, note: string|null }
+const normalizeLocationWithAI = async (street, city, pincode, countryCode) => {
+  // Build a readable input string for AI
+  const parts = [street, city, pincode].filter(p => p && p.trim());
+  const rawInput = parts.join(', ');
+
+  // If Gemini not available, return as-is
+  if (!genAI) return { normalized: rawInput, corrected: false, note: null };
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const countryHint = countryCode === 'IN' ? 'India' : (countryCode || 'India');
+
+    const prompt = `You are a location spelling corrector for ${countryHint}.
+
+User entered this location:
+- Street/Area: "${street || ''}"
+- City: "${city || ''}"
+- Pincode: "${pincode || ''}"
+
+Your job:
+1. Fix any spelling mistakes in the area/street name (e.g. "madhavpuri" → "Madhavpuri", "koramangla" → "Koramangala")
+2. If the area name looks like a Hindi transliteration, keep it but fix spelling (e.g. "vrindavan" is correct, "vrindabn" → "Vrindavan")
+3. If the area name is completely unrecognizable, suggest the closest real locality in that city
+4. Return ONLY a JSON object, no explanation, no markdown:
+{"normalized":"<corrected full location string>","corrected":<true|false>,"note":"<short note if corrected, else null>"}
+
+Examples:
+- Input: street="madhavpuri", city="mathura" → {"normalized":"Madhavpuri, Mathura","corrected":false,"note":null}
+- Input: street="koramangla", city="bangalore" → {"normalized":"Koramangala, Bangalore","corrected":true,"note":"Corrected koramangla → Koramangala"}
+- Input: street="vrindabn", city="mathura" → {"normalized":"Vrindavan, Mathura","corrected":true,"note":"Corrected vrindabn → Vrindavan"}
+- Input: street="sadar bazar", city="mathura" → {"normalized":"Sadar Bazaar, Mathura","corrected":false,"note":null}`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().trim();
+
+    // Extract JSON — strip markdown code fences if present
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { normalized: rawInput, corrected: false, note: null };
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      normalized: parsed.normalized || rawInput,
+      corrected: !!parsed.corrected,
+      note: parsed.note || null,
+    };
+  } catch (e) {
+    console.log('AI location normalization failed:', e.message);
+    return { normalized: rawInput, corrected: false, note: null };
+  }
+};
+
+// Free geocoding via OpenStreetMap Nominatim — with structured + typo fallback
+const geocodeLocation = async (location, countryCode = null, structuredParts = null) => {
   const key = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(key)) return geocodeCache.get(key);
 
   const tryGeocode = async (query, cc) => {
     const url = `https://nominatim.openstreetmap.org/search`;
     const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
-    // Only restrict by country if a valid 2-letter code is provided
+    if (cc && /^[A-Z]{2}$/.test(cc)) params.countrycodes = cc.toLowerCase();
+    const res = await axios.get(url, {
+      params,
+      headers: { 'User-Agent': 'BizScopeAI/1.0' },
+      timeout: 6000,
+    });
+    return res.data && res.data.length > 0 ? res.data[0] : null;
+  };
+
+  // Structured search — Nominatim understands street+city separately, much more accurate
+  const tryStructuredGeocode = async (street, city, postalcode, cc) => {
+    const url = `https://nominatim.openstreetmap.org/search`;
+    const params = { format: 'json', limit: 1, addressdetails: 1 };
+    if (street)     params.street = street;
+    if (city)       params.city   = city;
+    if (postalcode) params.postalcode = postalcode;
     if (cc && /^[A-Z]{2}$/.test(cc)) params.countrycodes = cc.toLowerCase();
     const res = await axios.get(url, {
       params,
@@ -919,10 +988,38 @@ const geocodeLocation = async (location, countryCode = null) => {
   let matchedQuery = location;
   let partialMatch = false;
 
-  // Try full query first
-  result = await tryGeocode(location, countryCode);
+  // Step 1: Try structured search first (most accurate — uses street/city/pincode separately)
+  if (structuredParts && (structuredParts.street || structuredParts.city)) {
+    result = await tryStructuredGeocode(
+      structuredParts.street,
+      structuredParts.city,
+      structuredParts.pincode,
+      countryCode
+    ).catch(() => null);
+    if (result) {
+      console.log(`Structured geocode hit for street="${structuredParts.street}" city="${structuredParts.city}"`);
+    }
+  }
 
-  // If not found, try progressively simpler queries (strip parts from left)
+  // Step 2: Try full free-text query
+  if (!result) {
+    result = await tryGeocode(location, countryCode);
+  }
+
+  // Step 3: If structured parts available, try area+city without pincode
+  if (!result && structuredParts && structuredParts.street && structuredParts.city) {
+    const areaCity = `${structuredParts.street}, ${structuredParts.city}`;
+    result = await tryGeocode(areaCity, countryCode);
+    if (result) { matchedQuery = areaCity; partialMatch = false; }
+  }
+
+  // Step 4: Try just city + pincode (pincode gives precise area centroid)
+  if (!result && structuredParts && structuredParts.city && structuredParts.pincode) {
+    result = await tryStructuredGeocode(null, structuredParts.city, structuredParts.pincode, countryCode).catch(() => null);
+    if (result) { matchedQuery = `${structuredParts.city} - ${structuredParts.pincode}`; partialMatch = true; }
+  }
+
+  // Step 5: Progressively strip parts from left (existing fallback)
   if (!result) {
     const parts = location.split(',').map(p => p.trim()).filter(Boolean);
     for (let i = 1; i < parts.length; i++) {
@@ -932,11 +1029,10 @@ const geocodeLocation = async (location, countryCode = null) => {
     }
   }
 
-  // Last resort: try just the first word
-  if (!result) {
-    const firstWord = location.split(',')[0].trim();
-    result = await tryGeocode(firstWord, countryCode);
-    if (result) { matchedQuery = firstWord; partialMatch = true; }
+  // Step 6: Last resort — just city name
+  if (!result && structuredParts && structuredParts.city) {
+    result = await tryGeocode(structuredParts.city, countryCode);
+    if (result) { matchedQuery = structuredParts.city; partialMatch = true; }
   }
 
   if (!result) return null;
@@ -948,7 +1044,7 @@ const geocodeLocation = async (location, countryCode = null) => {
     partialMatch,
     matchedQuery,
   };
-  console.log(`Geocoded "${location}" to ${geo.latitude}, ${geo.longitude} (${geo.displayName})`);
+  console.log(`Geocoded "${location}" → ${geo.latitude}, ${geo.longitude} (matched: "${matchedQuery}")`);
   geocodeCache.set(key, geo);
   return geo;
 };
@@ -1121,21 +1217,27 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
     // Query node + way — Indian businesses are often mapped as ways (buildings)
     // timeout:25 gives Overpass enough time for dense cities like Mumbai/Delhi
     const amenityVals = "restaurant|cafe|fast_food|pharmacy|hospital|clinic|doctors|dentist|gym|fitness_centre|bakery|laundry|bar|pub|hotel|hostel|guest_house|school|college|university|bank|atm|fuel|car_wash|swimming_pool|sports_centre|ice_cream|food_court|money_transfer|marketplace|post_office|library|cinema|theatre|nursing_home|veterinary|optician|physiotherapist|studio";
-    const shopVals = "supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold|bakery|confectionery|pastry|deli|butcher|greengrocer|cosmetics|medical_supply|bicycle|outdoor|gift|art|electrical|paint|pet|second_hand|fabric|bags|accessories|perfumery|kitchen|carpet|interior_decoration";
+    const shopVals = "supermarket|convenience|grocery|hairdresser|beauty|clothes|shoes|electronics|mobile_phone|computer|jewellery|hardware|books|sports|furniture|stationery|toys|florist|chemist|tailor|massage|nail_salon|spa|boutique|car_repair|tyres|motorcycle|wholesale|watches|gold|bakery|confectionery|pastry|deli|butcher|greengrocer|cosmetics|medical_supply|bicycle|outdoor|gift|art|electrical|paint|pet|second_hand|fabric|bags|accessories|perfumery|kitchen|carpet|interior_decoration|department_store|mall|variety_store|clothing|fashion|apparel";
     const officeVals = "company|it|lawyer|accountant|architect|engineer|real_estate|consulting|insurance|financial|travel_agent|employment_agency|advertising|educational_institution";
     const tourismVals = "hotel|hostel|guest_house|motel|apartment";
     const leisureVals = "fitness_centre|gym|sports_centre|swimming_pool|bowling_alley|yoga|dance|martial_arts";
-    const query = `[out:json][timeout:25];(`
-      + `node["amenity"~"${amenityVals}"](around:${radiusMeters},${lat},${lng});`
-      + `way["amenity"~"${amenityVals}"](around:${radiusMeters},${lat},${lng});`
-      + `node["shop"~"${shopVals}"](around:${radiusMeters},${lat},${lng});`
-      + `way["shop"~"${shopVals}"](around:${radiusMeters},${lat},${lng});`
-      + `node["office"~"${officeVals}"](around:${radiusMeters},${lat},${lng});`
-      + `way["office"~"${officeVals}"](around:${radiusMeters},${lat},${lng});`
-      + `node["tourism"~"${tourismVals}"](around:${radiusMeters},${lat},${lng});`
-      + `way["tourism"~"${tourismVals}"](around:${radiusMeters},${lat},${lng});`
-      + `node["leisure"~"${leisureVals}"](around:${radiusMeters},${lat},${lng});`
-      + `way["leisure"~"${leisureVals}"](around:${radiusMeters},${lat},${lng});`
+
+    // Query with ["name"] filter — only fetch named places, skip unnamed noise
+    // Also query by brand tag — this catches Zudio, Peter England, D-Mart etc. if mapped in OSM
+    const query = `[out:json][timeout:30];(`
+      + `node["amenity"~"${amenityVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `way["amenity"~"${amenityVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `node["shop"~"${shopVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `way["shop"~"${shopVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `node["office"~"${officeVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `way["office"~"${officeVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `node["tourism"~"${tourismVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `way["tourism"~"${tourismVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `node["leisure"~"${leisureVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      + `way["leisure"~"${leisureVals}"]["name"](around:${radiusMeters},${lat},${lng});`
+      // Brand-tagged nodes — catches chain stores like Zudio, Peter England, D-Mart if mapped
+      + `node["brand"](around:${radiusMeters},${lat},${lng});`
+      + `way["brand"](around:${radiusMeters},${lat},${lng});`
       + `);out center qt;`;
 
     const mirrors = [
@@ -1175,6 +1277,11 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
       const elLat = el.lat ?? el.center?.lat;
       const elLon = el.lon ?? el.center?.lon;
       if (!elLat || !elLon) return null;
+
+      // Name: prefer brand tag (Zudio, Peter England etc.) over name, skip unnamed
+      const name = tags.brand || tags.name || tags['name:en'] || tags.operator || null;
+      if (!name) return null; // skip unnamed — they add noise without value
+
       const rawCat = tags.amenity || tags.shop || tags.office || tags.tourism || tags.leisure || 'Other';
       let category = osmToCategory[rawCat];
       if (!category && tags.office) category = 'Office';
@@ -1182,10 +1289,10 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
 
       const addrParts = [tags['addr:housenumber'], tags['addr:street'], tags['addr:suburb'] || tags['addr:city']].filter(Boolean);
       return {
-        name: tags.name || `${category} (unnamed)`,
+        name,
         category,
-        rating: stableRating(tags.name || `${elLat}_${elLon}`, category),
-        reviewCount: stableReviews(tags.name || `${elLat}_${elLon}`, category),
+        rating: stableRating(name, category),
+        reviewCount: stableReviews(name, category),
         address: addrParts.join(', ') || `Near ${elLat.toFixed(3)}, ${elLon.toFixed(3)}`,
         phone: tags.phone || tags['contact:phone'] || '',
         website: tags.website || tags['contact:website'] || '',
@@ -1195,7 +1302,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
         ratingEstimated: true,
         reviewCountEstimated: true,
       };
-    }).filter(b => b.latitude && b.longitude && b.name);
+    }).filter(b => b && b.latitude && b.longitude && b.name);
 
     console.log(`Overpass returned ${allElements.length} elements, ${results.length} valid businesses for (${lat},${lng}) r=${radiusMeters}`);
     return results;
@@ -1218,40 +1325,169 @@ const fsqCategoryMap = {
 };
 
 const fetchFoursquareBusinesses = async (lat, lng, radiusMeters = 8000) => {
-  const key = process.env.FOURSQUARE_API_KEY;
-  if (!key || key === 'your_foursquare_key') return [];
+  // Foursquare v3 API deprecated June 2025 — new API not yet available on free tier
+  // Returning empty array to avoid errors
+  return [];
+};
+
+// Google Places API (Nearby Search) — best coverage for branded Indian retail stores
+// Zudio, Peter England, Westside, etc. are all on Google Maps
+const googlePlacesCatMap = (types = []) => {
+  const t = types.join(' ');
+  if (t.includes('restaurant') || t.includes('food') || t.includes('meal')) return 'Restaurant';
+  if (t.includes('cafe') || t.includes('bakery') || t.includes('coffee')) return 'Cafe';
+  if (t.includes('clothing') || t.includes('apparel') || t.includes('fashion')) return 'Clothing';
+  if (t.includes('electronics') || t.includes('mobile') || t.includes('computer')) return 'Electronics';
+  if (t.includes('grocery') || t.includes('supermarket') || t.includes('convenience')) return 'Grocery';
+  if (t.includes('pharmacy') || t.includes('drugstore') || t.includes('chemist')) return 'Pharmacy';
+  if (t.includes('hospital') || t.includes('doctor') || t.includes('health')) return 'Hospital';
+  if (t.includes('gym') || t.includes('fitness') || t.includes('sports')) return 'Gym';
+  if (t.includes('salon') || t.includes('beauty') || t.includes('spa') || t.includes('hair')) return 'Salon';
+  if (t.includes('hotel') || t.includes('lodging') || t.includes('hostel')) return 'Hotel';
+  if (t.includes('bank') || t.includes('atm') || t.includes('finance')) return 'Finance';
+  if (t.includes('school') || t.includes('university') || t.includes('education')) return 'Education';
+  if (t.includes('jewelry') || t.includes('jewellery')) return 'Jewellery';
+  if (t.includes('furniture') || t.includes('home_goods')) return 'Furniture';
+  if (t.includes('hardware') || t.includes('tool')) return 'Hardware';
+  if (t.includes('shoe') || t.includes('footwear')) return 'Clothing';
+  if (t.includes('department_store') || t.includes('shopping_mall') || t.includes('store')) return 'Retail';
+  if (t.includes('car') || t.includes('auto') || t.includes('fuel') || t.includes('gas')) return 'Automotive';
+  return 'Retail';
+};
+
+const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 3000) => {
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key || key === 'your_google_places_key') return [];
+
+  const results = [];
+  const seen = new Set();
+
+  // Fetch multiple types to get broad coverage including branded stores
+  const types = ['store', 'restaurant', 'health', 'gym', 'bank', 'school', 'lodging'];
+
   try {
-    const res = await axios.get('https://api.foursquare.com/v3/places/search', {
-      headers: { Authorization: key, Accept: 'application/json' },
+    await Promise.all(types.map(async (type) => {
+      try {
+        const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
+          params: {
+            location: `${lat},${lng}`,
+            radius: radiusMeters,
+            type,
+            key,
+          },
+          timeout: 8000,
+        });
+
+        for (const place of (res.data.results || [])) {
+          if (!place.geometry?.location) continue;
+          const nameKey = (place.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+          const posKey = `${Math.round(place.geometry.location.lat * 1000)}_${Math.round(place.geometry.location.lng * 1000)}`;
+          const dedupKey = `${nameKey}_${posKey}`;
+          if (seen.has(dedupKey)) continue;
+          seen.add(dedupKey);
+
+          results.push({
+            name: place.name,
+            category: googlePlacesCatMap(place.types || []),
+            rating: place.rating || null,
+            reviewCount: place.user_ratings_total || 0,
+            address: place.vicinity || '',
+            phone: '',
+            website: '',
+            latitude: place.geometry.location.lat,
+            longitude: place.geometry.location.lng,
+            source: 'google',
+            isOpen: place.opening_hours?.open_now,
+            priceLevel: place.price_level,
+          });
+        }
+      } catch (_) {}
+    }));
+
+    console.log(`Google Places returned ${results.length} businesses for (${lat},${lng})`);
+    return results;
+  } catch (e) {
+    console.log('Google Places failed:', e.message.slice(0, 60));
+    return [];
+  }
+};
+
+// Mappls (MapmyIndia) Nearby API — India-specific, NO card needed, covers branded stores
+// Free signup at: https://developer.mappls.com  (Indian company, best India coverage)
+const mapplsCatMap = (subType = '') => {
+  const s = subType.toLowerCase();
+  if (s.includes('restaurant') || s.includes('food') || s.includes('dhaba') || s.includes('eatery')) return 'Restaurant';
+  if (s.includes('cafe') || s.includes('coffee') || s.includes('bakery') || s.includes('sweet')) return 'Cafe';
+  if (s.includes('cloth') || s.includes('fashion') || s.includes('apparel') || s.includes('garment') || s.includes('boutique') || s.includes('textile')) return 'Clothing';
+  if (s.includes('shoe') || s.includes('footwear')) return 'Clothing';
+  if (s.includes('electronic') || s.includes('mobile') || s.includes('computer') || s.includes('phone')) return 'Electronics';
+  if (s.includes('grocery') || s.includes('supermarket') || s.includes('kirana') || s.includes('provision')) return 'Grocery';
+  if (s.includes('pharmacy') || s.includes('chemist') || s.includes('medical') || s.includes('drug')) return 'Pharmacy';
+  if (s.includes('hospital') || s.includes('clinic') || s.includes('doctor') || s.includes('health')) return 'Hospital';
+  if (s.includes('gym') || s.includes('fitness') || s.includes('yoga') || s.includes('sports')) return 'Gym';
+  if (s.includes('salon') || s.includes('beauty') || s.includes('spa') || s.includes('parlour') || s.includes('hair')) return 'Salon';
+  if (s.includes('hotel') || s.includes('lodge') || s.includes('hostel') || s.includes('guest')) return 'Hotel';
+  if (s.includes('bank') || s.includes('atm') || s.includes('finance') || s.includes('insurance')) return 'Finance';
+  if (s.includes('school') || s.includes('college') || s.includes('coaching') || s.includes('tutor') || s.includes('education')) return 'Education';
+  if (s.includes('jewel') || s.includes('gold') || s.includes('silver')) return 'Jewellery';
+  if (s.includes('furniture') || s.includes('home') || s.includes('decor') || s.includes('interior')) return 'Furniture';
+  if (s.includes('hardware') || s.includes('tool') || s.includes('building')) return 'Hardware';
+  if (s.includes('petrol') || s.includes('fuel') || s.includes('auto') || s.includes('car') || s.includes('garage')) return 'Automotive';
+  if (s.includes('mall') || s.includes('market') || s.includes('plaza') || s.includes('bazaar') || s.includes('shop')) return 'Retail';
+  return 'Retail';
+};
+
+const fetchMapplsBusinesses = async (lat, lng, radiusMeters = 3000) => {
+  const key = process.env.MAPPLS_API_KEY;
+  if (!key || key === 'your_mappls_api_key') return [];
+
+  try {
+    // Mappls Nearby API — static key goes as query param
+    const res = await axios.get('https://atlas.mappls.com/api/places/nearby/json', {
       params: {
-        ll: `${lat},${lng}`,
+        keywords: 'shop;restaurant;hospital;school;hotel;bank;gym;salon;pharmacy;clothing;electronics',
+        refLocation: `${lat},${lng}`,
         radius: radiusMeters,
-        limit: 50,
-        fields: 'name,categories,location,tel,website,rating,stats,geocodes',
+        sortBy: 'dist:asc',
+        page: 1,
+        pod: 'LOCALITY',
+        token: key,   // static key goes here for Mappls
       },
       timeout: 8000,
     });
-    return (res.data.results || []).map(place => {
-      const cat = place.categories?.[0]?.name || 'Other';
-      const mapped = fsqCategoryMap[cat] || cat;
-      const geo = place.geocodes?.main;
-      if (!geo?.latitude || !geo?.longitude) return null;
+
+    const places = res.data?.suggestedLocations || res.data?.nearbyPlaces || res.data?.results || [];
+    const seen = new Set();
+
+    const results = places.map(place => {
+      const lat_ = parseFloat(place.latitude || place.lat);
+      const lng_ = parseFloat(place.longitude || place.lng);
+      if (!lat_ || !lng_ || isNaN(lat_) || isNaN(lng_)) return null;
+
+      const nameKey = (place.placeName || place.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+      const posKey = `${Math.round(lat_ * 1000)}_${Math.round(lng_ * 1000)}`;
+      const dedupKey = `${nameKey}_${posKey}`;
+      if (seen.has(dedupKey)) return null;
+      seen.add(dedupKey);
+
       return {
-        name: place.name,
-        category: mapped,
-        // Real ratings from Foursquare — not estimated!
-        rating: place.rating ? parseFloat((place.rating / 2).toFixed(1)) : stableRating(place.name, mapped),
-        reviewCount: place.stats?.total_ratings || stableReviews(place.name, mapped),
-        address: [place.location?.address, place.location?.locality].filter(Boolean).join(', ') || 'Unknown',
-        phone: place.tel || '',
-        website: place.website || '',
-        latitude: geo.latitude,
-        longitude: geo.longitude,
-        source: 'foursquare',
+        name: place.placeName || place.name || place.placeAddress,
+        category: mapplsCatMap(place.type || place.subType || place.categoryCode || ''),
+        rating: null,
+        reviewCount: 0,
+        address: place.placeAddress || place.address || '',
+        phone: place.tel || place.phone || '',
+        website: '',
+        latitude: lat_,
+        longitude: lng_,
+        source: 'mappls',
       };
     }).filter(Boolean);
+
+    console.log(`Mappls returned ${results.length} businesses for (${lat},${lng})`);
+    return results;
   } catch (e) {
-    console.log('Foursquare failed:', e.message.slice(0, 60));
+    console.log('Mappls failed:', e.message.slice(0, 80));
     return [];
   }
 };
@@ -2052,13 +2288,26 @@ Ensure designs are specific to a ${scale} ${industry} in India. All costs in ₹
       ];
     }
 
-    // Add Pollinations image URL to each concept — smaller size for faster loading
-    const conceptsWithImages = concepts.map(c => ({
-      ...c,
-      imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        `${c.imageKeywords}, ${industry} interior, photorealistic, cinematic`
-      )}?width=400&height=260&nologo=true&seed=${c.id * 7}&model=flux`,
-    }));
+    // Add image URL — Unsplash Source (instant, no API key, real photos)
+    const unsplashKeywords = {
+      'Biophilic':       'biophilic,interior,plants,cafe',
+      'Industrial':      'industrial,loft,interior,design',
+      'Dopamine Decor':  'colorful,interior,design,vibrant',
+      'Warm Minimalist': 'minimalist,interior,warm,cozy',
+      'Dark Moody':      'dark,moody,interior,restaurant',
+      'Rustic Indian':   'rustic,indian,interior,terracotta',
+      'Tech Modern':     'modern,tech,office,interior,neon',
+      'Vintage Retro':   'vintage,retro,cafe,interior',
+      'Scandinavian':    'scandinavian,interior,white,minimal',
+      'Color Drenching': 'bold,color,interior,design',
+    };
+    const conceptsWithImages = concepts.map(c => {
+      const kw = unsplashKeywords[c.category] || c.imageKeywords.split(',').slice(0, 3).join(',');
+      return {
+        ...c,
+        imageUrl: `https://source.unsplash.com/480x300/?${encodeURIComponent(kw)}&sig=${c.id * 17}`,
+      };
+    });
 
     res.json({ concepts: conceptsWithImages, businessName, industry, spaceScale: scale });
   } catch (e) {
@@ -2502,9 +2751,15 @@ app.get('/api/admin/events', adminAuth, async (req, res) => {
 
 // 0. Real-time streaming analysis via SSE
 app.get('/api/analyze-stream', async (req, res) => {
-  const location = sanitizeLocationInput(req.query.location || '');
+  const rawLocation = sanitizeLocationInput(req.query.location || '');
   const countryCode = (req.query.country || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || null;
-  if (!location || !isSafeLocation(location)) return res.status(400).json({ error: 'Valid location required' });
+
+  // Accept structured parts from frontend (street, city, pincode sent separately)
+  const rawStreet  = (req.query.street  || '').trim();
+  const rawCity    = (req.query.city    || '').trim();
+  const rawPincode = (req.query.pincode || '').trim();
+
+  if (!rawLocation || !isSafeLocation(rawLocation)) return res.status(400).json({ error: 'Valid location required' });
 
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -2512,7 +2767,7 @@ app.get('/api/analyze-stream', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
   const send = (step, message, sub, progress) => {
@@ -2520,17 +2775,45 @@ app.get('/api/analyze-stream', async (req, res) => {
   };
 
   try {
-    // Step 1: Geocode FIRST to get coordinates, then create cache key with lat/lon
-    send('geocode', 'Finding your location on the map...', 'Geocoding your area', 10);
-    const geo = await geocodeLocation(location, countryCode);
+    // Step 1a: AI spelling correction + normalization (runs before geocoding)
+    send('geocode', 'Verifying location spelling with AI...', 'AI is checking your area name', 8);
+
+    let location = rawLocation;
+    let aiCorrectionNote = null;
+    let structuredParts = null;
+
+    // Only run AI normalization if we have structured parts (street/city/pincode)
+    if (rawStreet || rawCity) {
+      const aiResult = await normalizeLocationWithAI(rawStreet, rawCity, rawPincode, countryCode);
+      location = sanitizeLocationInput(aiResult.normalized);
+      aiCorrectionNote = aiResult.corrected ? aiResult.note : null;
+
+      if (aiResult.corrected) {
+        console.log(`AI corrected location: "${rawLocation}" → "${location}" (${aiResult.note})`);
+        send('geocode', `AI corrected: "${aiResult.note}"`, 'Spelling fixed, locating...', 10);
+      }
+
+      // Pass structured parts to geocoder for precise lookup
+      // Use AI-corrected values if available
+      const correctedParts = location.split(',').map(p => p.trim());
+      structuredParts = {
+        street:  rawStreet  ? correctedParts[0] : null,
+        city:    rawCity    ? (correctedParts[1] || correctedParts[0]) : null,
+        pincode: rawPincode || null,
+      };
+    }
+
+    // Step 1b: Geocode with structured parts for precision
+    send('geocode', 'Finding your exact location on the map...', 'Geocoding your area', 12);
+    const geo = await geocodeLocation(location, countryCode, structuredParts);
     if (!geo) {
-      res.write(`data: ${JSON.stringify({ step: 'error', message: 'Location not found. Please check the spelling.' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ step: 'error', message: 'Location not found. Please check the spelling or try a nearby landmark.' })}\n\n`);
       return res.end();
     }
     const { latitude, longitude, displayName, partialMatch, matchedQuery } = geo;
 
-    // Cache key includes lat/lon to prevent cross-city collisions
-    const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(2)}|${longitude.toFixed(2)}`;
+    // Cache key uses 4 decimal precision (~11m) to avoid cross-locality collisions
+    const cacheKey = `${location.toLowerCase().trim()}|${latitude.toFixed(4)}|${longitude.toFixed(4)}`;
     const cached = getCached(cacheKey);
     // Skip cache if it contains mock/estimated data — always re-fetch for real data
     if (cached && cached.aiSuggestions !== 'Generating AI recommendations...' && !cached.estimatedData) {
@@ -2539,20 +2822,25 @@ app.get('/api/analyze-stream', async (req, res) => {
       res.write(`data: ${JSON.stringify({ step: 'result', data: cached })}\n\n`);
       return res.end();
     }
-    send('geocode', `Found: ${displayName.split(',').slice(0, 2).join(', ')}`, 'Location confirmed', 20);
 
-    // Step 2: Fetch businesses — TomTom + OSM + Manual all in parallel
-    send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OpenStreetMap', 30);
-    const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
+    const confirmedLabel = displayName.split(',').slice(0, 2).join(', ');
+    send('geocode', `Found: ${confirmedLabel}`, aiCorrectionNote ? `✏️ ${aiCorrectionNote}` : 'Location confirmed', 20);
+
+    // Step 2: Fetch businesses — TomTom + OSM + Foursquare + Google Places + Mappls + Manual all in parallel
+    send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OSM + Google + Foursquare + Mappls', 30);
+    const [tomtomBusinesses, osmBusinesses, foursquareBusinesses, googleBusinesses, mapplsBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
       fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),
+      fetchFoursquareBusinesses(latitude, longitude, 5000).catch(() => []),
+      fetchGooglePlacesBusinesses(latitude, longitude, 3000).catch(() => []),
+      fetchMapplsBusinesses(latitude, longitude, 3000).catch(() => []),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
         Math.sqrt(Math.pow(b.latitude - latitude, 2) + Math.pow(b.longitude - longitude, 2)) < 0.08
       )).catch(() => []),
     ]);
 
-    send('fetch', `Found ${tomtomBusinesses.length + osmBusinesses.length} raw businesses, analyzing...`, 'Processing data', 45);
+    send('fetch', `Found ${tomtomBusinesses.length + osmBusinesses.length + foursquareBusinesses.length + googleBusinesses.length + mapplsBusinesses.length} raw businesses, analyzing...`, 'Processing data', 45);
 
     // Second OSM pass — wider radius, but with short timeout so it doesn't block
     const osmWider = await Promise.race([
@@ -2560,18 +2848,42 @@ app.get('/api/analyze-stream', async (req, res) => {
       new Promise(r => setTimeout(() => r([]), 8000)), // max 8s extra
     ]).catch(() => []);
 
-    // Track raw source counts BEFORE dedup so OSM is not hidden by TomTom dedup
+    // Track raw source counts BEFORE dedup
     const rawSourceCounts = {};
-    if (tomtomBusinesses.length) rawSourceCounts.tomtom = tomtomBusinesses.length;
-    if (osmBusinesses.length)    rawSourceCounts.osm    = osmBusinesses.length;
-    if (manualBusinesses.length) rawSourceCounts.manual = manualBusinesses.length;
+    if (tomtomBusinesses.length)    rawSourceCounts.tomtom     = tomtomBusinesses.length;
+    if (osmBusinesses.length)       rawSourceCounts.osm        = osmBusinesses.length;
+    if (foursquareBusinesses.length) rawSourceCounts.foursquare = foursquareBusinesses.length;
+    if (googleBusinesses.length)    rawSourceCounts.google     = googleBusinesses.length;
+    if (mapplsBusinesses.length)    rawSourceCounts.mappls     = mapplsBusinesses.length;
+    if (manualBusinesses.length)    rawSourceCounts.manual     = manualBusinesses.length;
 
-    // Smart merge: per-category, whichever source gives more businesses wins
+    // Merge all sources — Google/Mappls first (best branded store coverage), then Foursquare (ratings), then TomTom+OSM
     const allOsm = [...osmBusinesses, ...(osmWider || [])];
-    let businesses = [
-      ...mergeSmarter(tomtomBusinesses, allOsm),
-      ...manualBusinesses.map(b => ({ name: b.name, category: b.category, rating: 4.0, reviewCount: 50, address: b.address, phone: b.phone, website: b.website, latitude: b.latitude, longitude: b.longitude, isManual: true })),
+    const allSources = [
+      ...googleBusinesses,        // Google first — best branded store coverage
+      ...mapplsBusinesses,        // Mappls — India-specific branded stores (no card needed)
+      ...foursquareBusinesses,    // Foursquare — real ratings
+      ...mergeSmarter(tomtomBusinesses, allOsm),  // TomTom + OSM merged
     ];
+
+    // Global dedup across all sources
+    const globalSeen = new Set();
+    let businesses = allSources.filter(b => {
+      if (!b || !b.latitude || !b.longitude || !b.name) return false;
+      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${b.category}`;
+      if (globalSeen.has(key)) return false;
+      globalSeen.add(key);
+      return true;
+    });
+
+    // Add manual businesses
+    businesses.push(...manualBusinesses.map(b => ({
+      name: b.name, category: b.category, rating: 4.0, reviewCount: 50,
+      address: b.address, phone: b.phone, website: b.website,
+      latitude: b.latitude, longitude: b.longitude, isManual: true,
+    })));
 
     // Retry with wider radius if empty
     if (businesses.length === 0) {
@@ -2640,6 +2952,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     const result = {
       location: { displayName, latitude, longitude },
       partialMatch: partialMatch ? `Exact address not found — showing results for "${matchedQuery}" instead` : null,
+      aiCorrectionNote: aiCorrectionNote || null,
       estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses, categoryStats: sortedStats, aiSuggestions,
       userLat: latitude, userLng: longitude,

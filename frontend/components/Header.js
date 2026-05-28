@@ -20,9 +20,10 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
         display: 'flex',
         alignItems: 'center',
         padding: '0 16px',
-        background: '#0d0e12',
-        borderBottom: '1px solid #1a1d28',
+        background: 'var(--header-bg)',
+        borderBottom: '1px solid var(--header-border)',
         gap: '12px',
+        transition: 'background 0.3s, border-color 0.3s',
       }}>
 
         {/* ── LEFT: Hamburger (mobile) + Logo ── */}
@@ -34,8 +35,8 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
             style={{
               display: 'none',
               background: 'transparent',
-              border: '1px solid #1a1d28',
-              color: '#5a6480',
+              border: '1px solid var(--header-border)',
+              color: 'var(--muted)',
               width: '32px', height: '32px',
               borderRadius: '7px',
               cursor: 'pointer',
@@ -65,7 +66,7 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
             </div>
             <span style={{
               fontSize: '15px', fontWeight: '800',
-              color: '#eef0f8', letterSpacing: '-0.03em',
+              color: 'var(--text)', letterSpacing: '-0.03em',
               whiteSpace: 'nowrap',
             }}>
               Biz<span style={{
@@ -77,7 +78,7 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
           </div>
         </div>
 
-        {/* ── CENTER: Market Name (large, prominent) ── */}
+        {/* ── CENTER: Market Name ── */}
         <div style={{
           flex: 1,
           display: 'flex',
@@ -85,15 +86,15 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
           justifyContent: 'center',
           gap: '8px',
         }}>
-          <span style={{ fontSize: '18px', lineHeight: 1 }}>📍</span>
+          {marketName && <span style={{ fontSize: '18px', lineHeight: 1 }}>📍</span>}
           <span style={{
             fontSize: '18px',
             fontWeight: '700',
-            color: '#eef0f8',
+            color: 'var(--text)',
             letterSpacing: '-0.02em',
             whiteSpace: 'nowrap',
           }}>
-            {marketName || 'New Delhi Market'}
+            {marketName || 'BizScope AI'}
           </span>
         </div>
 
@@ -105,11 +106,12 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
                 className="hide-on-mobile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid #1a1d28',
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--border)',
                   borderRadius: '100px',
                   padding: '4px 10px 4px 6px',
                   cursor: 'pointer',
+                  transition: 'background 0.2s',
                 }}
                 onClick={() => router.push('/admin')}
               >
@@ -121,19 +123,19 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
                 }}>
                   {user.name?.[0]?.toUpperCase() || 'U'}
                 </div>
-                <span style={{ fontSize: '12px', color: '#c8cfe0', fontWeight: '500' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text2)', fontWeight: '500' }}>
                   {user.name?.split(' ')[0] || 'Account'}
                 </span>
               </div>
               <button
                 onClick={() => { logout(); router.push('/'); }}
                 style={{
-                  background: 'transparent', border: '1px solid #1a1d28',
-                  color: '#5a6480', padding: '5px 10px', borderRadius: '7px',
+                  background: 'transparent', border: '1px solid var(--border)',
+                  color: 'var(--muted)', padding: '5px 10px', borderRadius: '7px',
                   cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#c8cfe0'; e.currentTarget.style.borderColor = '#2e3d60'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#5a6480'; e.currentTarget.style.borderColor = '#1a1d28'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--border3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 Sign Out
               </button>
@@ -143,13 +145,13 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
               onClick={() => router.push('/login')}
               style={{
                 background: 'transparent', border: 'none',
-                color: '#8a93a8', padding: '5px 8px',
+                color: 'var(--muted)', padding: '5px 8px',
                 borderRadius: '7px', cursor: 'pointer',
                 fontSize: '13px', fontWeight: '500',
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.color = '#eef0f8'}
-              onMouseLeave={e => e.currentTarget.style.color = '#8a93a8'}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
             >
               Sign In
             </button>
@@ -159,8 +161,8 @@ export default function Header({ onMenuToggle, cmdOpen, setCmdOpen, marketName }
           <button
             style={{
               background: 'transparent',
-              border: '1px solid ' + (cartHover ? '#2e3d60' : '#1a1d28'),
-              color: cartHover ? '#c8cfe0' : '#5a6480',
+              border: '1px solid ' + (cartHover ? 'var(--border3)' : 'var(--border)'),
+              color: cartHover ? 'var(--text)' : 'var(--muted)',
               width: '32px', height: '32px',
               borderRadius: '8px', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',

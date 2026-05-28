@@ -13,14 +13,15 @@ export default function CommandCenter({ onSearchClick }) {
       alignItems: 'center',
       gap: '10px',
       padding: '10px 20px',
-      borderBottom: '1px solid #1a1d28',
-      background: '#0d0e12',
+      borderBottom: '1px solid var(--header-border)',
+      background: 'var(--header-bg)',
+      transition: 'background 0.3s, border-color 0.3s',
     }}>
       {/* Label */}
       <span style={{
         fontSize: '10px',
         fontWeight: '700',
-        color: '#2a3350',
+        color: 'var(--muted-label)',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         flexShrink: 0,
@@ -40,8 +41,8 @@ export default function CommandCenter({ onSearchClick }) {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          background: hovered ? 'rgba(79,142,247,0.06)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${hovered ? 'rgba(79,142,247,0.3)' : '#1e2235'}`,
+          background: hovered ? 'var(--active-bg)' : 'var(--surface2)',
+          border: `1px solid ${hovered ? 'var(--border3)' : 'var(--border)'}`,
           borderRadius: '8px',
           padding: '7px 12px',
           cursor: 'pointer',
@@ -49,10 +50,10 @@ export default function CommandCenter({ onSearchClick }) {
           textAlign: 'left',
         }}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3a4560" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <span style={{ flex: 1, fontSize: '12px', color: '#3a4560', fontWeight: '400' }}>
+        <span style={{ flex: 1, fontSize: '12px', color: 'var(--muted)', fontWeight: '400' }}>
           AI-Powered Market &amp; Cmd Search (Ctrl+K)
         </span>
       </button>
@@ -64,8 +65,8 @@ export default function CommandCenter({ onSearchClick }) {
       <button
         style={{
           background: 'transparent',
-          border: '1px solid #1a1d28',
-          color: '#3a4560',
+          border: '1px solid var(--border)',
+          color: 'var(--muted)',
           width: '30px', height: '30px',
           borderRadius: '7px',
           cursor: 'pointer',
@@ -73,8 +74,8 @@ export default function CommandCenter({ onSearchClick }) {
           transition: 'all 0.15s',
           flexShrink: 0,
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2e3d60'; e.currentTarget.style.color = '#c8cfe0'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a1d28'; e.currentTarget.style.color = '#3a4560'; }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border3)'; e.currentTarget.style.color = 'var(--text2)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)'; }}
         title="Edit"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,8 +88,8 @@ export default function CommandCenter({ onSearchClick }) {
       <button
         style={{
           background: 'transparent',
-          border: '1px solid #1a1d28',
-          color: '#3a4560',
+          border: '1px solid var(--border)',
+          color: 'var(--muted)',
           width: '30px', height: '30px',
           borderRadius: '7px',
           cursor: 'pointer',
@@ -96,8 +97,8 @@ export default function CommandCenter({ onSearchClick }) {
           transition: 'all 0.15s',
           flexShrink: 0,
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2e3d60'; e.currentTarget.style.color = '#c8cfe0'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a1d28'; e.currentTarget.style.color = '#3a4560'; }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border3)'; e.currentTarget.style.color = 'var(--text2)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)'; }}
         title="Settings"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -57,14 +57,14 @@ function NewsTicker({ headlines }) {
   if (!headlines || headlines.length === 0) return null;
   const items = [...headlines, ...headlines];
   return (
-    <div style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(59,130,246,0.2)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
+    <div style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)', padding: '7px 0', overflow: 'hidden', zIndex: 10, position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ background: 'linear-gradient(135deg,#3b82f6,#2563eb)', color: '#ffffff', padding: '3px 14px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.1em', flexShrink: 0 }}>LIVE</div>
         <div style={{ overflow: 'hidden', flex: 1 }}>
           <div className="ticker-track">
             {items.map((h, i) => (
               <a key={i} href={h.url} target="_blank" rel="noreferrer"
-                style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', paddingRight: '60px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                style={{ fontSize: '12px', color: 'var(--muted)', paddingRight: '60px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 📰 {h.title}
               </a>
             ))}
@@ -97,7 +97,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
   const meta = STEP_META[step] || STEP_META.geocode;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,15,10,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,10,15,0.97)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' }}>
       <div style={{ position: 'absolute', top: '20%', left: '20%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
@@ -112,7 +112,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
           {message || meta.label}{dots}
         </div>
 
-        <div style={{ fontSize: '14px', color: '#475569', marginBottom: '40px' }}>{sub || ''}</div>
+        <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '40px' }}>{sub || ''}</div>
 
         {/* Real progress bar */}
         <div style={{ width: '100%', height: '6px', background: '#1c2130', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
@@ -222,15 +222,16 @@ export default function Home() {
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');
-    // Only use city + address + pincode — country is sent separately as code
+    // Build combined location string (for display + cache key)
     const parts = [form.address, form.city, form.pincode].filter(p => p.trim());
     const location = parts.join(', ');
     trackEvent('analysis_started', { city: form.city || '', hasAddress: !!form.address, hasPincode: !!form.pincode });
 
-    setLoadState({ step: 'geocode', message: 'Finding your location...', sub: 'Geocoding your area', progress: 10 });
+    setLoadState({ step: 'geocode', message: 'Verifying location with AI...', sub: 'Checking spelling & area name', progress: 8 });
 
     try {
-      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}`;
+      // Send structured parts separately so backend can do precise geocoding + AI correction
+      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}&street=${encodeURIComponent(form.address || '')}&city=${encodeURIComponent(form.city || '')}&pincode=${encodeURIComponent(form.pincode || '')}`;
       const evtSource = new EventSource(streamUrl);
 
       await new Promise((resolve, reject) => {
@@ -415,9 +416,6 @@ export default function Home() {
         {/* Analysis loader overlay */}
         {loading && <AnalysisLoader city={form.city || form.address || 'your location'} step={loadState.step} message={loadState.message} sub={loadState.sub} progress={loadState.progress} />}
 
-        {/* Live news ticker with real headlines */}
-        <NewsTicker headlines={news.slice(0, 10)} />
-
         {/* Navbar */}
         <nav style={{ position: 'relative', zIndex: 10, borderBottom: '1px solid var(--border)', background: 'var(--nav-bg)', backdropFilter: 'blur(20px)' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -452,11 +450,14 @@ export default function Home() {
           </div>
         </nav>
 
+        {/* Live news ticker with real headlines */}
+        <NewsTicker headlines={news.slice(0, 10)} />
+
         {/* Hero */}
         <main style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px 40px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px 40px' }}>
 
-            {/* ── WORLD INNOVATION NEWS — TOP SECTION ── */}
+            {/* ── WORLD INNOVATION NEWS — below hero ── */}
             <div style={{ marginBottom: '56px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
@@ -543,20 +544,26 @@ export default function Home() {
               })()}
             </div>
 
-            {/* ── DIVIDER ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '100px', background: 'linear-gradient(135deg,#3b82f615,#ef444410)', border: '1px solid #3b82f630' }}>
-                <span style={{ fontSize: '16px' }}>🚀</span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>BizScope AI — Market Analysis</span>
-              </div>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            </div>
 
-            {/* Badge */}
-            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <div className="badge-live" style={{ fontSize: '13px' }}>
-                Free for entrepreneurs worldwide · No signup needed
+            {/* ── HERO SECTION — full viewport ── */}
+            <div className="hero-viewport">
+
+
+
+            {/* ── HERO BADGE ── */}
+            <div className="anim-fade-down" style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: 'linear-gradient(135deg, rgba(79,142,247,0.12), rgba(139,92,246,0.08))',
+                border: '1px solid rgba(79,142,247,0.3)',
+                borderRadius: '100px', padding: '8px 20px',
+                fontSize: '13px', fontWeight: '700', color: 'var(--accent)',
+                letterSpacing: '0.02em',
+                boxShadow: '0 0 20px rgba(79,142,247,0.15)',
+                animation: 'heroFloat 4s ease-in-out infinite',
+              }}>
+                <span>🚀</span>
+                <span>AI-Powered · Free · No Signup</span>
               </div>
             </div>
 
@@ -590,8 +597,19 @@ export default function Home() {
             </div>
 
             {/* Form Card */}
-            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px' }}>
-              <div className="glass-card border-glow-anim" style={{ padding: '32px', boxShadow: dark ? '0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)' : '0 12px 48px rgba(37,99,235,0.1)' }}>
+            <div className="anim-scale delay-3" style={{ maxWidth: '500px', margin: '0 auto 56px', position: 'relative' }}>
+              {/* Aurora glow behind form */}
+              <div className="aurora-glow" />
+              <div className="glass-card" style={{
+                padding: '32px',
+                position: 'relative',
+                zIndex: 1,
+                boxShadow: dark
+                  ? '0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 60px rgba(79,142,247,0.08)'
+                  : '0 12px 48px rgba(37,99,235,0.12)',
+                border: '1px solid rgba(79,142,247,0.2)',
+                animation: 'shimmerBorder 3s ease-in-out infinite',
+              }}>
               <form onSubmit={handleAnalyze}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
 
@@ -679,12 +697,18 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-                <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em' }}>
-                  {loading ? 'Analyzing...' : 'Analyze market →'}
+                <button type="submit" disabled={loading} className="btn-primary cta-glow" style={{ width: '100%', fontSize: '15px', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  {loading ? 'Analyzing...' : <><span>Analyze market</span><span style={{ display: 'inline-block', transition: 'transform 0.2s' }}>→</span></>}
                 </button>
               </form>
             </div>
             </div>
+
+            {/* Scroll indicator */}
+            <div className="scroll-indicator" style={{ marginTop: '32px', fontSize: '20px', color: 'var(--muted)', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}>↓</div>
+
+            </div>
+            {/* ── END HERO VIEWPORT ── */}
 
             {/* Try it live CTA */}
             <div className="anim-fade-up delay-4" style={{ maxWidth: '600px', margin: '0 auto 64px', textAlign: 'center' }}>
@@ -714,7 +738,7 @@ export default function Home() {
                 { value: '<10s', label: 'Analysis time' },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1 }}>{s.value}</div>
+                  <div className="stat-reveal" style={{ fontSize: '28px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1 }}>{s.value}</div>
                   <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', fontWeight: '500' }}>{s.label}</div>
                 </div>
               ))}

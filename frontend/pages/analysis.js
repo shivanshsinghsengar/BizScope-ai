@@ -93,29 +93,35 @@ export default function Dashboard() {
 
         {/* ── Location Banner ── */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(239,68,68,0.05) 100%)',
-          border: '1px solid rgba(59,130,246,0.18)',
-          borderRadius: '14px',
-          padding: '14px 20px',
-          margin: '16px 0 14px',
+          background: 'linear-gradient(135deg, var(--surface2), var(--surface))',
+          border: '1px solid var(--border2)',
+          borderRadius: '18px',
+          padding: '20px 24px',
+          margin: '16px 0 20px',
+          position: 'relative',
+          overflow: 'hidden',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '12px',
         }}>
+          {/* Rainbow top accent */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6, #ef4444)' }} />
+          {/* Subtle glow orb */}
+          <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,142,247,0.12), transparent)', pointerEvents: 'none' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{ fontSize: '32px', lineHeight: 1 }}>📍</div>
             <div>
-              <div style={{ fontSize: '10px', color: '#4f8ef7', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Analyzing</div>
-              <div style={{ fontSize: '15px', color: '#eef0f8', fontWeight: '700', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '10px', color: 'var(--active-color)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Analyzing</div>
+              <div style={{ fontSize: '15px', color: 'var(--text)', fontWeight: '700', letterSpacing: '-0.02em' }}>
                 {data.location?.displayName?.split(',').slice(0, 3).join(', ')}
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#3a4560', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--muted)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--active-color)', display: 'inline-block' }} />
               {data.businesses?.length} businesses
             </span>
             <span>📂 {data.categoryStats?.length} categories</span>
@@ -131,12 +137,12 @@ export default function Dashboard() {
             </span>
             <ExportPDF data={data} onExported={() => trackEvent('pdf_exported', { location: data.location?.displayName?.split(',')[0] || '' })} />
             <button onClick={handleShare}
-              style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid #1e2438', background: copied ? 'rgba(79,142,247,0.1)' : 'transparent', color: copied ? '#4f8ef7' : '#3a4560', cursor: 'pointer', fontSize: '11.5px', fontWeight: '600', transition: 'all 0.15s' }}>
+              style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid var(--border2)', background: copied ? 'var(--active-bg)' : 'transparent', color: copied ? 'var(--active-color)' : 'var(--muted)', cursor: 'pointer', fontSize: '11.5px', fontWeight: '600', transition: 'all 0.15s' }}>
               {copied ? '✅ Copied!' : '🔗 Share'}
             </button>
             {user && (
               <button onClick={saveSearch} disabled={saved}
-                style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid #1e2438', background: saved ? 'rgba(52,211,153,0.1)' : 'transparent', color: saved ? '#34d399' : '#3a4560', cursor: saved ? 'default' : 'pointer', fontSize: '11.5px', fontWeight: '600' }}>
+                style={{ padding: '5px 12px', borderRadius: '7px', border: '1px solid var(--border2)', background: saved ? 'rgba(52,211,153,0.1)' : 'transparent', color: saved ? '#34d399' : 'var(--muted)', cursor: saved ? 'default' : 'pointer', fontSize: '11.5px', fontWeight: '600' }}>
                 {saved ? '✅ Saved' : '🔖 Save'}
               </button>
             )}
@@ -180,11 +186,18 @@ export default function Dashboard() {
           </div>
         )}
 
+        {data.aiCorrectionNote && (
+          <div style={{ background: '#3b82f615', border: '1px solid #3b82f640', borderRadius: '10px', padding: '10px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>✏️</span>
+            <span style={{ color: '#60a5fa', fontWeight: '600', fontSize: '12px' }}>AI corrected: {data.aiCorrectionNote}</span>
+          </div>
+        )}
+
         {/* ── RECOMMENDED ACTIONS ── */}
         <RecommendedActions />
 
         {/* ── OVERVIEW GRID LABEL ── */}
-        <div style={{ fontSize: '10px', fontWeight: '700', color: '#2a3350', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
+        <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--muted-label)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '10px' }}>
           Overview Grid
         </div>
 
@@ -194,42 +207,103 @@ export default function Dashboard() {
           {/* Left main column */}
           <div style={{ flex: 1, minWidth: 0 }}>
 
-            {/* Stat cards */}
-            <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' }}>
+            {/* ── TIER 1 — Hero Metric Row (3 large cards) ── */}
+            <div style={{ display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap' }} className="stat-tier1">
               {[
-                { icon: '🏪', label: 'Total Businesses', value: data.businesses?.length || 0, color: '#4f8ef7', href: '/competitors' },
-                { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
-                { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
-                { icon: '🟢', label: 'Best Opportunity', value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A', color: '#22c55e', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}` },
-                { icon: '🎯', label: `Viability: ${viabilityLabel}`, value: `${viabilityScore}/100`, color: viabilityColor, href: '/insights' },
+                {
+                  icon: '🏪',
+                  value: data.businesses?.length || 0,
+                  label: 'Businesses Found',
+                  sub: 'in your area',
+                  color: '#4f8ef7',
+                  gradient: 'linear-gradient(135deg, rgba(79,142,247,0.15), rgba(79,142,247,0.05))',
+                  href: '/competitors',
+                  isMain: false,
+                },
+                {
+                  icon: '🎯',
+                  value: `${viabilityScore}/100`,
+                  label: `${viabilityLabel} Market`,
+                  sub: 'viability score',
+                  color: viabilityColor,
+                  gradient: `linear-gradient(135deg, ${viabilityColor}25, ${viabilityColor}08)`,
+                  href: '/insights',
+                  isMain: true,
+                },
+                {
+                  icon: '🟢',
+                  value: data.categoryStats?.[data.categoryStats.length - 1]?.category || 'N/A',
+                  label: 'Best Opportunity',
+                  sub: 'lowest competition',
+                  color: '#22c55e',
+                  gradient: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))',
+                  href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[data.categoryStats.length - 1]?.category || '')}`,
+                  isMain: false,
+                },
               ].map((s, i) => (
                 <div key={i} onClick={() => router.push(s.href)}
-                  style={{ background: '#161b27', border: `1px solid ${s.color}20`, borderRadius: '12px', padding: '16px', position: 'relative', overflow: 'hidden', transition: 'all 0.2s', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = s.color + '50'; e.currentTarget.style.boxShadow = `0 8px 24px ${s.color}15`; }}
+                  className={s.isMain ? 'stat-hero-card-main' : 'stat-hero-card'}
+                  style={{
+                    background: s.gradient,
+                    border: `1px solid ${s.color}30`,
+                    flex: s.isMain ? '1.4' : '1',
+                    minWidth: '140px',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 12px 32px ${s.color}20`; e.currentTarget.style.borderColor = s.color + '60'; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = s.color + '30'; }}>
+                  {/* Top accent line */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
+                  {/* Glow orb */}
+                  <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: `radial-gradient(circle, ${s.color}20, transparent)`, pointerEvents: 'none' }} />
+                  <div style={{ fontSize: '28px', marginBottom: '12px' }}>{s.icon}</div>
+                  <div style={{ fontSize: s.isMain ? '36px' : '28px', fontWeight: '900', color: 'var(--text)', letterSpacing: '-1.5px', lineHeight: 1, marginBottom: '6px' }}>{s.value}</div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: s.color, marginBottom: '3px' }}>{s.label}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── TIER 2 — Supporting stats (smaller row) ── */}
+            <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+              {[
+                { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
+                { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
+                { icon: '✅', label: 'Data Source', value: (() => {
+                  const sources = data.dataQuality?.sourceCounts ? Object.keys(data.dataQuality.sourceCounts) : [];
+                  if (sources.includes('tomtom') && sources.includes('osm')) return 'TomTom + OSM';
+                  if (sources.includes('tomtom')) return 'TomTom';
+                  if (sources.includes('osm')) return 'OSM Live';
+                  return 'Live Data';
+                })(), color: '#22c55e', href: '#' },
+              ].map((s, i) => (
+                <div key={i} onClick={() => s.href !== '#' && router.push(s.href)}
+                  style={{ background: 'var(--card-bg)', border: `1px solid ${s.color}20`, borderRadius: '12px', padding: '14px 16px', position: 'relative', overflow: 'hidden', transition: 'all 0.2s', cursor: s.href !== '#' ? 'pointer' : 'default' }}
+                  onMouseEnter={e => { if (s.href !== '#') { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = s.color + '50'; e.currentTarget.style.boxShadow = `0 6px 20px ${s.color}15`; } }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = s.color + '20'; e.currentTarget.style.boxShadow = 'none'; }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
-                  <div style={{ fontSize: '22px', marginBottom: '8px' }}>{s.icon}</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#eef0f8', lineHeight: 1 }}>{s.value}</div>
-                  <div style={{ fontSize: '11px', color: '#3a4560', marginTop: '5px' }}>{s.label}</div>
-                  <div style={{ fontSize: '10.5px', color: s.color, fontWeight: '600', marginTop: '6px' }}>View details →</div>
+                  <div style={{ fontSize: '18px', marginBottom: '6px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', lineHeight: 1, marginBottom: '4px' }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{s.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Charts */}
             <div className="chart-grid" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '20px' }}>
-                <div style={{ fontWeight: '700', color: '#eef0f8', marginBottom: '3px', fontSize: '13.5px' }}>📊 Competitor Score by Category</div>
-                <div style={{ fontSize: '11.5px', color: '#3a4560', marginBottom: '16px' }}>Higher = more competition. Lower = better opportunity.</div>
-                <div style={{ height: '220px' }}>
-                  <Bar data={chartBar} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#3a4560', font: { size: 10 } }, grid: { color: '#1a1d28' } }, y: { beginAtZero: true, ticks: { color: '#3a4560', font: { size: 10 } }, grid: { color: '#1a1d28' } } } }} />
+              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 24px rgba(79,142,247,0.06)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #4f8ef7, transparent)' }} />
+                <div style={{ fontWeight: '700', color: 'var(--text)', marginBottom: '3px', fontSize: '13.5px' }}>📊 Competitor Score by Category</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '16px' }}>Higher = more competition. Lower = better opportunity.</div>
+                <div style={{ height: '280px' }}>
+                  <Bar data={chartBar} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'var(--muted)', font: { size: 10 } }, grid: { color: 'var(--border)' } }, y: { beginAtZero: true, ticks: { color: 'var(--muted)', font: { size: 10 } }, grid: { color: 'var(--border)' } } } }} />
                 </div>
               </div>
-              <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '20px' }}>
-                <div style={{ fontWeight: '700', color: '#eef0f8', marginBottom: '3px', fontSize: '13.5px' }}>🥧 Market Share</div>
-                <div style={{ fontSize: '11.5px', color: '#3a4560', marginBottom: '12px' }}>Distribution by category</div>
-                <div style={{ height: '200px' }}>
-                  <Doughnut data={chartDoughnut} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#3a4560', font: { size: 10 }, boxWidth: 10 } } }, cutout: '65%' }} />
+              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 24px rgba(139,92,246,0.06)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #8b5cf6, transparent)' }} />
+                <div style={{ fontWeight: '700', color: 'var(--text)', marginBottom: '3px', fontSize: '13.5px' }}>🥧 Market Share</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '12px' }}>Distribution by category</div>
+                <div style={{ height: '260px' }}>
+                  <Doughnut data={chartDoughnut} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: 'var(--muted)', font: { size: 10 }, boxWidth: 10 } } }, cutout: '65%' }} />
                 </div>
               </div>
             </div>
@@ -238,21 +312,26 @@ export default function Dashboard() {
             <div className="cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
               {data.categoryStats?.map((s, i) => (
                 <div key={i}
+                  className="card-premium"
                   onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
-                  style={{ background: '#161b27', border: `1px solid ${(categoryColors[s.category] || '#4f8ef7')}20`, borderRadius: '12px', padding: '16px', transition: 'all 0.2s', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#4f8ef7') + '50'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = (categoryColors[s.category] || '#4f8ef7') + '20'; }}>
+                  style={{
+                    borderLeft: `4px solid ${categoryColors[s.category] || '#4f8ef7'}`,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 12px 32px ${(categoryColors[s.category] || '#4f8ef7')}20, 0 0 0 1px ${(categoryColors[s.category] || '#4f8ef7')}30`; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '20px' }}>{categoryIcons[s.category] || '🏪'}</span>
-                      <span style={{ fontWeight: '600', color: '#eef0f8', fontSize: '13px' }}>{s.category}</span>
+                      <span style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13px' }}>{s.category}</span>
                     </div>
                     <span style={{ fontSize: '20px', fontWeight: '800', color: categoryColors[s.category] || '#4f8ef7' }}>{s.count}</span>
                   </div>
-                  <div style={{ height: '3px', background: '#1e2438', borderRadius: '2px', marginBottom: '10px' }}>
-                    <div style={{ height: '100%', borderRadius: '2px', background: categoryColors[s.category] || '#4f8ef7', width: `${Math.min((s.count / (data.businesses?.length || 1)) * 300, 100)}%` }} />
+                  {/* Mini sparkline bar */}
+                  <div style={{ height: '4px', background: 'var(--progress-track)', borderRadius: '2px', marginBottom: '10px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: '2px', background: `linear-gradient(90deg, ${categoryColors[s.category] || '#4f8ef7'}, ${categoryColors[s.category] || '#4f8ef7'}80)`, width: `${Math.min((s.count / (data.businesses?.length || 1)) * 300, 100)}%`, transition: 'width 0.8s cubic-bezier(.34,1.56,.64,1)' }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#3a4560' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)' }}>
                     <span>⭐ {s.avgRating} avg</span>
                     <span style={{ color: categoryColors[s.category] || '#4f8ef7', fontWeight: '600' }}>Score: {s.competitorScore?.toFixed(1)}</span>
                   </div>
@@ -265,31 +344,31 @@ export default function Dashboard() {
           <div className="right-panel" style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '100px' }}>
 
             {/* Viability gauge */}
-            <div style={{ background: '#161b27', border: `1px solid ${viabilityColor}25`, borderRadius: '14px', padding: '18px', marginBottom: '14px', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Market Viability</div>
+            <div style={{ background: 'var(--card-bg)', border: `1px solid ${viabilityColor}25`, borderRadius: '14px', padding: '18px', marginBottom: '14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Market Viability</div>
               <svg width="90" height="90" viewBox="0 0 100 100" style={{ margin: '0 auto 10px', display: 'block' }}>
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#1e2438" strokeWidth="10" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--progress-track)" strokeWidth="10" />
                 <circle cx="50" cy="50" r="40" fill="none" stroke={viabilityColor} strokeWidth="10"
                   strokeDasharray={`${(viabilityScore / 100) * 251} 251`}
                   strokeLinecap="round"
                   transform="rotate(-90 50 50)" />
-                <text x="50" y="46" textAnchor="middle" fill="#eef0f8" fontSize="18" fontWeight="800">{viabilityScore}</text>
-                <text x="50" y="60" textAnchor="middle" fill="#3a4560" fontSize="9">/100</text>
+                <text x="50" y="46" textAnchor="middle" fill="var(--text)" fontSize="18" fontWeight="800">{viabilityScore}</text>
+                <text x="50" y="60" textAnchor="middle" fill="var(--muted)" fontSize="9">/100</text>
               </svg>
               <div style={{ fontSize: '13px', fontWeight: '700', color: viabilityColor }}>{viabilityLabel}</div>
-              <div style={{ fontSize: '10.5px', color: '#2a3350', marginTop: '3px' }}>Overall market score</div>
+              <div style={{ fontSize: '10.5px', color: 'var(--muted-label)', marginTop: '3px' }}>Overall market score</div>
             </div>
 
             {/* Top Opportunities */}
-            <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
-              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
+            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>🟢 Top Opportunities</div>
               {[...data.categoryStats].reverse().slice(0, 4).map((s, i) => (
                 <div key={i} onClick={() => router.push(`/competitors?category=${encodeURIComponent(s.category)}`)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 3 ? '1px solid #1a1d28' : 'none', cursor: 'pointer' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
                   <span style={{ fontSize: '16px' }}>{categoryIcons[s.category] || '🏪'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '11.5px', fontWeight: '600', color: '#eef0f8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
-                    <div style={{ fontSize: '10px', color: '#2a3350' }}>{s.count} competitors</div>
+                    <div style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.category}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted-label)' }}>{s.count} competitors</div>
                   </div>
                   <span style={{ fontSize: '9.5px', padding: '2px 5px', borderRadius: '100px', background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontWeight: '700', flexShrink: 0 }}>Low</span>
                 </div>
@@ -297,17 +376,17 @@ export default function Dashboard() {
             </div>
 
             {/* Actions */}
-            <div style={{ background: '#161b27', border: '1px solid #1e2438', borderRadius: '14px', padding: '14px' }}>
-              <div style={{ fontSize: '10px', color: '#2a3350', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>⚡ Quick Actions</div>
+            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '14px', padding: '14px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>⚡ Quick Actions</div>
               {[
                 { icon: '📄', label: 'Export PDF',   action: () => document.getElementById('export-pdf-btn')?.click() },
                 { icon: '🔗', label: 'Share Report', action: handleShare },
                 { icon: '🔍', label: 'New Analysis', action: () => router.push('/') },
               ].map(a => (
                 <button key={a.label} onClick={a.action}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '7px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#3a4560', background: 'transparent', marginBottom: '2px', textAlign: 'left', transition: 'all 0.14s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#eef0f8'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#3a4560'; }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '7px 8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'var(--muted)', background: 'transparent', marginBottom: '2px', textAlign: 'left', transition: 'all 0.14s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--muted)'; }}>
                   <span style={{ fontSize: '15px' }}>{a.icon}</span>
                   <span>{a.label}</span>
                 </button>
@@ -323,6 +402,7 @@ export default function Dashboard() {
       <style>{`
         @media (max-width: 1100px) {
           .stat-grid  { grid-template-columns: repeat(3, 1fr) !important; }
+          .stat-tier1 { flex-direction: column !important; }
           .chart-grid { grid-template-columns: 1fr !important; }
           .cat-grid   { grid-template-columns: repeat(2, 1fr) !important; }
           .right-panel { display: none !important; }
@@ -330,6 +410,7 @@ export default function Dashboard() {
         @media (max-width: 768px) {
           .analysis-body { flex-direction: column !important; }
           .stat-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+          .stat-tier1 { flex-direction: column !important; }
           .cat-grid   { grid-template-columns: 1fr !important; }
         }
       `}</style>

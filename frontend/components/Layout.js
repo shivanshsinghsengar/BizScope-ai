@@ -9,6 +9,26 @@ import Sidebar from './Sidebar';
 import CommandCenter from './CommandCenter';
 import CommandPalette from './CommandPalette';
 
+function useMarketName() {
+  const [marketName, setMarketName] = useState('');
+  const router = useRouter();
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = sessionStorage.getItem('analysisData');
+        if (!raw) { setMarketName(''); return; }
+        const d = JSON.parse(raw);
+        const name = d?.location?.displayName?.split(',').slice(0, 2).join(', ') || '';
+        setMarketName(name ? `${name} Market` : '');
+      } catch (_) { setMarketName(''); }
+    };
+    read();
+    router.events.on('routeChangeComplete', read);
+    return () => router.events.off('routeChangeComplete', read);
+  }, [router]);
+  return marketName;
+}
+
 /* Routes that get the full dashboard shell (sidebar + command center) */
 const DASHBOARD_ROUTES = [
   '/analysis', '/competitors', '/insights', '/trends', '/properties',
@@ -26,6 +46,7 @@ export default function Layout({ children }) {
   const { dark, toggle } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const marketName = useMarketName();
 
   const isDashboard = DASHBOARD_ROUTES.some(r =>
     router.pathname === r || router.pathname.startsWith(r + '/')
@@ -51,23 +72,28 @@ export default function Layout({ children }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0d0e12',
-      color: '#eef0f8',
+      background: 'var(--layout-bg)',
+      color: 'var(--text)',
       display: 'flex',
       flexDirection: 'column',
+      transition: 'background 0.3s, color 0.3s',
     }}>
       {/* Ambient blobs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{
           position: 'absolute', top: '-10%', right: '-5%',
           width: '500px', height: '500px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(79,142,247,0.05) 0%, transparent 70%)',
+          background: dark
+            ? 'radial-gradient(circle, rgba(79,142,247,0.05) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(194,65,12,0.06) 0%, transparent 70%)',
           animation: 'blobFloat 16s ease-in-out infinite',
         }} />
         <div style={{
           position: 'absolute', bottom: '-10%', left: '-5%',
           width: '400px', height: '400px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%)',
+          background: dark
+            ? 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(180,83,9,0.05) 0%, transparent 70%)',
           animation: 'blobFloat2 20s ease-in-out infinite',
         }} />
       </div>
@@ -80,6 +106,7 @@ export default function Layout({ children }) {
         onMenuToggle={() => setSidebarOpen(o => !o)}
         cmdOpen={cmdOpen}
         setCmdOpen={setCmdOpen}
+        marketName={marketName}
       />
 
       {/* ── BODY ── */}
@@ -131,16 +158,16 @@ export default function Layout({ children }) {
           zIndex: 200,
           width: '36px', height: '36px',
           borderRadius: '50%',
-          background: '#161b27',
-          border: '1px solid #1e2438',
+          background: 'var(--theme-btn-bg)',
+          border: '1px solid var(--theme-btn-border)',
           fontSize: '15px',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          boxShadow: dark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.1)',
           transition: 'all 0.2s',
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#4f8ef7'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#1e2438'}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--theme-btn-border)'}
       >
         {dark ? '☀️' : '🌙'}
       </button>
@@ -150,11 +177,11 @@ export default function Layout({ children }) {
         className={isDashboard ? 'footer-shell' : ''}
         style={{
           position: 'relative', zIndex: 1,
-          borderTop: '1px solid #1a1d28',
-          background: '#080a0f',
+          borderTop: '1px solid var(--footer-border)',
+          background: 'var(--footer-bg)',
           padding: '32px 24px',
           marginLeft: isDashboard ? `${SIDEBAR_WIDTH}px` : '0',
-          transition: 'margin-left 0.26s cubic-bezier(.16,1,.3,1)',
+          transition: 'margin-left 0.26s cubic-bezier(.16,1,.3,1), background 0.3s, border-color 0.3s',
         }}
       >
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -166,7 +193,7 @@ export default function Layout({ children }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <Logo size={24} textSize={13} />
               </div>
-              <p style={{ fontSize: '11.5px', color: '#2a3350', lineHeight: '1.7', margin: 0 }}>
+              <p style={{ fontSize: '11.5px', color: 'var(--footer-text)', lineHeight: '1.7', margin: 0 }}>
                 Free market intelligence for Indian entrepreneurs. Know your market before you invest.
               </p>
             </div>
@@ -176,16 +203,16 @@ export default function Layout({ children }) {
                 { heading: 'Company', links: [['About', '/about'], ['Feedback', '/feedback'], ['Privacy', '/privacy'], ['Terms', '/terms']] },
               ].map(col => (
                 <div key={col.heading}>
-                  <div style={{ fontSize: '9.5px', fontWeight: '700', color: '#2a3350', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '9.5px', fontWeight: '700', color: 'var(--footer-text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
                     {col.heading}
                   </div>
                   {col.links.map(([label, href]) => (
                     <div
                       key={label}
                       onClick={() => router.push(href)}
-                      style={{ fontSize: '11.5px', color: '#2a3350', cursor: 'pointer', marginBottom: '7px', transition: 'color 0.14s' }}
-                      onMouseEnter={e => e.target.style.color = '#eef0f8'}
-                      onMouseLeave={e => e.target.style.color = '#2a3350'}
+                      style={{ fontSize: '11.5px', color: 'var(--footer-text)', cursor: 'pointer', marginBottom: '7px', transition: 'color 0.14s' }}
+                      onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                      onMouseLeave={e => e.target.style.color = 'var(--footer-text)'}
                     >
                       {label}
                     </div>
@@ -195,16 +222,16 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div style={{
-            borderTop: '1px solid #1a1d28', paddingTop: '16px',
+            borderTop: '1px solid var(--footer-border)', paddingTop: '16px',
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'center', flexWrap: 'wrap', gap: '10px',
           }}>
-            <span style={{ fontSize: '11px', color: '#2a3350' }}>
+            <span style={{ fontSize: '11px', color: 'var(--footer-text)' }}>
               © 2026 BizScope AI · Built by Shivansh Singh Sengar
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 5px rgba(34,197,94,0.6)' }} />
-              <span style={{ fontSize: '11px', color: '#2a3350' }}>All systems operational</span>
+              <span style={{ fontSize: '11px', color: 'var(--footer-text)' }}>All systems operational</span>
             </div>
           </div>
         </div>
