@@ -163,8 +163,17 @@ export default function Docs() {
   return (
     <>
       <Head>
-        <title>Documentation — BizScope AI</title>
-        <meta name="description" content="Learn how to use BizScope AI for market analysis, competitor research, and business opportunity discovery." />
+        <title>Documentation — BizScope AI | How to Use Market Analysis Tool</title>
+        <meta name="description" content="Learn how to use BizScope AI — run market analyses, understand competitor scores, export PDF reports, list your business, and use AI recommendations." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/docs" />
+        <meta property="og:title" content="Documentation — BizScope AI" />
+        <meta property="og:description" content="Learn how to use BizScope AI for market analysis, competitor research, and business opportunity discovery." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/docs" />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="BizScope AI Documentation" />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
       </Head>
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
 

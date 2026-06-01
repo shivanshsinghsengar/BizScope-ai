@@ -191,7 +191,17 @@ export default function Insights() {
 
   return (
     <Layout>
-      <Head><title>AI Insights — BizScope AI</title></Head>
+      <Head>
+        <title>AI Market Insights — BizScope AI</title>
+        <meta name="description" content="AI-powered market insights for your location — best business opportunities, saturated markets, supplier directory, and risk analysis powered by Gemini AI." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/insights" />
+        <meta property="og:title" content="AI Market Insights — BizScope AI" />
+        <meta property="og:description" content="AI-powered market insights — best opportunities, saturated markets, supplier directory, and risk analysis." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/insights" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+      </Head>
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
 
         <div style={{ marginBottom: '28px' }}>

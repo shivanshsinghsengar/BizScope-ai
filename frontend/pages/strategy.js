@@ -269,8 +269,18 @@ export default function StrategyPage() {
   return (
     <Layout>
       <Head>
-        <title>Business Strategy Engine — BizScope AI</title>
-        <meta name="description" content="Get a complete McKinsey-level business strategy for your idea — market analysis, GTM plan, financial blueprint, and 90-day roadmap." />
+        <title>Business Strategy Engine — AI-Powered GTM Plan & Market Analysis | BizScope AI</title>
+        <meta name="description" content="Get a complete McKinsey-level business strategy for your idea — market analysis, competitor map, GTM plan, financial blueprint, and 90-day roadmap. Powered by Gemini AI. Free." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/strategy" />
+        <meta property="og:title" content="Business Strategy Engine — BizScope AI" />
+        <meta property="og:description" content="Get a complete AI-powered business strategy — market analysis, GTM plan, financial blueprint, and 90-day roadmap in 60 seconds." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/strategy" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Business Strategy Engine — BizScope AI" />
+        <meta name="twitter:description" content="AI-powered business strategy: market analysis, GTM plan, financial blueprint, 90-day roadmap." />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
       </Head>
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 20px' }}>

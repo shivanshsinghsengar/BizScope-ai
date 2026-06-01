@@ -1,0 +1,62 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0f1a"/>
+      <stop offset="100%" style="stop-color:#0d1526"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="50%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#ef4444"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Glow orbs -->
+  <circle cx="200" cy="150" r="300" fill="url(#glow)" opacity="0.6"/>
+  <circle cx="1000" cy="480" r="250" fill="#ef4444" opacity="0.04"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent)"/>
+
+  <!-- Logo icon -->
+  <rect x="80" y="200" width="72" height="72" rx="18" fill="#3b82f6"/>
+  <text x="116" y="250" font-size="36" text-anchor="middle" fill="white">🚀</text>
+
+  <!-- Brand name -->
+  <text x="172" y="248" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="900" fill="white">Biz</text>
+  <text x="270" y="248" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="900" fill="#3b82f6">Scope</text>
+  <text x="420" y="248" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="900" fill="white"> AI</text>
+
+  <!-- Tagline -->
+  <text x="80" y="310" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#94a3b8" font-weight="400">Free Market Analysis &amp; Competitor Research Tool</text>
+
+  <!-- Feature pills -->
+  <rect x="80" y="360" width="220" height="44" rx="22" fill="#3b82f620" stroke="#3b82f640" stroke-width="1"/>
+  <text x="190" y="388" font-family="system-ui, sans-serif" font-size="18" fill="#60a5fa" text-anchor="middle" font-weight="600">🏪 Competitor Map</text>
+
+  <rect x="316" y="360" width="200" height="44" rx="22" fill="#3b82f620" stroke="#3b82f640" stroke-width="1"/>
+  <text x="416" y="388" font-family="system-ui, sans-serif" font-size="18" fill="#60a5fa" text-anchor="middle" font-weight="600">🤖 AI Insights</text>
+
+  <rect x="532" y="360" width="220" height="44" rx="22" fill="#3b82f620" stroke="#3b82f640" stroke-width="1"/>
+  <text x="642" y="388" font-family="system-ui, sans-serif" font-size="18" fill="#60a5fa" text-anchor="middle" font-weight="600">📊 Market Scores</text>
+
+  <rect x="768" y="360" width="200" height="44" rx="22" fill="#3b82f620" stroke="#3b82f640" stroke-width="1"/>
+  <text x="868" y="388" font-family="system-ui, sans-serif" font-size="18" fill="#60a5fa" text-anchor="middle" font-weight="600">📄 PDF Export</text>
+
+  <!-- Bottom URL -->
+  <text x="80" y="560" font-family="system-ui, sans-serif" font-size="22" fill="#475569" font-weight="500">biz-scope-ai.vercel.app</text>
+
+  <!-- Right side stats -->
+  <text x="1100" y="280" font-family="system-ui, sans-serif" font-size="64" font-weight="900" fill="white" text-anchor="middle">50M+</text>
+  <text x="1100" y="320" font-family="system-ui, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">businesses tracked</text>
+
+  <text x="1100" y="420" font-family="system-ui, sans-serif" font-size="64" font-weight="900" fill="#3b82f6" text-anchor="middle">Free</text>
+  <text x="1100" y="460" font-family="system-ui, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">forever</text>
+</svg>

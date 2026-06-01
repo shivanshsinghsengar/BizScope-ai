@@ -311,8 +311,18 @@ export default function HowItWorks() {
   return (
     <>
       <Head>
-        <title>How It Works — BizScope AI</title>
-        <meta name="description" content="Full technical breakdown of BizScope AI — formulas, scoring algorithms, data sources, and AI engine." />
+        <title>How BizScope AI Works — Formulas, Data Sources & Algorithms</title>
+        <meta name="description" content="Full technical breakdown of BizScope AI — competitor scoring formulas, risk algorithms, OpenStreetMap data pipeline, Gemini AI engine, and caching system." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/how-it-works" />
+        <meta property="og:title" content="How BizScope AI Works — Formulas, Data Sources & Algorithms" />
+        <meta property="og:description" content="Full technical breakdown of BizScope AI — competitor scoring formulas, risk algorithms, OpenStreetMap data pipeline, Gemini AI engine, and caching system." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/how-it-works" />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="How BizScope AI Works" />
+        <meta name="twitter:description" content="Competitor scoring formulas, risk algorithms, OpenStreetMap data pipeline, and AI engine explained." />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
       </Head>
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
 

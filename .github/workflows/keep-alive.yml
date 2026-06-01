@@ -2,30 +2,40 @@ name: Keep Backend Alive
 
 on:
   schedule:
-    # Every 14 minutes — prevents Render free tier from sleeping
-    - cron: '*/14 * * * *'
+    # Every 10 minutes — prevents Render free tier from sleeping (sleeps after 15min)
+    # Using multiple cron entries because GitHub may skip some on inactive repos
+    - cron: '0,10,20,30,40,50 * * * *'
   workflow_dispatch: # allow manual trigger
+  push:
+    branches: [main] # also ping on every deploy
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Ping backend health endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/health)
+          echo "Pinging backend at $(date)"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 --retry 2 --retry-delay 5 https://bizscope-ai-og.onrender.com/api/health)
           echo "Backend responded with HTTP $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "⚠️ Backend returned $STATUS — may be starting up"
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Backend is alive and healthy"
+          elif [ "$STATUS" = "000" ]; then
+            echo "⚠️ Backend did not respond (cold start or down) — waiting 20s and retrying"
+            sleep 20
+            STATUS2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://bizscope-ai-og.onrender.com/api/health)
+            echo "Retry responded with HTTP $STATUS2"
           else
-            echo "✅ Backend is alive"
+            echo "⚠️ Backend returned $STATUS — may be starting up"
           fi
 
-      - name: Warm up cofounder endpoint
+      - name: Warm up analyze endpoint (keeps DB connection alive)
         run: |
-          curl -s --max-time 30 https://bizscope-ai-og.onrender.com/api/cofounder > /dev/null
-          echo "✅ Cofounder endpoint warmed"
+          curl -s --max-time 20 "https://bizscope-ai-og.onrender.com/api/analyze-stream?location=Mumbai" > /dev/null || true
+          echo "✅ Analyze endpoint warmed"
 
       - name: Warm up news endpoint
         run: |
-          curl -s --max-time 30 https://bizscope-ai-og.onrender.com/api/news > /dev/null
+          curl -s --max-time 15 https://bizscope-ai-og.onrender.com/api/news > /dev/null || true
           echo "✅ News endpoint warmed"

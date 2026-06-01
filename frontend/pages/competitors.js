@@ -253,7 +253,17 @@ export default function Competitors() {
 
   return (
     <Layout>
-      <Head><title>Competitors — BizScope AI</title></Head>
+      <Head>
+        <title>Competitor Directory — BizScope AI</title>
+        <meta name="description" content="Browse all businesses found near your location — filter by category, sort by rating, and research any competitor with one click." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/competitors" />
+        <meta property="og:title" content="Competitor Directory — BizScope AI" />
+        <meta property="og:description" content="Browse all businesses near your location — filter by category, sort by rating, and research any competitor." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/competitors" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+      </Head>
 
       {selected && <BusinessDialog b={selected} countryCode={countryCode} onClose={() => setSelected(null)} />}
 

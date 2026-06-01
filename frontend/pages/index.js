@@ -84,15 +84,33 @@ const STEP_META = {
   ai:      { icon: '🏪', label: 'Asking AI for recommendations...' },
   done:    { icon: '✨', label: 'Polishing results...' },
   cache:   { icon: '⚡', label: 'Loading from cache...' },
+  wakeup:  { icon: '⏳', label: 'Server is waking up...' },
 };
 
 function AnalysisLoader({ city, step, message, sub, progress }) {
   const [dots, setDots] = useState('');
   const dotsRef = useRef(null);
+  const [countdown, setCountdown] = useState(15);
+  const countdownRef = useRef(null);
+
+  const isWakingUp = message?.includes('waking up') || message?.includes('Retrying');
+
   useEffect(() => {
     dotsRef.current = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 400);
     return () => clearInterval(dotsRef.current);
   }, []);
+
+  useEffect(() => {
+    if (isWakingUp) {
+      setCountdown(15);
+      countdownRef.current = setInterval(() => {
+        setCountdown(c => c > 0 ? c - 1 : 0);
+      }, 1000);
+    } else {
+      clearInterval(countdownRef.current);
+    }
+    return () => clearInterval(countdownRef.current);
+  }, [isWakingUp]);
 
   const meta = STEP_META[step] || STEP_META.geocode;
 
@@ -102,34 +120,51 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
       <div style={{ position: 'absolute', bottom: '20%', right: '20%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
       <div style={{ textAlign: 'center', maxWidth: '480px', padding: '0 24px', position: 'relative', zIndex: 1 }}>
-        <div style={{ fontSize: '72px', marginBottom: '24px', animation: 'fadeInUp 0.4s ease' }}>{meta.icon}</div>
+        <div style={{ fontSize: '72px', marginBottom: '24px', animation: 'fadeInUp 0.4s ease' }}>{isWakingUp ? '⏳' : meta.icon}</div>
 
-        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
-          Analyzing {city}
+        <div style={{ fontSize: '13px', color: isWakingUp ? '#f59e0b' : '#3b82f6', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '12px' }}>
+          {isWakingUp ? 'Server Cold Start' : `Analyzing ${city}`}
         </div>
 
         <div style={{ fontSize: '22px', fontWeight: '800', color: '#f1f5f9', marginBottom: '8px', lineHeight: '1.3', minHeight: '60px' }}>
-          {message || meta.label}{dots}
+          {message || meta.label}{isWakingUp ? '' : dots}
         </div>
 
-        <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '40px' }}>{sub || ''}</div>
+        <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: isWakingUp ? '16px' : '40px' }}>
+          {isWakingUp ? 'Render free tier sleeps after inactivity. This is a one-time wait.' : (sub || '')}
+        </div>
+
+        {isWakingUp && (
+          <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '14px', padding: '16px 20px', marginBottom: '24px', fontSize: '14px', color: '#fbbf24', lineHeight: '1.6' }}>
+            ⏱️ Auto-retrying in <strong style={{ fontSize: '20px' }}>{countdown}s</strong>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
+              The server wakes up in ~15–30 seconds. You don't need to do anything.
+            </div>
+          </div>
+        )}
 
         {/* Real progress bar */}
         <div style={{ width: '100%', height: '6px', background: '#1c2130', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #3b82f6, #ffffff, #ef4444)', width: `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: '0 0 12px rgba(59,130,246,0.6)' }} />
+          <div style={{ height: '100%', borderRadius: '3px', background: isWakingUp ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : 'linear-gradient(90deg, #3b82f6, #ffffff, #ef4444)', width: isWakingUp ? `${((15 - countdown) / 15) * 100}%` : `${progress || 5}%`, transition: 'width 0.5s ease', boxShadow: isWakingUp ? '0 0 12px rgba(245,158,11,0.6)' : '0 0 12px rgba(59,130,246,0.6)' }} />
         </div>
 
-        <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
+        {!isWakingUp && (
+          <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '700', marginBottom: '32px' }}>{progress || 0}%</div>
+        )}
 
         {/* Step indicators */}
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
-          {Object.keys(STEP_META).filter(k => k !== 'cache').map((k, i) => (
-            <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#3b82f6' : '#1c2130', transition: 'all 0.3s ease' }} />
-          ))}
-        </div>
+        {!isWakingUp && (
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '32px' }}>
+            {Object.keys(STEP_META).filter(k => k !== 'cache' && k !== 'wakeup').map((k, i) => (
+              <div key={k} style={{ width: k === step ? '24px' : '8px', height: '8px', borderRadius: '4px', background: Object.keys(STEP_META).indexOf(step) >= i ? '#3b82f6' : '#1c2130', transition: 'all 0.3s ease' }} />
+            ))}
+          </div>
+        )}
 
-        <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-          💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.
+        <div style={{ background: isWakingUp ? 'rgba(245,158,11,0.06)' : 'rgba(59,130,246,0.08)', border: `1px solid ${isWakingUp ? 'rgba(245,158,11,0.2)' : 'rgba(59,130,246,0.2)'}`, borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+          {isWakingUp
+            ? '💡 <span style="color:#94a3b8">Tip:</span> This only happens after 2+ days of no activity. Once awake, the server stays fast.'
+            : '💡 <span style="color:#94a3b8">Did you know?</span> BizScope fuses <strong style="color:#3b82f6">TomTom</strong> + <strong style="color:#3b82f6">OpenStreetMap</strong> data for the most complete business coverage in India.'}
         </div>
       </div>
     </div>
@@ -219,6 +254,64 @@ export default function Home() {
     setInsightsLoading(false);
   };
 
+  // Wake up the backend if it's cold (Render free tier sleeps after inactivity)
+  const wakeUpBackend = async () => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      await fetch(`${API_URL}/api/health`, { signal: controller.signal });
+      clearTimeout(timeout);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const runAnalysisStream = (location, streamUrl) => {
+    return new Promise((resolve, reject) => {
+      const evtSource = new EventSource(streamUrl);
+      // 90s timeout
+      const sseTimeout = setTimeout(() => {
+        evtSource.close();
+        reject(new Error('__TIMEOUT__'));
+      }, 90000);
+      evtSource.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload.step === 'result') {
+            evtSource.close();
+            clearTimeout(sseTimeout);
+            const data = payload.data;
+            if (data.error) { reject(new Error(data.error)); return; }
+            setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
+            saveToHistory(form.city || form.address);
+            sessionStorage.setItem('analysisData', JSON.stringify(data));
+            setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
+            trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
+            resolve(data);
+          } else if (payload.step === 'error') {
+            evtSource.close();
+            clearTimeout(sseTimeout);
+            reject(new Error(payload.message || 'Analysis failed. Please try again.'));
+          } else {
+            // Real-time step updates from backend
+            setLoadState({
+              step: payload.step,
+              message: payload.message || '',
+              sub: payload.sub || '',
+              progress: payload.progress || 0,
+            });
+          }
+        } catch (_) {}
+      };
+      evtSource.onerror = () => {
+        evtSource.close();
+        clearTimeout(sseTimeout);
+        reject(new Error('__CONNECTION_LOST__'));
+      };
+    });
+  };
+
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');
@@ -229,56 +322,40 @@ export default function Home() {
 
     setLoadState({ step: 'geocode', message: 'Verifying location with AI...', sub: 'Checking spelling & area name', progress: 8 });
 
+    const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}&street=${encodeURIComponent(form.address || '')}&city=${encodeURIComponent(form.city || '')}&pincode=${encodeURIComponent(form.pincode || '')}`;
+
     try {
-      // Send structured parts separately so backend can do precise geocoding + AI correction
-      const streamUrl = `${API_URL}/api/analyze-stream?location=${encodeURIComponent(location)}&country=${encodeURIComponent(form.country)}&street=${encodeURIComponent(form.address || '')}&city=${encodeURIComponent(form.city || '')}&pincode=${encodeURIComponent(form.pincode || '')}`;
-      const evtSource = new EventSource(streamUrl);
-
-      await new Promise((resolve, reject) => {
-        // 90s timeout
-        const sseTimeout = setTimeout(() => {
-          evtSource.close();
-          reject(new Error('Analysis timed out. Please try again.'));
-        }, 90000);
-        evtSource.onmessage = (e) => {
-          try {
-            const payload = JSON.parse(e.data);
-            if (payload.step === 'result') {
-              evtSource.close();
-              clearTimeout(sseTimeout);
-              const data = payload.data;
-              if (data.error) { reject(new Error(data.error)); return; }
-              setLoadState({ step: 'done', message: 'Analysis complete!', sub: 'Preparing your report', progress: 100 });
-              saveToHistory(form.city || form.address);
-              sessionStorage.setItem('analysisData', JSON.stringify(data));
-              setTimeout(() => window.dispatchEvent(new Event('bizscope_trigger_review')), 8000);
-              trackEvent('analysis_succeeded', { businesses: data?.businesses?.length || 0 });
-              resolve(data);
-            } else if (payload.step === 'error') {
-              evtSource.close();
-              reject(new Error(payload.message || 'Analysis failed. Please try again.'));
-            } else {
-              // Real-time step updates from backend
-              setLoadState({
-                step: payload.step,
-                message: payload.message || '',
-                sub: payload.sub || '',
-                progress: payload.progress || 0,
-              });
-            }
-          } catch (_) {}
-        };
-        evtSource.onerror = () => {
-          evtSource.close();
-          reject(new Error('Connection lost. Please try again.'));
-        };
-      });
-
+      await runAnalysisStream(location, streamUrl);
       router.push('/analysis');
     } catch (err) {
-      setError(err.message || 'Analysis failed. Please try again.');
-      setLoading(false);
-      trackEvent('analysis_failed', { reason: err.message });
+      const isColdStart = err.message === '__TIMEOUT__' || err.message === '__CONNECTION_LOST__';
+
+      if (isColdStart) {
+        // Backend is likely cold — show wake-up message and retry once automatically
+        setLoadState({ step: 'geocode', message: 'Server is waking up...', sub: 'Render free tier sleeps after inactivity. Retrying in 15s...', progress: 5 });
+        trackEvent('analysis_cold_start_retry', { city: form.city || '' });
+
+        // Wait 15s for Render to wake up, then retry
+        await new Promise(r => setTimeout(r, 15000));
+
+        setLoadState({ step: 'geocode', message: 'Retrying analysis...', sub: 'Server is awake, starting analysis', progress: 8 });
+
+        try {
+          await runAnalysisStream(location, streamUrl);
+          router.push('/analysis');
+        } catch (retryErr) {
+          const msg = retryErr.message === '__TIMEOUT__' || retryErr.message === '__CONNECTION_LOST__'
+            ? 'Server took too long to respond. Please try again in 30 seconds — it may still be waking up.'
+            : retryErr.message || 'Analysis failed. Please try again.';
+          setError(msg);
+          setLoading(false);
+          trackEvent('analysis_failed', { reason: 'cold_start_retry_failed' });
+        }
+      } else {
+        setError(err.message || 'Analysis failed. Please try again.');
+        setLoading(false);
+        trackEvent('analysis_failed', { reason: err.message });
+      }
     }
   };
 
@@ -683,7 +760,18 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>⚠️ {error}</p>}
+                {error && (
+                  <div style={{ marginBottom: '12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '10px', padding: '10px 14px' }}>
+                    <p style={{ color: '#f87171', fontSize: '13px', margin: 0, fontWeight: '600' }}>
+                      ⚠️ {error}
+                    </p>
+                    {(error.includes('waking up') || error.includes('30 seconds') || error.includes('timed out')) && (
+                      <p style={{ color: '#94a3b8', fontSize: '12px', margin: '6px 0 0', lineHeight: '1.5' }}>
+                        💡 This happens when the server hasn't been used for a while. Just click Analyze again — it should work now.
+                      </p>
+                    )}
+                  </div>
+                )}
                 {history.length > 0 && !loading && (
                   <div style={{ marginBottom: '14px' }}>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>Recent</div>

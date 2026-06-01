@@ -9,8 +9,30 @@ export default function About() {
   return (
     <>
       <Head>
-        <title>About — BizScope AI</title>
-        <meta name="description" content="BizScope AI — built by Shivansh Singh Sengar to help Indian entrepreneurs make smarter business decisions." />
+        <title>About BizScope AI — Free Market Intelligence for Indian Entrepreneurs</title>
+        <meta name="description" content="BizScope AI is built by Shivansh Singh Sengar to help Indian entrepreneurs analyze local competition, discover market gaps, and make smarter business decisions — completely free." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/about" />
+        <meta property="og:title" content="About BizScope AI — Free Market Intelligence for Indian Entrepreneurs" />
+        <meta property="og:description" content="Built to help Indian entrepreneurs analyze local competition, discover market gaps, and make smarter business decisions — completely free." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/about" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About BizScope AI" />
+        <meta name="twitter:description" content="Built to help Indian entrepreneurs analyze local competition and make smarter business decisions — free." />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          "name": "About BizScope AI",
+          "url": "https://biz-scope-ai.vercel.app/about",
+          "description": "BizScope AI is a free market intelligence platform built to help Indian entrepreneurs analyze local business competition and discover market gaps.",
+          "author": {
+            "@type": "Person",
+            "name": "Shivansh Singh Sengar",
+            "email": "shivanshsinghsengar8@gmail.com"
+          }
+        })}} />
       </Head>
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
 

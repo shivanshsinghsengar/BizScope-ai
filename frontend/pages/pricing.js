@@ -30,8 +30,27 @@ export default function Pricing() {
   return (
     <>
       <Head>
-        <title>Pricing — BizScope AI</title>
-        <meta name="description" content="Simple, transparent pricing for BizScope AI market analysis platform." />
+        <title>Pricing — BizScope AI | 100% Free Market Analysis Tool</title>
+        <meta name="description" content="BizScope AI is completely free — unlimited market analyses, competitor research, AI recommendations, PDF exports, and more. No credit card required." />
+        <link rel="canonical" href="https://biz-scope-ai.vercel.app/pricing" />
+        <meta property="og:title" content="Pricing — BizScope AI | 100% Free Market Analysis Tool" />
+        <meta property="og:description" content="BizScope AI is completely free — unlimited market analyses, competitor research, AI recommendations, PDF exports, and more. No credit card required." />
+        <meta property="og:url" content="https://biz-scope-ai.vercel.app/pricing" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="BizScope AI Pricing — 100% Free" />
+        <meta name="twitter:image" content="https://biz-scope-ai.vercel.app/og-image.svg" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "Is BizScope AI really free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — 100% free during early access. No credit card, no hidden limits, no trial period. Every feature is fully unlocked." } },
+            { "@type": "Question", "name": "Will it stay free forever?", "acceptedAnswer": { "@type": "Answer", "text": "We plan to introduce paid plans in the future, but early users will always get a generous free tier." } },
+            { "@type": "Question", "name": "How many analyses can I run?", "acceptedAnswer": { "@type": "Answer", "text": "Unlimited. Run as many market analyses as you need — there are no daily or monthly caps right now." } },
+            { "@type": "Question", "name": "Do I need to create an account?", "acceptedAnswer": { "@type": "Answer", "text": "No account needed for market analysis. Sign up only if you want to save searches or list your business." } }
+          ]
+        })}} />
       </Head>
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
 

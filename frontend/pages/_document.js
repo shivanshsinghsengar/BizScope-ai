@@ -47,6 +47,8 @@ export default function Document() {
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://bizscope-ai-og.onrender.com" />
+        <link rel="dns-prefetch" href="https://bizscope-ai-og.onrender.com" />
 
         {/* Favicon & PWA */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
