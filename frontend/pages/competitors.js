@@ -307,7 +307,7 @@ export default function Competitors() {
 
         <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '16px' }}>{filtered.length} results</div>
 
-        <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+        <div className="responsive-grid-3" style={{ display: 'grid', gap: '14px' }}>
           {filtered.map((b, i) => (
             <div key={i} onClick={() => setSelected(b)}
               style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', cursor: 'pointer' }}

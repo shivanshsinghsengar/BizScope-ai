@@ -264,7 +264,7 @@ export default function Dashboard() {
             </div>
 
             {/* ── TIER 2 — Supporting stats (smaller row) ── */}
-            <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+            <div className="stat-grid" style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
               {[
                 { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
                 { icon: '📂', label: 'Categories', value: data.categoryStats?.length || 0, color: '#8b5cf6', href: '/insights' },
@@ -309,7 +309,7 @@ export default function Dashboard() {
             </div>
 
             {/* Category cards */}
-            <div className="cat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+            <div className="cat-grid" style={{ display: 'grid', gap: '12px' }}>
               {data.categoryStats?.map((s, i) => (
                 <div key={i}
                   className="card-premium"

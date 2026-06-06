@@ -583,18 +583,32 @@ body::before {
 }
 
 /* ── Responsive ── */
+.responsive-grid-2 { grid-template-columns: 1fr 1fr; }
+.responsive-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.responsive-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.stat-grid  { grid-template-columns: repeat(3, 1fr); }
+.cat-grid   { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 1024px) {
+  .responsive-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .responsive-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+  .cat-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+}
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
   .nav-links { display: none !important; }
   .responsive-grid-2 { grid-template-columns: 1fr !important; }
   .responsive-grid-3 { grid-template-columns: 1fr !important; }
   .responsive-grid-4 { grid-template-columns: 1fr 1fr !important; }
+  .stat-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+  .cat-grid   { grid-template-columns: 1fr !important; }
   .responsive-pad { padding: 16px !important; }
   .responsive-title { font-size: 22px !important; }
   .cmd-box { margin: 0 16px; }
 }
 @media (max-width: 480px) {
   .responsive-grid-4 { grid-template-columns: 1fr !important; }
+  .stat-grid  { grid-template-columns: 1fr !important; }
 }
 
 /* ── Scrolling news background ── */

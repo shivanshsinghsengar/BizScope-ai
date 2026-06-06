@@ -128,8 +128,6 @@ export default function Layout({ children }) {
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            marginLeft: isDashboard ? `${SIDEBAR_WIDTH}px` : '0',
-            transition: 'margin-left 0.26s cubic-bezier(.16,1,.3,1)',
           }}
         >
           {/* Command Center bar — dashboard only */}
@@ -154,7 +152,7 @@ export default function Layout({ children }) {
         style={{
           position: 'fixed',
           bottom: '20px',
-          left: isDashboard ? `${SIDEBAR_WIDTH + 12}px` : '20px',
+          left: '20px',
           zIndex: 200,
           width: '36px', height: '36px',
           borderRadius: '50%',
@@ -180,8 +178,7 @@ export default function Layout({ children }) {
           borderTop: '1px solid var(--footer-border)',
           background: 'var(--footer-bg)',
           padding: '32px 24px',
-          marginLeft: isDashboard ? `${SIDEBAR_WIDTH}px` : '0',
-          transition: 'margin-left 0.26s cubic-bezier(.16,1,.3,1), background 0.3s, border-color 0.3s',
+          transition: 'background 0.3s, border-color 0.3s',
         }}
       >
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -239,9 +236,16 @@ export default function Layout({ children }) {
 
       {/* ── Responsive overrides ── */}
       <style>{`
+        /* Desktop: main content and footer shift right to clear sidebar */
+        @media (min-width: 769px) {
+          .main-shell  { margin-left: ${SIDEBAR_WIDTH}px !important; }
+          .footer-shell { margin-left: ${SIDEBAR_WIDTH}px !important; }
+          .theme-btn-dashboard { left: ${SIDEBAR_WIDTH + 12}px !important; }
+        }
+        /* Mobile: no margin shift — sidebar overlays */
         @media (max-width: 768px) {
-          .main-shell    { margin-left: 0 !important; }
-          .footer-shell  { margin-left: 0 !important; }
+          .main-shell   { margin-left: 0 !important; }
+          .footer-shell { margin-left: 0 !important; }
           .theme-btn-dashboard { left: 20px !important; }
         }
       `}</style>
