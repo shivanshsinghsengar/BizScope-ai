@@ -162,9 +162,11 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
         )}
 
         <div style={{ background: isWakingUp ? 'rgba(245,158,11,0.06)' : 'rgba(59,130,246,0.08)', border: `1px solid ${isWakingUp ? 'rgba(245,158,11,0.2)' : 'rgba(59,130,246,0.2)'}`, borderRadius: '14px', padding: '14px 20px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
-          {isWakingUp
-            ? '💡 <span style="color:#94a3b8">Tip:</span> This only happens after 2+ days of no activity. Once awake, the server stays fast.'
-            : '💡 <span style="color:#94a3b8">Did you know?</span> BizScope fuses <strong style="color:#3b82f6">TomTom</strong> + <strong style="color:#3b82f6">OpenStreetMap</strong> data for the most complete business coverage in India.'}
+          {isWakingUp ? (
+            <span>💡 <span style={{ color: '#94a3b8' }}>Tip:</span> This only happens after 2+ days of no activity. Once awake, the server stays fast.</span>
+          ) : (
+            <span>💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.</span>
+          )}
         </div>
       </div>
     </div>
