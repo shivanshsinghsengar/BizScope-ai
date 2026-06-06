@@ -3587,15 +3587,26 @@ app.post('/api/compare-cities', compareCitiesHandler);
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 
-  // Self-ping every 14 minutes to prevent Render free tier sleep
-  const BACKEND_URL = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-    : null;
+  // Self-ping every 10 minutes to prevent Render free tier sleep
+  // Render sleeps after 15min of inactivity — ping every 10min to stay awake
+  const BACKEND_URL =
+    process.env.RENDER_EXTERNAL_URL ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null);
+
   if (BACKEND_URL) {
+    // First ping after 5 minutes (let server fully warm up)
+    setTimeout(() => {
+      axios.get(`${BACKEND_URL}/api/health`).catch(() => {});
+    }, 5 * 60 * 1000);
+
+    // Then every 10 minutes
     setInterval(() => {
       axios.get(`${BACKEND_URL}/api/health`).catch(() => {});
-    }, 14 * 60 * 1000);
-    console.log(`Self-ping enabled: ${BACKEND_URL}/api/health`);
+    }, 10 * 60 * 1000);
+
+    console.log(`Self-ping enabled every 10min: ${BACKEND_URL}/api/health`);
+  } else {
+    console.log('Self-ping disabled (no RENDER_EXTERNAL_URL set)');
   }
 });
 
