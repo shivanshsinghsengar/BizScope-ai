@@ -1429,32 +1429,74 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
     });
   };
 
-  // Helper: fetch one nearbysearch page with optional page token
-  const fetchNearbyPage = async (type, pageToken = null) => {
-    const params = { location: `${lat},${lng}`, radius: radiusMeters, key };
-    if (pageToken) { params.pagetoken = pageToken; }
-    else { params.type = type; params.rankby = undefined; }
-    try {
-      const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-        params, timeout: 10000,
-      });
-      return res.data || {};
-    } catch (_) { return {}; }
+  // ── Sub-grid: divide the area into a 3×3 grid of overlapping circles ──
+  // Each sub-circle has ~2km radius — together they cover the full 5km area
+  // This bypasses Google's 60-result cap per search by searching different sub-areas
+  const subRadiusMeters = Math.round(radiusMeters * 0.45); // ~45% of total radius per cell
+  const offsetDeg = (radiusMeters * 0.0055) / 1000; // ~offset in degrees per km
+  const gridOffsets = [
+    [0, 0],                           // center
+    [offsetDeg, 0],                   // north
+    [-offsetDeg, 0],                  // south
+    [0, offsetDeg],                   // east
+    [0, -offsetDeg],                  // west
+    [offsetDeg * 0.7, offsetDeg * 0.7],   // NE
+    [offsetDeg * 0.7, -offsetDeg * 0.7],  // NW
+    [-offsetDeg * 0.7, offsetDeg * 0.7],  // SE
+    [-offsetDeg * 0.7, -offsetDeg * 0.7], // SW
+  ];
+
+  // Helper: fetch nearbysearch (all pages) for a given center + type
+  const fetchNearbyAllPages = async (clat, clng, type) => {
+    const fetchPage = async (pageToken = null) => {
+      const params = { location: `${clat},${clng}`, radius: subRadiusMeters, key };
+      if (pageToken) { params.pagetoken = pageToken; }
+      else { params.type = type; }
+      try {
+        const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
+          params, timeout: 10000,
+        });
+        return res.data || {};
+      } catch (_) { return {}; }
+    };
+
+    const page1 = await fetchPage();
+    (page1.results || []).forEach(p => addPlace(p, type));
+    if (page1.next_page_token) {
+      await new Promise(r => setTimeout(r, 2000));
+      const page2 = await fetchPage(page1.next_page_token);
+      (page2.results || []).forEach(p => addPlace(p, type));
+      if (page2.next_page_token) {
+        await new Promise(r => setTimeout(r, 2000));
+        const page3 = await fetchPage(page2.next_page_token);
+        (page3.results || []).forEach(p => addPlace(p, type));
+      }
+    }
   };
 
-  // Helper: fetch one textsearch page
-  const fetchTextPage = async (query, pageToken = null) => {
-    const params = { query, location: `${lat},${lng}`, radius: radiusMeters, key };
-    if (pageToken) params.pagetoken = pageToken;
-    try {
-      const res = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
-        params, timeout: 10000,
-      });
-      return res.data || {};
-    } catch (_) { return {}; }
+  // Helper: fetch textsearch (2 pages) for a given center + query
+  const fetchTextAllPages = async (clat, clng, query) => {
+    const fetchPage = async (pageToken = null) => {
+      const params = { query, location: `${clat},${clng}`, radius: subRadiusMeters, key };
+      if (pageToken) params.pagetoken = pageToken;
+      try {
+        const res = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
+          params, timeout: 10000,
+        });
+        return res.data || {};
+      } catch (_) { return {}; }
+    };
+    const page1 = await fetchPage();
+    (page1.results || []).forEach(p => addPlace(p));
+    if (page1.next_page_token) {
+      await new Promise(r => setTimeout(r, 2000));
+      const page2 = await fetchPage(page1.next_page_token);
+      (page2.results || []).forEach(p => addPlace(p));
+    }
   };
 
-  // ── Track 1: Nearby Search — typed queries (fast, 20 results/page, up to 3 pages = 60/type)
+  // ── Track 1: Nearby Search across all 9 grid points, high-priority types ──
+  // Use most-common types — these yield the most unique businesses per query
   const nearbyTypes = [
     'restaurant', 'cafe', 'store', 'clothing_store', 'electronics_store',
     'grocery_or_supermarket', 'pharmacy', 'gym', 'hair_care', 'bank',
@@ -1462,48 +1504,39 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
     'hardware_store', 'car_repair', 'bakery',
   ];
 
-  await Promise.all(nearbyTypes.map(async (type) => {
-    try {
-      const page1 = await fetchNearbyPage(type);
-      (page1.results || []).forEach(p => addPlace(p, type));
+  // Run grid × types in parallel (batched to avoid rate-limit)
+  // Batch: process 3 grid points at a time to avoid overwhelming Google API
+  for (let gi = 0; gi < gridOffsets.length; gi += 3) {
+    const batch = gridOffsets.slice(gi, gi + 3);
+    await Promise.all(batch.map(async ([dlat, dlng]) => {
+      const clat = lat + dlat;
+      const clng = lng + dlng;
+      await Promise.all(nearbyTypes.map(type => fetchNearbyAllPages(clat, clng, type).catch(() => {})));
+    }));
+  }
 
-      if (page1.next_page_token) {
-        await new Promise(r => setTimeout(r, 2000));
-        const page2 = await fetchNearbyPage(type, page1.next_page_token);
-        (page2.results || []).forEach(p => addPlace(p, type));
-
-        if (page2.next_page_token) {
-          await new Promise(r => setTimeout(r, 2000));
-          const page3 = await fetchNearbyPage(type, page2.next_page_token);
-          (page3.results || []).forEach(p => addPlace(p, type));
-        }
-      }
-    } catch (_) {}
-  }));
-
-  // ── Track 2: Text Search — broader keyword queries catch stores nearbysearch misses
-  // e.g. "Zudio", "Reliance Digital", "DMart" — these have type=store but Text Search finds more
+  // ── Track 2: Text Search — center only (catches branded Indian stores) ──
   const textQueries = [
-    'shops near me', 'restaurants near me', 'market near me',
-    'medical store near me', 'clothing store near me', 'electronics shop near me',
-    'hotel near me', 'gym near me', 'salon near me', 'bank near me',
-    'school near me', 'coaching centre near me', 'sweet shop near me',
+    'shops', 'restaurants', 'medical store', 'clothing store',
+    'electronics shop', 'hotel', 'salon beauty parlour',
+    'coaching centre', 'sweet shop mithai', 'hardware store',
+    'petrol pump fuel station', 'jewellery gold shop',
+    'kirana grocery store', 'mobile repair shop',
   ];
 
-  await Promise.all(textQueries.map(async (query) => {
-    try {
-      const page1 = await fetchTextPage(query);
-      (page1.results || []).forEach(p => addPlace(p));
+  await Promise.all(textQueries.map(q => fetchTextAllPages(lat, lng, q).catch(() => {})));
 
-      if (page1.next_page_token) {
-        await new Promise(r => setTimeout(r, 2000));
-        const page2 = await fetchTextPage(query, page1.next_page_token);
-        (page2.results || []).forEach(p => addPlace(p));
-      }
-    } catch (_) {}
+  // ── Track 3: Text Search on offset grid for high-density areas ──
+  // Only run on 4 cardinal points (not all 9 — keeps API cost reasonable)
+  const cardinalOffsets = gridOffsets.slice(1, 5); // N, S, E, W
+  const denseTextQueries = ['restaurant', 'shop store', 'medical pharmacy'];
+  await Promise.all(cardinalOffsets.map(async ([dlat, dlng]) => {
+    await Promise.all(denseTextQueries.map(q =>
+      fetchTextAllPages(lat + dlat, lng + dlng, q).catch(() => {})
+    ));
   }));
 
-  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng}) [nearbysearch + textsearch]`);
+  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng}) [sub-grid: ${gridOffsets.length} points × ${nearbyTypes.length} types + textsearch]`);
   return results;
 };
 
