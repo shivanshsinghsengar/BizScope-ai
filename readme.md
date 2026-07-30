@@ -1,28 +1,59 @@
-# 🚀 BizScope AI - Deployment Guide
+# 🚀 BizScope AI
 
-## Prerequisites
-- Node.js 18+
-- PostgreSQL 15+
-- Docker (optional)
-- API Keys:
-  - OpenAI API Key
-  - Google Maps API Key
+Free AI-powered market analysis and competitor research tool for Indian entrepreneurs.
 
-## Quick Start (Development)
+**Live:** https://biz-scope-ai.vercel.app
 
-1. **Clone & Install**
+---
+
+## Structure
+
+```
+BizScopeAI/
+├── backend/          Node.js + Express API (deployed on Render)
+│   ├── server.js     Main server — all API routes
+│   ├── routes_new_features.js  Scorecard, Revenue, Compare Cities
+│   └── .env          API keys (never commit)
+└── frontend/         Next.js app (deployed on Vercel)
+    ├── pages/        All page routes
+    ├── components/   Reusable UI components
+    ├── context/      Auth + Theme context
+    ├── hooks/        Custom hooks (useAnalysis)
+    ├── utils/        API helper
+    └── public/       Static files
+```
+
+---
+
+## Local Development
+
+**Backend:**
 ```bash
-git clone <repo>
-cd bizscope-ai
-
-# Backend
 cd backend
 npm install
-cp .env.example .env
-# Add your API keys to .env
+# .env is already configured
+npm run dev        # runs on http://localhost:5000
+```
 
-# Frontend  
-cd ../frontend
+**Frontend:**
+```bash
+cd frontend
 npm install
-cp .env.local.example .env.local
-# Add your Google Maps key
+# .env.local already points to localhost:5000
+npm run dev        # runs on http://localhost:3000
+```
+
+---
+
+## Environment Variables
+
+**backend/.env** — all keys stored here, never exposed to browser
+**frontend/.env.local** — only `NEXT_PUBLIC_API_URL` (backend URL)
+
+---
+
+## Deployment
+
+- Frontend → Vercel (auto-deploy on push to main)
+- Backend → Render (auto-deploy on push to main)
+- Database → Neon (serverless PostgreSQL, free tier)
