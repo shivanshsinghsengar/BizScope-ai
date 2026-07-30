@@ -3611,6 +3611,7 @@ app.listen(PORT, () => {
 });
 
 // Sync DB in background — server stays up even if DB is slow
-sequelize.sync({ force: false })
-  .then(() => console.log('Database synced'))
+// alter:true adds missing columns to existing tables without dropping data
+sequelize.sync({ force: false, alter: true })
+  .then(() => console.log('Database synced (alter mode — new columns added)'))
   .catch(e => console.error('DB sync failed (non-fatal):', e.message));
