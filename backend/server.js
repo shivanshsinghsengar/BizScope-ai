@@ -952,10 +952,10 @@ Examples:
 };
 
 // Free geocoding via OpenStreetMap Nominatim — with structured + typo fallback
-// If GOOGLE_PLACES_API_KEY is set, Google Geocoding is used first (far more accurate for India)
+// Google Geocoding API used only if Geocoding API is enabled on the key
 const geocodeLocation = async (location, countryCode = null, structuredParts = null) => {
-  const key = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
-  if (geocodeCache.has(key)) return geocodeCache.get(key);
+  const cacheKey = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
+  if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey);
 
   // ── Google Geocoding (primary when key is available) ──────────────────────
   const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
@@ -963,7 +963,6 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
 
   if (hasGoogleKey) {
     try {
-      // Build a precise query — city + area + pincode if available
       let query = location;
       if (structuredParts) {
         const parts = [structuredParts.street, structuredParts.city, structuredParts.pincode].filter(Boolean);
@@ -976,8 +975,9 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
         timeout: 6000,
       });
 
-      const result = res.data?.results?.[0];
-      if (result) {
+      // Only use result if API is enabled and returned valid data
+      if (res.data?.status === 'OK' && res.data?.results?.[0]) {
+        const result = res.data.results[0];
         const { lat, lng } = result.geometry.location;
         const geo = {
           latitude: lat,
@@ -986,12 +986,16 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
           partialMatch: false,
           matchedQuery: query,
         };
-        console.log(`Google Geocoding: "${location}" → ${lat}, ${lng} (${result.formatted_address})`);
-        geocodeCache.set(key, geo);
+        console.log(`Google Geocoding: "${location}" → ${lat}, ${lng}`);
+        geocodeCache.set(cacheKey, geo);
         return geo;
       }
+      // If REQUEST_DENIED or no results — fall through to Nominatim silently
+      if (res.data?.status === 'REQUEST_DENIED') {
+        console.log('Google Geocoding API not enabled — using Nominatim');
+      }
     } catch (e) {
-      console.log('Google Geocoding failed, falling back to Nominatim:', e.message?.slice(0, 60));
+      console.log('Google Geocoding failed, using Nominatim:', e.message?.slice(0, 60));
     }
   }
 
@@ -1085,7 +1089,7 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
     matchedQuery,
   };
   console.log(`Geocoded "${location}" → ${geo.latitude}, ${geo.longitude} (matched: "${matchedQuery}")`);
-  geocodeCache.set(key, geo);
+  geocodeCache.set(cacheKey, geo);
   return geo;
 };
 
