@@ -952,10 +952,50 @@ Examples:
 };
 
 // Free geocoding via OpenStreetMap Nominatim — with structured + typo fallback
+// If GOOGLE_PLACES_API_KEY is set, Google Geocoding is used first (far more accurate for India)
 const geocodeLocation = async (location, countryCode = null, structuredParts = null) => {
   const key = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(key)) return geocodeCache.get(key);
 
+  // ── Google Geocoding (primary when key is available) ──────────────────────
+  const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
+  const hasGoogleKey = GOOGLE_KEY && GOOGLE_KEY !== 'your_google_places_key' && GOOGLE_KEY !== 'your_google_places_api_key';
+
+  if (hasGoogleKey) {
+    try {
+      // Build a precise query — city + area + pincode if available
+      let query = location;
+      if (structuredParts) {
+        const parts = [structuredParts.street, structuredParts.city, structuredParts.pincode].filter(Boolean);
+        if (parts.length > 0) query = parts.join(', ');
+      }
+      if (countryCode) query += `, ${countryCode}`;
+
+      const res = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+        params: { address: query, key: GOOGLE_KEY },
+        timeout: 6000,
+      });
+
+      const result = res.data?.results?.[0];
+      if (result) {
+        const { lat, lng } = result.geometry.location;
+        const geo = {
+          latitude: lat,
+          longitude: lng,
+          displayName: result.formatted_address,
+          partialMatch: false,
+          matchedQuery: query,
+        };
+        console.log(`Google Geocoding: "${location}" → ${lat}, ${lng} (${result.formatted_address})`);
+        geocodeCache.set(key, geo);
+        return geo;
+      }
+    } catch (e) {
+      console.log('Google Geocoding failed, falling back to Nominatim:', e.message?.slice(0, 60));
+    }
+  }
+
+  // ── Nominatim fallback ────────────────────────────────────────────────────
   const tryGeocode = async (query, cc) => {
     const url = `https://nominatim.openstreetmap.org/search`;
     const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
@@ -1355,37 +1395,56 @@ const googlePlacesCatMap = (types = []) => {
   return 'Retail';
 };
 
-const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 3000) => {
+const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
   const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key || key === 'your_google_places_key') return [];
+  if (!key || key === 'your_google_places_key' || key === 'your_google_places_api_key') return [];
 
   const results = [];
   const seen = new Set();
 
-  // Fetch multiple types to get broad coverage including branded stores
-  const types = ['store', 'restaurant', 'health', 'gym', 'bank', 'school', 'lodging'];
+  // Broad type list — covers all major business categories in India
+  const types = [
+    'restaurant', 'cafe', 'store', 'clothing_store', 'electronics_store',
+    'grocery_or_supermarket', 'pharmacy', 'gym', 'hair_care', 'bank',
+    'school', 'hospital', 'lodging', 'jewelry_store', 'furniture_store',
+    'hardware_store', 'car_dealer', 'car_repair', 'bakery', 'laundry',
+  ];
 
-  try {
-    await Promise.all(types.map(async (type) => {
-      try {
-        const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-          params: {
-            location: `${lat},${lng}`,
-            radius: radiusMeters,
-            type,
-            key,
-          },
-          timeout: 8000,
-        });
+  // Helper: fetch one page + optional next_page_token for up to 3 pages (60 results) per type
+  const fetchPage = async (type, pageToken = null) => {
+    const params = {
+      location: `${lat},${lng}`,
+      radius: radiusMeters,
+      key,
+    };
+    if (pageToken) {
+      params.pagetoken = pageToken;
+    } else {
+      params.type = type;
+    }
+    try {
+      const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
+        params,
+        timeout: 10000,
+      });
+      return res.data || {};
+    } catch (_) {
+      return {};
+    }
+  };
 
-        for (const place of (res.data.results || [])) {
+  await Promise.all(types.map(async (type) => {
+    try {
+      // Page 1
+      const page1 = await fetchPage(type);
+      const addPlaces = (places) => {
+        for (const place of (places || [])) {
           if (!place.geometry?.location) continue;
           const nameKey = (place.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-          const posKey = `${Math.round(place.geometry.location.lat * 1000)}_${Math.round(place.geometry.location.lng * 1000)}`;
-          const dedupKey = `${nameKey}_${posKey}`;
-          if (seen.has(dedupKey)) continue;
+          const posKey = `${Math.round(place.geometry.location.lat * 2000)}_${Math.round(place.geometry.location.lng * 2000)}`;
+          const dedupKey = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${type}`;
+          if (seen.has(dedupKey)) return;
           seen.add(dedupKey);
-
           results.push({
             name: place.name,
             category: googlePlacesCatMap(place.types || []),
@@ -1401,15 +1460,28 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 3000) => {
             priceLevel: place.price_level,
           });
         }
-      } catch (_) {}
-    }));
+      };
 
-    console.log(`Google Places returned ${results.length} businesses for (${lat},${lng})`);
-    return results;
-  } catch (e) {
-    console.log('Google Places failed:', e.message.slice(0, 60));
-    return [];
-  }
+      addPlaces(page1.results);
+
+      // Page 2 — wait 2s (Google requires delay before using next_page_token)
+      if (page1.next_page_token) {
+        await new Promise(r => setTimeout(r, 2000));
+        const page2 = await fetchPage(type, page1.next_page_token);
+        addPlaces(page2.results);
+
+        // Page 3
+        if (page2.next_page_token) {
+          await new Promise(r => setTimeout(r, 2000));
+          const page3 = await fetchPage(type, page2.next_page_token);
+          addPlaces(page3.results);
+        }
+      }
+    } catch (_) {}
+  }));
+
+  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng})`);
+  return results;
 };
 
 // Mappls (MapmyIndia) Nearby API — India-specific, NO card needed, covers branded stores
@@ -2832,7 +2904,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
       fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),
       fetchFoursquareBusinesses(latitude, longitude, 5000).catch(() => []),
-      fetchGooglePlacesBusinesses(latitude, longitude, 3000).catch(() => []),
+      fetchGooglePlacesBusinesses(latitude, longitude, 5000).catch(() => []),
       fetchMapplsBusinesses(latitude, longitude, 3000).catch(() => []),
       ManualBusiness.findAll().then(all => all.filter(b =>
         b.latitude && b.longitude &&
