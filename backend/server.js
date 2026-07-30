@@ -1406,85 +1406,104 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
   const results = [];
   const seen = new Set();
 
-  // Broad type list — covers all major business categories in India
-  const types = [
+  const addPlace = (place, typeHint = '') => {
+    if (!place.geometry?.location) return;
+    const nameKey = (place.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+    const posKey = `${Math.round(place.geometry.location.lat * 2000)}_${Math.round(place.geometry.location.lng * 2000)}`;
+    const dedupKey = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${typeHint}`;
+    if (seen.has(dedupKey)) return;
+    seen.add(dedupKey);
+    results.push({
+      name: place.name,
+      category: googlePlacesCatMap(place.types || [typeHint]),
+      rating: place.rating || null,
+      reviewCount: place.user_ratings_total || 0,
+      address: place.vicinity || place.formatted_address || '',
+      phone: '',
+      website: '',
+      latitude: place.geometry.location.lat,
+      longitude: place.geometry.location.lng,
+      source: 'google',
+      isOpen: place.opening_hours?.open_now,
+      priceLevel: place.price_level,
+    });
+  };
+
+  // Helper: fetch one nearbysearch page with optional page token
+  const fetchNearbyPage = async (type, pageToken = null) => {
+    const params = { location: `${lat},${lng}`, radius: radiusMeters, key };
+    if (pageToken) { params.pagetoken = pageToken; }
+    else { params.type = type; params.rankby = undefined; }
+    try {
+      const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
+        params, timeout: 10000,
+      });
+      return res.data || {};
+    } catch (_) { return {}; }
+  };
+
+  // Helper: fetch one textsearch page
+  const fetchTextPage = async (query, pageToken = null) => {
+    const params = { query, location: `${lat},${lng}`, radius: radiusMeters, key };
+    if (pageToken) params.pagetoken = pageToken;
+    try {
+      const res = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
+        params, timeout: 10000,
+      });
+      return res.data || {};
+    } catch (_) { return {}; }
+  };
+
+  // ── Track 1: Nearby Search — typed queries (fast, 20 results/page, up to 3 pages = 60/type)
+  const nearbyTypes = [
     'restaurant', 'cafe', 'store', 'clothing_store', 'electronics_store',
     'grocery_or_supermarket', 'pharmacy', 'gym', 'hair_care', 'bank',
     'school', 'hospital', 'lodging', 'jewelry_store', 'furniture_store',
-    'hardware_store', 'car_dealer', 'car_repair', 'bakery', 'laundry',
+    'hardware_store', 'car_repair', 'bakery',
   ];
 
-  // Helper: fetch one page + optional next_page_token for up to 3 pages (60 results) per type
-  const fetchPage = async (type, pageToken = null) => {
-    const params = {
-      location: `${lat},${lng}`,
-      radius: radiusMeters,
-      key,
-    };
-    if (pageToken) {
-      params.pagetoken = pageToken;
-    } else {
-      params.type = type;
-    }
+  await Promise.all(nearbyTypes.map(async (type) => {
     try {
-      const res = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-        params,
-        timeout: 10000,
-      });
-      return res.data || {};
-    } catch (_) {
-      return {};
-    }
-  };
+      const page1 = await fetchNearbyPage(type);
+      (page1.results || []).forEach(p => addPlace(p, type));
 
-  await Promise.all(types.map(async (type) => {
-    try {
-      // Page 1
-      const page1 = await fetchPage(type);
-      const addPlaces = (places) => {
-        for (const place of (places || [])) {
-          if (!place.geometry?.location) continue;
-          const nameKey = (place.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-          const posKey = `${Math.round(place.geometry.location.lat * 2000)}_${Math.round(place.geometry.location.lng * 2000)}`;
-          const dedupKey = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${type}`;
-          if (seen.has(dedupKey)) return;
-          seen.add(dedupKey);
-          results.push({
-            name: place.name,
-            category: googlePlacesCatMap(place.types || []),
-            rating: place.rating || null,
-            reviewCount: place.user_ratings_total || 0,
-            address: place.vicinity || '',
-            phone: '',
-            website: '',
-            latitude: place.geometry.location.lat,
-            longitude: place.geometry.location.lng,
-            source: 'google',
-            isOpen: place.opening_hours?.open_now,
-            priceLevel: place.price_level,
-          });
-        }
-      };
-
-      addPlaces(page1.results);
-
-      // Page 2 — wait 2s (Google requires delay before using next_page_token)
       if (page1.next_page_token) {
         await new Promise(r => setTimeout(r, 2000));
-        const page2 = await fetchPage(type, page1.next_page_token);
-        addPlaces(page2.results);
+        const page2 = await fetchNearbyPage(type, page1.next_page_token);
+        (page2.results || []).forEach(p => addPlace(p, type));
 
-        // Page 3
         if (page2.next_page_token) {
           await new Promise(r => setTimeout(r, 2000));
-          const page3 = await fetchPage(type, page2.next_page_token);
-          addPlaces(page3.results);
+          const page3 = await fetchNearbyPage(type, page2.next_page_token);
+          (page3.results || []).forEach(p => addPlace(p, type));
         }
       }
     } catch (_) {}
   }));
 
-  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng})`);
+  // ── Track 2: Text Search — broader keyword queries catch stores nearbysearch misses
+  // e.g. "Zudio", "Reliance Digital", "DMart" — these have type=store but Text Search finds more
+  const textQueries = [
+    'shops near me', 'restaurants near me', 'market near me',
+    'medical store near me', 'clothing store near me', 'electronics shop near me',
+    'hotel near me', 'gym near me', 'salon near me', 'bank near me',
+    'school near me', 'coaching centre near me', 'sweet shop near me',
+  ];
+
+  await Promise.all(textQueries.map(async (query) => {
+    try {
+      const page1 = await fetchTextPage(query);
+      (page1.results || []).forEach(p => addPlace(p));
+
+      if (page1.next_page_token) {
+        await new Promise(r => setTimeout(r, 2000));
+        const page2 = await fetchTextPage(query, page1.next_page_token);
+        (page2.results || []).forEach(p => addPlace(p));
+      }
+    } catch (_) {}
+  }));
+
+  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng}) [nearbysearch + textsearch]`);
   return results;
 };
 
@@ -3296,58 +3315,91 @@ app.get('/api/businesses/:lat/:lng', async (req, res) => {
   if (businesses.length > 0) return res.json(businesses);
 
   try {
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"](around:${radiusMeters},${lat},${lng});
-        node["shop"](around:${radiusMeters},${lat},${lng});
-        node["office"](around:${radiusMeters},${lat},${lng});
-        way["amenity"](around:${radiusMeters},${lat},${lng});
-        way["shop"](around:${radiusMeters},${lat},${lng});
-        way["office"](around:${radiusMeters},${lat},${lng});
-      );
-      out center body;
-    `;
+    // Fetch from OSM + Google Places in parallel for best map coverage
+    const [osmElements, googleBizRaw] = await Promise.all([
+      (async () => {
+        const query = `
+          [out:json][timeout:25];
+          (
+            node["amenity"](around:${radiusMeters},${lat},${lng});
+            node["shop"](around:${radiusMeters},${lat},${lng});
+            node["office"](around:${radiusMeters},${lat},${lng});
+            way["amenity"](around:${radiusMeters},${lat},${lng});
+            way["shop"](around:${radiusMeters},${lat},${lng});
+            way["office"](around:${radiusMeters},${lat},${lng});
+          );
+          out center body;
+        `;
+        const osmRes = await axios.post(
+          'https://overpass-api.de/api/interpreter',
+          `data=${encodeURIComponent(query)}`,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 25000 }
+        );
+        return (osmRes.data.elements || []).filter(el => {
+          const elLat = el.lat ?? el.center?.lat;
+          const elLon = el.lon ?? el.center?.lon;
+          return elLat && elLon;
+        });
+      })().catch(() => []),
+      fetchGooglePlacesBusinesses(lat, lng, radiusMeters).catch(() => []),
+    ]);
 
-    const osmRes = await axios.post(
-      'https://overpass-api.de/api/interpreter',
-      `data=${encodeURIComponent(query)}`,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 25000 }
-    );
+    const allBiz = [];
+    const mapSeen = new Set();
 
-    const elements = (osmRes.data.elements || []).filter(el => {
-      const elLat = el.lat ?? el.center?.lat;
-      const elLon = el.lon ?? el.center?.lon;
-      return elLat && elLon;
+    // Add Google Places first (real ratings)
+    googleBizRaw.forEach(b => {
+      const nameKey = (b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 18);
+      const posKey = `${Math.round(b.latitude * 2000)}_${Math.round(b.longitude * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_g`;
+      if (mapSeen.has(key)) return;
+      mapSeen.add(key);
+      allBiz.push({
+        id: `g_${nameKey}_${posKey}`,
+        name: b.name,
+        category: b.category,
+        rating: b.rating || stableRating(b.name, b.category),
+        reviewCount: b.reviewCount || stableReviews(b.name, b.category, 240),
+        address: b.address,
+        latitude: b.latitude,
+        longitude: b.longitude,
+        phone: b.phone || null,
+        isOpen: b.isOpen,
+        source: 'google',
+      });
     });
 
-    if (elements.length > 0) {
-      const osmBusinesses = elements.slice(0, 30).map((el, i) => {
-        const tags = el.tags || {};
-        const elLat = el.lat ?? el.center?.lat;
-        const elLon = el.lon ?? el.center?.lon;
-        const name = tags.name || tags.brand || tags.operator || tags.ref || `Nearby Business ${i + 1}`;
-        const category = tags.amenity || tags.shop || tags.office || tags.tourism || tags.leisure || 'Business';
-        const addressParts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:suburb'], tags['addr:city'], tags['addr:postcode']].filter(Boolean);
-        const address = addressParts.join(', ') || tags['addr:full'] || tags['addr:place'] || null;
-
-        return {
-          id: `${el.type}_${el.id}`,
-          name,
-          category,
-          rating: stableRating(name, category),
-          reviewCount: stableReviews(name, category, 240),
-          address,
-          latitude: elLat,
-          longitude: elLon,
-          phone: tags.phone || tags['contact:phone'] || null,
-        };
+    // Add OSM elements (fills gaps Google misses)
+    osmElements.forEach((el, i) => {
+      const tags = el.tags || {};
+      const elLat = el.lat ?? el.center?.lat;
+      const elLon = el.lon ?? el.center?.lon;
+      const name = tags.name || tags.brand || tags.operator || tags.ref;
+      if (!name) return;
+      const nameKey = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 18);
+      const posKey = `${Math.round(elLat * 2000)}_${Math.round(elLon * 2000)}`;
+      const key = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_o`;
+      if (mapSeen.has(key)) return;
+      mapSeen.add(key);
+      const category = tags.amenity || tags.shop || tags.office || tags.tourism || tags.leisure || 'Business';
+      const addressParts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:suburb'], tags['addr:city'], tags['addr:postcode']].filter(Boolean);
+      allBiz.push({
+        id: `${el.type}_${el.id}`,
+        name,
+        category: osmToCategory[category] || category,
+        rating: stableRating(name, category),
+        reviewCount: stableReviews(name, category, 240),
+        address: addressParts.join(', ') || tags['addr:full'] || null,
+        latitude: elLat,
+        longitude: elLon,
+        phone: tags.phone || tags['contact:phone'] || null,
+        source: 'osm',
       });
+    });
 
-      return res.json(osmBusinesses);
-    }
+    if (allBiz.length > 0) return res.json(allBiz);
   } catch (e) {
-    console.log('OSM business fetch failed:', e.message);
+    console.log('Map business fetch failed:', e.message);
   }
 
   // fallback mock
@@ -3355,11 +3407,11 @@ app.get('/api/businesses/:lat/:lng', async (req, res) => {
   const mock = Array.from({ length: 20 }, (_, i) => ({
     name: `Business ${i + 1}`,
     category: cats[i % cats.length],
-    rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
-    reviewCount: Math.floor(Math.random() * 300 + 10),
+    rating: parseFloat((deterministicRandom(`mock_${i}_${lat}`) * 2 + 3).toFixed(1)),
+    reviewCount: Math.floor(deterministicRandom(`mock_rev_${i}`) * 300 + 10),
     address: `Address ${i + 1}`,
-    latitude: parseFloat(lat) + (Math.random() - 0.5) * 0.01,
-    longitude: parseFloat(lng) + (Math.random() - 0.5) * 0.01,
+    latitude: parseFloat(lat) + (deterministicRandom(`mock_lat_${i}`) - 0.5) * 0.01,
+    longitude: parseFloat(lng) + (deterministicRandom(`mock_lng_${i}`) - 0.5) * 0.01,
   }));
   res.json(mock);
 });
