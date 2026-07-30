@@ -1399,12 +1399,39 @@ const googlePlacesCatMap = (types = []) => {
   return 'Retail';
 };
 
+// ── Google Place Details — fetch phone + website for a place_id ──
+const placeDetailsCache = new Map();
+const fetchPlaceDetails = async (placeId, key) => {
+  if (placeDetailsCache.has(placeId)) return placeDetailsCache.get(placeId);
+  try {
+    const res = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+      params: {
+        place_id: placeId,
+        fields: 'formatted_phone_number,website,opening_hours,url',
+        key,
+      },
+      timeout: 6000,
+    });
+    const r = res.data?.result || {};
+    const detail = {
+      phone: r.formatted_phone_number || '',
+      website: r.website || '',
+      isOpen: r.opening_hours?.open_now ?? null,
+      googleUrl: r.url || '',
+    };
+    placeDetailsCache.set(placeId, detail);
+    return detail;
+  } catch (_) { return { phone: '', website: '', isOpen: null, googleUrl: '' }; }
+};
+
 const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key || key === 'your_google_places_key' || key === 'your_google_places_api_key') return [];
 
   const results = [];
   const seen = new Set();
+  // Store place_ids for details enrichment
+  const placeIds = [];
 
   const addPlace = (place, typeHint = '') => {
     if (!place.geometry?.location) return;
@@ -1413,6 +1440,7 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
     const dedupKey = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_${typeHint}`;
     if (seen.has(dedupKey)) return;
     seen.add(dedupKey);
+    const idx = results.length;
     results.push({
       name: place.name,
       category: googlePlacesCatMap(place.types || [typeHint]),
@@ -1424,9 +1452,14 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
       latitude: place.geometry.location.lat,
       longitude: place.geometry.location.lng,
       source: 'google',
-      isOpen: place.opening_hours?.open_now,
+      isOpen: place.opening_hours?.open_now ?? null,
       priceLevel: place.price_level,
+      googleUrl: '',
     });
+    // Track place_id for enrichment (only top 300 to limit API calls)
+    if (place.place_id && placeIds.length < 300) {
+      placeIds.push({ idx, place_id: place.place_id });
+    }
   };
 
   // ── Sub-grid: divide the area into a 3×3 grid of overlapping circles ──
@@ -1504,15 +1537,20 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
     'hardware_store', 'car_repair', 'bakery',
   ];
 
-  // Run grid × types in parallel (batched to avoid rate-limit)
-  // Batch: process 3 grid points at a time to avoid overwhelming Google API
+  // Run grid × types — batched to avoid Google rate-limit
+  // Each grid point runs types in small batches of 6 with 500ms pause between batches
   for (let gi = 0; gi < gridOffsets.length; gi += 3) {
     const batch = gridOffsets.slice(gi, gi + 3);
     await Promise.all(batch.map(async ([dlat, dlng]) => {
       const clat = lat + dlat;
       const clng = lng + dlng;
-      await Promise.all(nearbyTypes.map(type => fetchNearbyAllPages(clat, clng, type).catch(() => {})));
+      for (let ti = 0; ti < nearbyTypes.length; ti += 6) {
+        const typeBatch = nearbyTypes.slice(ti, ti + 6);
+        await Promise.all(typeBatch.map(type => fetchNearbyAllPages(clat, clng, type).catch(() => {})));
+        if (ti + 6 < nearbyTypes.length) await new Promise(r => setTimeout(r, 500));
+      }
     }));
+    if (gi + 3 < gridOffsets.length) await new Promise(r => setTimeout(r, 800));
   }
 
   // ── Track 2: Text Search — center only (catches branded Indian stores) ──
@@ -1536,7 +1574,93 @@ const fetchGooglePlacesBusinesses = async (lat, lng, radiusMeters = 5000) => {
     ));
   }));
 
-  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng}) [sub-grid: ${gridOffsets.length} points × ${nearbyTypes.length} types + textsearch]`);
+  // ── Track 4: Google Places New API (places.googleapis.com/v1) ──
+  // New API returns richer data in one call — phone, website, opening hours included
+  // Uses includedTypes field — no separate Details call needed for basic info
+  const newApiTypes = [
+    ['restaurant', 'cafe', 'bakery', 'bar', 'meal_delivery', 'meal_takeaway'],
+    ['clothing_store', 'jewelry_store', 'shoe_store', 'department_store', 'shopping_mall'],
+    ['electronics_store', 'hardware_store', 'furniture_store', 'home_goods_store'],
+    ['grocery_or_supermarket', 'convenience_store', 'supermarket'],
+    ['pharmacy', 'hospital', 'doctor', 'dentist', 'physiotherapist'],
+    ['gym', 'beauty_salon', 'hair_care', 'spa'],
+    ['bank', 'atm', 'insurance_agency', 'finance'],
+    ['school', 'university', 'secondary_school', 'tutoring_center'],
+    ['lodging', 'hotel', 'motel', 'guest_house'],
+    ['car_repair', 'car_dealer', 'gas_station', 'parking'],
+    ['laundry', 'dry_cleaning'],
+  ];
+
+  // New Places API — searchNearby v1
+  const newApiPromises = newApiTypes.map(async (typeGroup) => {
+    try {
+      const res = await axios.post(
+        'https://places.googleapis.com/v1/places:searchNearby',
+        {
+          includedTypes: typeGroup,
+          maxResultCount: 20,
+          locationRestriction: {
+            circle: {
+              center: { latitude: lat, longitude: lng },
+              radius: radiusMeters,
+            },
+          },
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': key,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.rating,places.userRatingCount,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.priceLevel',
+          },
+          timeout: 10000,
+        }
+      );
+      const places = res.data?.places || [];
+      places.forEach(p => {
+        if (!p.location?.latitude || !p.location?.longitude) return;
+        const nameKey = (p.displayName?.text || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+        const posKey = `${Math.round(p.location.latitude * 2000)}_${Math.round(p.location.longitude * 2000)}`;
+        const dedupKey = nameKey.length > 2 ? `${nameKey}_${posKey}` : `${posKey}_new`;
+        if (seen.has(dedupKey)) return;
+        seen.add(dedupKey);
+        results.push({
+          name: p.displayName?.text || '',
+          category: googlePlacesCatMap(p.types || []),
+          rating: p.rating || null,
+          reviewCount: p.userRatingCount || 0,
+          address: p.formattedAddress || '',
+          phone: p.nationalPhoneNumber || '',
+          website: p.websiteUri || '',
+          latitude: p.location.latitude,
+          longitude: p.location.longitude,
+          source: 'google_new',
+          isOpen: p.currentOpeningHours?.openNow ?? null,
+          priceLevel: p.priceLevel || null,
+          googleUrl: '',
+        });
+      });
+    } catch (_) {}
+  });
+  await Promise.all(newApiPromises);
+
+  // ── Enrich top results with Place Details (phone + website) ──
+  // Only enrich entries that still have no phone — batched 10 at a time
+  const needsEnrichment = placeIds.filter(({ idx }) => !results[idx]?.phone);
+  const enrichBatchSize = 10;
+  for (let i = 0; i < Math.min(needsEnrichment.length, 200); i += enrichBatchSize) {
+    const batch = needsEnrichment.slice(i, i + enrichBatchSize);
+    await Promise.all(batch.map(async ({ idx, place_id }) => {
+      const detail = await fetchPlaceDetails(place_id, key);
+      if (results[idx]) {
+        results[idx].phone = detail.phone || results[idx].phone;
+        results[idx].website = detail.website || results[idx].website;
+        results[idx].isOpen = results[idx].isOpen ?? detail.isOpen;
+        results[idx].googleUrl = detail.googleUrl || '';
+      }
+    }));
+  }
+
+  console.log(`Google Places returned ${results.length} businesses for (${lat},${lng}) [grid+textsearch+newAPI+details]`);
   return results;
 };
 
