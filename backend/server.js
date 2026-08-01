@@ -1809,39 +1809,47 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 8000) => {
     });
   };
 
+  // All TomTom category IDs for Indian businesses
+  const allCats = [
+    '7315','7314','7313','7316','7317','7318','7319','7320','7321','7322',
+    '7311','7312','9376','9361','7332','9362','9379','9383','9374','9377',
+    '9352','9353','9357','9358','9359','9360','9378','9380','9381','9382',
+  ];
+
+  // Sub-grid offsets — 5x5 grid for better coverage
+  const offsetDeg = (radiusMeters * 0.004) / 1000;
+  const subRadius = Math.round(radiusMeters * 0.55);
+  const gridOffsets = [
+    [0, 0],
+    [offsetDeg, 0], [-offsetDeg, 0], [0, offsetDeg], [0, -offsetDeg],
+    [offsetDeg * 0.7, offsetDeg * 0.7], [offsetDeg * 0.7, -offsetDeg * 0.7],
+    [-offsetDeg * 0.7, offsetDeg * 0.7], [-offsetDeg * 0.7, -offsetDeg * 0.7],
+  ];
+
   try {
-    // Primary: nearbySearch — single call, most reliable, no countrySet restriction
-    const nearbyRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
-      params: {
-        key, lat, lon: lng, radius: radiusMeters, limit: 100, language: 'en-GB',
-        // No categorySet — get ALL business types for accurate market analysis
-        spreadingMode: 'auto',
-      },
-      timeout: 12000,
-    }).catch(e => { console.log('TomTom nearbySearch failed:', e.message); return null; });
+    // Run all grid points in parallel — each with nearbySearch + all category searches
+    await Promise.all(gridOffsets.map(async ([dlat, dlng]) => {
+      const clat = lat + dlat;
+      const clng = lng + dlng;
+      const r = Math.round(dlat === 0 && dlng === 0 ? radiusMeters : subRadius);
 
-    // Add nearbySearch results first
-    if (nearbyRes?.data?.results?.length > 0) {
-      nearbyRes.data.results.forEach(addPlace);
-    }
+      // nearbySearch for this grid point
+      const nearbyRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
+        params: { key, lat: clat, lon: clng, radius: r, limit: 100, language: 'en-GB', spreadingMode: 'auto' },
+        timeout: 12000,
+      }).catch(() => null);
+      if (nearbyRes?.data?.results) nearbyRes.data.results.forEach(addPlace);
 
-    // Always run category searches to maximise coverage — TomTom nearbySearch caps at 100
-    // These 14 category IDs cover all major business types in Indian cities
-    // 7315=restaurant, 9376=grocery, 9361=hotel, 7321=pharmacy, 7318=hospital,
-    // 7332=bank, 9362=gym, 9379=salon, 7311=clothing, 7312=electronics,
-    // 7317=education, 9383=automotive, 9374=bakery, 7313=hardware
-    const allCats = ['7315','9376','9361','7321','7318','7332','9362','9379','7311','7312','7317','9383','9374','7313'];
-    const catRes = await Promise.all(
-      allCats.map(catId =>
+      // Category searches for this grid point
+      await Promise.all(allCats.map(catId =>
         axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
-          params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, categorySet: catId, language: 'en-GB' },
+          params: { key, lat: clat, lon: clng, radius: r, limit: 100, categorySet: catId, language: 'en-GB' },
           timeout: 8000,
-        }).catch(() => null)
-      )
-    );
-    catRes.forEach(res => { if (res?.data?.results) res.data.results.forEach(addPlace); });
+        }).then(res => { if (res?.data?.results) res.data.results.forEach(addPlace); }).catch(() => {})
+      ));
+    }));
 
-    console.log(`TomTom returned ${results.length} businesses (nearbySearch + ${allCats.length} category searches)`);
+    console.log(`TomTom returned ${results.length} businesses (${gridOffsets.length} grid points × ${allCats.length} categories)`);
     return results;
   } catch (e) {
     console.log('TomTom failed:', e.message);
