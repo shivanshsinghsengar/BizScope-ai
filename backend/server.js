@@ -1224,22 +1224,20 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
     const tourismVals = "hotel|hostel|guest_house|motel|apartment";
     const leisureVals = "fitness_centre|gym|sports_centre|swimming_pool|bowling_alley|yoga|dance|martial_arts";
 
-    // Query with ["name"] filter — only fetch named places, skip unnamed noise
-    // Also query by brand tag — this catches Zudio, Peter England, D-Mart etc. if mapped in OSM
-    const query = `[out:json][timeout:30];(`
-      + `node["amenity"~"${amenityVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `way["amenity"~"${amenityVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `node["shop"~"${shopVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `way["shop"~"${shopVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `node["office"~"${officeVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `way["office"~"${officeVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `node["tourism"~"${tourismVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `way["tourism"~"${tourismVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `node["leisure"~"${leisureVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      + `way["leisure"~"${leisureVals}"]["name"](around:${radiusMeters},${lat},${lng});`
-      // Brand-tagged nodes — catches chain stores like Zudio, Peter England, D-Mart if mapped
-      + `node["brand"](around:${radiusMeters},${lat},${lng});`
-      + `way["brand"](around:${radiusMeters},${lat},${lng});`
+    const buildOsmQuery = (clat, clng, r) =>
+      `[out:json][timeout:30];(`
+      + `node["amenity"~"${amenityVals}"]["name"](around:${r},${clat},${clng});`
+      + `way["amenity"~"${amenityVals}"]["name"](around:${r},${clat},${clng});`
+      + `node["shop"~"${shopVals}"]["name"](around:${r},${clat},${clng});`
+      + `way["shop"~"${shopVals}"]["name"](around:${r},${clat},${clng});`
+      + `node["office"~"${officeVals}"]["name"](around:${r},${clat},${clng});`
+      + `way["office"~"${officeVals}"]["name"](around:${r},${clat},${clng});`
+      + `node["tourism"~"${tourismVals}"]["name"](around:${r},${clat},${clng});`
+      + `way["tourism"~"${tourismVals}"]["name"](around:${r},${clat},${clng});`
+      + `node["leisure"~"${leisureVals}"]["name"](around:${r},${clat},${clng});`
+      + `way["leisure"~"${leisureVals}"]["name"](around:${r},${clat},${clng});`
+      + `node["brand"](around:${r},${clat},${clng});`
+      + `way["brand"](around:${r},${clat},${clng});`
       + `);out center qt;`;
 
     const mirrors = [
@@ -1249,31 +1247,74 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
       'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
+    // ── Sub-grid: 3×3 grid of smaller overlapping circles ──
+    // Overpass has a ~500 result soft cap per query — sub-grid bypasses it
+    // Each sub-circle covers ~55% of total radius so cells overlap at edges
+    const subRadius = Math.round(radiusMeters * 0.55);
+    const offsetDeg = (radiusMeters * 0.006) / 1000;
+    const gridOffsets = [
+      [0, 0],
+      [offsetDeg, 0], [-offsetDeg, 0],
+      [0, offsetDeg], [0, -offsetDeg],
+      [offsetDeg * 0.7, offsetDeg * 0.7],
+      [offsetDeg * 0.7, -offsetDeg * 0.7],
+      [-offsetDeg * 0.7, offsetDeg * 0.7],
+      [-offsetDeg * 0.7, -offsetDeg * 0.7],
+    ];
+
+    const fetchOneCell = async (clat, clng) => {
+      const query = buildOsmQuery(clat, clng, subRadius);
+      try {
+        const winner = await Promise.any(
+          mirrors.map(url =>
+            axios.post(url, `data=${encodeURIComponent(query)}`,
+              { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
+            ).then(res => {
+              if (!res?.data?.elements?.length) throw new Error('empty');
+              return res.data.elements;
+            })
+          )
+        );
+        return winner;
+      } catch (_) { return []; }
+    };
+
     // Race all mirrors in PARALLEL — take the first one that responds with data
     // This prevents sequential timeouts (3 x 15s = 45s) causing server 500s
     let allElements = [];
     let fetched = false;
     try {
-      const winner = await Promise.any(
-        mirrors.map(url =>
-          axios.post(url, `data=${encodeURIComponent(query)}`,
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: timeoutMs }
-          ).then(res => {
-            if (!res?.data?.elements?.length) throw new Error('empty');
-            return res.data.elements;
-          })
-        )
+      // Run center cell first (fast path), then run remaining 8 cells in parallel
+      const centerElements = await fetchOneCell(lat, lng);
+      const outerResults = await Promise.allSettled(
+        gridOffsets.slice(1).map(([dlat, dlng]) => fetchOneCell(lat + dlat, lng + dlng))
       );
-      allElements = winner;
-      fetched = true;
+      const outerElements = outerResults
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value);
+
+      allElements = [...centerElements, ...outerElements];
+      fetched = allElements.length > 0;
+      if (!fetched) {
+        logError('overpass', 'All sub-grid cells returned empty', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
+        return [];
+      }
     } catch (e) {
-      // Promise.any rejects only if ALL mirrors fail
-      logError('overpass', 'All mirrors failed', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
+      logError('overpass', 'Sub-grid fetch failed', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
       return [];
     }
     if (!fetched) return [];
 
-    const results = allElements.map((el) => {
+    // Dedup by OSM element id — sub-grid cells overlap so same element may appear multiple times
+    const seenOsmIds = new Set();
+    const uniqueElements = allElements.filter(el => {
+      const osmId = `${el.type || 'n'}_${el.id}`;
+      if (seenOsmIds.has(osmId)) return false;
+      seenOsmIds.add(osmId);
+      return true;
+    });
+
+    const results = uniqueElements.map((el) => {
       const tags = el.tags || {};
       // way elements use center.lat/center.lon (from "out center"); node elements use el.lat/el.lon
       const elLat = el.lat ?? el.center?.lat;
@@ -1306,7 +1347,7 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
       };
     }).filter(b => b && b.latitude && b.longitude && b.name);
 
-    console.log(`Overpass returned ${allElements.length} elements, ${results.length} valid businesses for (${lat},${lng}) r=${radiusMeters}`);
+    console.log(`Overpass sub-grid returned ${allElements.length} raw elements → ${uniqueElements.length} unique → ${results.length} valid businesses for (${lat},${lng}) r=${radiusMeters}`);
     return results;
   } catch (e) {
     console.log('Overpass API failed:', e.message);
@@ -3234,7 +3275,7 @@ app.post('/api/analyze-location', async (req, res) => {
       cache.delete(cacheKey);
     }
 
-    // Fetch TomTom (fast, 8s) + OSM (15s max) in parallel
+    // Fetch TomTom (fast, 8s) + OSM sub-grid (15s max) in parallel
     const [tomtomBusinesses, osmBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
       fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),
