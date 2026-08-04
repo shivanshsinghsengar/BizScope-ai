@@ -1816,40 +1816,54 @@ const fetchTomTomBusinesses = async (lat, lng, radiusMeters = 8000) => {
     '9352','9353','9357','9358','9359','9360','9378','9380','9381','9382',
   ];
 
-  // Sub-grid offsets — 5x5 grid for better coverage
-  const offsetDeg = (radiusMeters * 0.004) / 1000;
-  const subRadius = Math.round(radiusMeters * 0.55);
-  const gridOffsets = [
-    [0, 0],
-    [offsetDeg, 0], [-offsetDeg, 0], [0, offsetDeg], [0, -offsetDeg],
-    [offsetDeg * 0.7, offsetDeg * 0.7], [offsetDeg * 0.7, -offsetDeg * 0.7],
-    [-offsetDeg * 0.7, offsetDeg * 0.7], [-offsetDeg * 0.7, -offsetDeg * 0.7],
-  ];
-
   try {
-    // Run all grid points in parallel — each with nearbySearch + all category searches
-    await Promise.all(gridOffsets.map(async ([dlat, dlng]) => {
+    // Center point first — most important results
+    const centerRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
+      params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, language: 'en-GB', spreadingMode: 'auto' },
+      timeout: 12000,
+    }).catch(() => null);
+    if (centerRes?.data?.results) centerRes.data.results.forEach(addPlace);
+
+    // Category searches on center — most coverage, single point
+    const allCats = [
+      '7315','7314','7313','7316','7317','7318','7319','7320','7321','7322',
+      '7311','7312','9376','9361','7332','9362','9379','9383','9374','9377',
+      '9352','9353','9357','9358','9359','9360','9378','9380','9381','9382',
+    ];
+    await Promise.all(allCats.map(catId =>
+      axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
+        params: { key, lat, lon: lng, radius: radiusMeters, limit: 100, categorySet: catId, language: 'en-GB' },
+        timeout: 8000,
+      }).then(res => { if (res?.data?.results) res.data.results.forEach(addPlace); }).catch(() => {})
+    ));
+
+    // Sub-grid on 4 cardinal offsets — extra coverage without full 9-point overhead
+    const offsetDeg = (radiusMeters * 0.004) / 1000;
+    const subRadius = Math.round(radiusMeters * 0.55);
+    const cardinalOffsets = [
+      [offsetDeg, 0], [-offsetDeg, 0], [0, offsetDeg], [0, -offsetDeg],
+    ];
+
+    await Promise.all(cardinalOffsets.map(async ([dlat, dlng]) => {
       const clat = lat + dlat;
       const clng = lng + dlng;
-      const r = Math.round(dlat === 0 && dlng === 0 ? radiusMeters : subRadius);
-
-      // nearbySearch for this grid point
-      const nearbyRes = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
-        params: { key, lat: clat, lon: clng, radius: r, limit: 100, language: 'en-GB', spreadingMode: 'auto' },
-        timeout: 12000,
+      const r = await axios.get('https://api.tomtom.com/search/2/nearbySearch/.json', {
+        params: { key, lat: clat, lon: clng, radius: subRadius, limit: 100, language: 'en-GB', spreadingMode: 'auto' },
+        timeout: 10000,
       }).catch(() => null);
-      if (nearbyRes?.data?.results) nearbyRes.data.results.forEach(addPlace);
+      if (r?.data?.results) r.data.results.forEach(addPlace);
 
-      // Category searches for this grid point
-      await Promise.all(allCats.map(catId =>
+      // Only high-yield categories on sub-grid to save time
+      const subCats = ['7315','7311','7312','9376','9361','7318','7321','7332','9362','9379'];
+      await Promise.all(subCats.map(catId =>
         axios.get('https://api.tomtom.com/search/2/categorySearch/.json', {
-          params: { key, lat: clat, lon: clng, radius: r, limit: 100, categorySet: catId, language: 'en-GB' },
+          params: { key, lat: clat, lon: clng, radius: subRadius, limit: 100, categorySet: catId, language: 'en-GB' },
           timeout: 8000,
         }).then(res => { if (res?.data?.results) res.data.results.forEach(addPlace); }).catch(() => {})
       ));
     }));
 
-    console.log(`TomTom returned ${results.length} businesses (${gridOffsets.length} grid points × ${allCats.length} categories)`);
+    console.log(`TomTom returned ${results.length} businesses (center+${allCats.length}cats + 4 cardinal offsets)`);
     return results;
   } catch (e) {
     console.log('TomTom failed:', e.message);
