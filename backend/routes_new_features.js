@@ -50,22 +50,7 @@ const OSM = {
 
 async function geocode(city) {
   try {
-    // Try Google Geocoding first if key is available
-    const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
-    const hasGoogleKey = GOOGLE_KEY && GOOGLE_KEY !== 'your_google_places_key' && GOOGLE_KEY !== 'your_google_places_api_key';
-    if (hasGoogleKey) {
-      try {
-        const r = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-          params: { address: city + ', India', key: GOOGLE_KEY },
-          timeout: 6000,
-        });
-        if (r.data?.status === 'OK' && r.data?.results?.[0]) {
-          const { lat, lng } = r.data.results[0].geometry.location;
-          return { lat, lon: lng };
-        }
-      } catch (_) {}
-    }
-    // Fallback to Nominatim
+    // Nominatim — free OSM geocoding
     const r = await axios.get(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
       {headers:{'User-Agent':'BizScopeAI/2.0'},timeout:6000}

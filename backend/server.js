@@ -951,55 +951,13 @@ Examples:
   }
 };
 
-// Free geocoding via OpenStreetMap Nominatim — with structured + typo fallback
-// Google Geocoding API used only if Geocoding API is enabled on the key
+// Free geocoding via OpenStreetMap Nominatim — primary geocoder
+// Google Geocoding removed (billing required, REQUEST_DENIED)
 const geocodeLocation = async (location, countryCode = null, structuredParts = null) => {
   const cacheKey = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey);
 
-  // ── Google Geocoding (primary when key is available) ──────────────────────
-  const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY;
-  const hasGoogleKey = GOOGLE_KEY && GOOGLE_KEY !== 'your_google_places_key' && GOOGLE_KEY !== 'your_google_places_api_key';
-
-  if (hasGoogleKey) {
-    try {
-      let query = location;
-      if (structuredParts) {
-        const parts = [structuredParts.street, structuredParts.city, structuredParts.pincode].filter(Boolean);
-        if (parts.length > 0) query = parts.join(', ');
-      }
-      if (countryCode) query += `, ${countryCode}`;
-
-      const res = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-        params: { address: query, key: GOOGLE_KEY },
-        timeout: 6000,
-      });
-
-      // Only use result if API is enabled and returned valid data
-      if (res.data?.status === 'OK' && res.data?.results?.[0]) {
-        const result = res.data.results[0];
-        const { lat, lng } = result.geometry.location;
-        const geo = {
-          latitude: lat,
-          longitude: lng,
-          displayName: result.formatted_address || query || location,
-          partialMatch: false,
-          matchedQuery: query,
-        };
-        console.log(`Google Geocoding: "${location}" → ${lat}, ${lng}`);
-        geocodeCache.set(cacheKey, geo);
-        return geo;
-      }
-      // If REQUEST_DENIED or no results — fall through to Nominatim silently
-      if (res.data?.status === 'REQUEST_DENIED') {
-        console.log('Google Geocoding API not enabled — using Nominatim');
-      }
-    } catch (e) {
-      console.log('Google Geocoding failed, using Nominatim:', e.message?.slice(0, 60));
-    }
-  }
-
-  // ── Nominatim fallback ────────────────────────────────────────────────────
+  // ── Nominatim ────────────────────────────────────────────────────────────
   const tryGeocode = async (query, cc) => {
     const url = `https://nominatim.openstreetmap.org/search`;
     const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
