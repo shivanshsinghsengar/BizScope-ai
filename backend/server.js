@@ -982,7 +982,7 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
         const geo = {
           latitude: lat,
           longitude: lng,
-          displayName: result.formatted_address,
+          displayName: result.formatted_address || query || location,
           partialMatch: false,
           matchedQuery: query,
         };
@@ -1084,7 +1084,7 @@ const geocodeLocation = async (location, countryCode = null, structuredParts = n
   const geo = {
     latitude: parseFloat(result.lat),
     longitude: parseFloat(result.lon),
-    displayName: result.display_name,
+    displayName: result.display_name || matchedQuery || location,
     partialMatch,
     matchedQuery,
   };
@@ -3079,7 +3079,12 @@ app.get('/api/analyze-stream', async (req, res) => {
 
     // Step 1b: Geocode with structured parts for precision
     send('geocode', 'Finding your exact location on the map...', 'Geocoding your area', 12);
-    const geo = await geocodeLocation(location, countryCode, structuredParts);
+    let geo = null;
+    try {
+      geo = await geocodeLocation(location, countryCode, structuredParts);
+    } catch (geoErr) {
+      console.error('[SSE] geocodeLocation threw:', geoErr?.message);
+    }
     if (!geo) {
       res.write(`data: ${JSON.stringify({ step: 'error', message: 'Location not found. Please check the spelling or try a nearby landmark.' })}\n\n`);
       return res.end();
@@ -3097,7 +3102,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       return res.end();
     }
 
-    const confirmedLabel = displayName.split(',').slice(0, 2).join(', ');
+    const confirmedLabel = (displayName || matchedQuery || location).split(',').slice(0, 2).join(', ');
     send('geocode', `Found: ${confirmedLabel}`, aiCorrectionNote ? `✏️ ${aiCorrectionNote}` : 'Location confirmed', 20);
 
     // Step 2: Fetch businesses — TomTom + OSM + Foursquare + Google Places + Mappls + Manual all in parallel
