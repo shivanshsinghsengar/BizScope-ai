@@ -720,7 +720,12 @@ const getAISuggestions = async (location, categoryStats, demandSignals = {}, cit
   const cityName = location.split(',')[0].trim();
   const { offices = 0, schools = 0, hospitals = 0 } = demandSignals;
 
-  const competitionSummary = categoryStats
+  // Accept both array and object — SSE passes object, POST passes array
+  const statsArray = Array.isArray(categoryStats)
+    ? categoryStats
+    : Object.entries(categoryStats).map(([category, stats]) => ({ category, ...stats }));
+
+  const competitionSummary = statsArray
     .slice(0, 8)
     .map(s => `${s.category}: ${s.count} businesses, risk=${s.riskLevel}`)
     .join('; ');
@@ -757,14 +762,18 @@ Tip: [specific tip]
 
 Be specific to ${cityName}. Avoid generic advice.`;
 
-  // Try Gemini first (free)
+  // Try Gemini first (free) — try multiple models in case one hits quota
   if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
-    try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    } catch (e) {
-      console.log('Gemini failed:', e.message);
+    for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.0-pro']) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      } catch (e) {
+        console.log(`Gemini ${modelName} failed:`, e.message?.slice(0, 80));
+        // If quota error (429), try next model; other errors break immediately
+        if (!e.message?.includes('429') && !e.message?.includes('quota') && !e.message?.includes('RESOURCE_EXHAUSTED')) break;
+      }
     }
   } else {
     console.log('Gemini not configured, GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'set' : 'missing');
@@ -3275,7 +3284,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     const wsOpportunityContext = wsDemandScore >= 7 && wsCompetitionScore >= 7 ? 'High competition but strong demand — viable for differentiated businesses' : wsDemandScore >= 7 && wsCompetitionScore < 5 ? 'Low competition with strong demand — excellent entry window' : wsDemandScore < 5 && wsCompetitionScore >= 7 ? 'High risk — low demand with heavy competition' : `Demand from offices (${wsOfficeCount}), schools (${wsSchoolCount}), hospitals (${wsHospitalCount})`;
 
     send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
-    const aiSuggestions = await getAISuggestions(location, categoryStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
+    const aiSuggestions = await getAISuggestions(location, sortedStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
 
     send('done', 'Analysis complete!', 'Preparing your market report', 100);
 
