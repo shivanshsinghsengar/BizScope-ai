@@ -1270,20 +1270,12 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
       'https://overpass.nchc.org.tw/api/interpreter',
     ];
 
-    // ── Sub-grid: 3×3 grid of smaller overlapping circles ──
-    // Overpass has a ~500 result soft cap per query — sub-grid bypasses it
-    // Each sub-circle covers ~55% of total radius so cells overlap at edges
+    // ── Sub-grid: run center cell first, then outer 4 cardinal points only if needed ──
+    // Strategy: center query usually gets enough data for Tier 2/3 cities.
+    // Run all 9 cells only for dense Tier 1 metros where Overpass hits its ~500 result cap.
+    // This prevents overwhelming Overpass with 36 parallel requests.
     const subRadius = Math.round(radiusMeters * 0.55);
     const offsetDeg = (radiusMeters * 0.006) / 1000;
-    const gridOffsets = [
-      [0, 0],
-      [offsetDeg, 0], [-offsetDeg, 0],
-      [0, offsetDeg], [0, -offsetDeg],
-      [offsetDeg * 0.7, offsetDeg * 0.7],
-      [offsetDeg * 0.7, -offsetDeg * 0.7],
-      [-offsetDeg * 0.7, offsetDeg * 0.7],
-      [-offsetDeg * 0.7, -offsetDeg * 0.7],
-    ];
 
     const fetchOneCell = async (clat, clng) => {
       const query = buildOsmQuery(clat, clng, subRadius);
@@ -1302,31 +1294,55 @@ const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12
       } catch (_) { return []; }
     };
 
-    // Race all mirrors in PARALLEL — take the first one that responds with data
-    // This prevents sequential timeouts (3 x 15s = 45s) causing server 500s
     let allElements = [];
-    let fetched = false;
     try {
-      // Run center cell first (fast path), then run remaining 8 cells in parallel
+      // Always run center cell
       const centerElements = await fetchOneCell(lat, lng);
-      const outerResults = await Promise.allSettled(
-        gridOffsets.slice(1).map(([dlat, dlng]) => fetchOneCell(lat + dlat, lng + dlng))
-      );
-      const outerElements = outerResults
-        .filter(r => r.status === 'fulfilled')
-        .flatMap(r => r.value);
 
-      allElements = [...centerElements, ...outerElements];
-      fetched = allElements.length > 0;
-      if (!fetched) {
-        logError('overpass', 'All sub-grid cells returned empty', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
-        return [];
+      // Run 4 cardinal cells — but only if center returned < 300 results (not already dense enough)
+      // This avoids hammering Overpass for small cities while still expanding for dense metros
+      const cardinalOffsets = [
+        [offsetDeg, 0], [-offsetDeg, 0],
+        [0, offsetDeg], [0, -offsetDeg],
+      ];
+
+      let outerElements = [];
+      if (centerElements.length < 300) {
+        const outerResults = await Promise.allSettled(
+          cardinalOffsets.map(([dlat, dlng]) => fetchOneCell(lat + dlat, lng + dlng))
+        );
+        outerElements = outerResults
+          .filter(r => r.status === 'fulfilled')
+          .flatMap(r => r.value);
       }
+
+      // Run diagonal cells only for very dense areas where even 5 cells aren't enough
+      let diagElements = [];
+      if (centerElements.length + outerElements.length > 400) {
+        const diagOffsets = [
+          [offsetDeg * 0.7, offsetDeg * 0.7],
+          [offsetDeg * 0.7, -offsetDeg * 0.7],
+          [-offsetDeg * 0.7, offsetDeg * 0.7],
+          [-offsetDeg * 0.7, -offsetDeg * 0.7],
+        ];
+        const diagResults = await Promise.allSettled(
+          diagOffsets.map(([dlat, dlng]) => fetchOneCell(lat + dlat, lng + dlng))
+        );
+        diagElements = diagResults
+          .filter(r => r.status === 'fulfilled')
+          .flatMap(r => r.value);
+      }
+
+      allElements = [...centerElements, ...outerElements, ...diagElements];
     } catch (e) {
       logError('overpass', 'Sub-grid fetch failed', { lat, lng, radiusMeters }, 'error', true, 'Falling back to estimated data');
       return [];
     }
-    if (!fetched) return [];
+
+    if (!allElements.length) {
+      logError('overpass', 'All sub-grid cells returned empty', { lat, lng, radiusMeters }, 'warn', true, 'Falling back to estimated data');
+      return [];
+    }
 
     // Dedup by OSM element id — sub-grid cells overlap so same element may appear multiple times
     const seenOsmIds = new Set();
@@ -3143,11 +3159,9 @@ app.get('/api/analyze-stream', async (req, res) => {
 
     send('fetch', `Found ${tomtomBusinesses.length + osmBusinesses.length + foursquareBusinesses.length + googleBusinesses.length + mapplsBusinesses.length} raw businesses, analyzing...`, 'Processing data', 45);
 
-    // Second OSM pass — wider radius, but with short timeout so it doesn't block
-    const osmWider = await Promise.race([
-      fetchRealBusinesses(latitude, longitude, 8000),
-      new Promise(r => setTimeout(() => r([]), 8000)), // max 8s extra
-    ]).catch(() => []);
+    // Second OSM pass removed — fetchRealBusinesses now uses sub-grid internally,
+    // so a second full call would double the Overpass load unnecessarily.
+    const osmWider = [];
 
     // Track raw source counts BEFORE dedup
     const rawSourceCounts = {};
