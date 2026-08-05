@@ -263,7 +263,74 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ── TIER 2 — Supporting stats (smaller row) ── */}
+            {/* ── DEMAND / COMPETITION / OPPORTUNITY — 3 cards ── */}
+            {(data.demandScore || data.competitionScore || data.opportunityScore) && (() => {
+              const ds = data.demandScore ?? 5;
+              const cs = data.competitionScore ?? 5;
+              const os = data.opportunityScore ?? 5;
+              const label = data.opportunityLabel || 'Moderate Opportunity';
+              const ctx = data.opportunityContext || '';
+
+              const oColor = os >= 7.5 ? '#15803d' : os >= 5.5 ? '#0f766e' : os >= 3.5 ? '#c2410c' : '#b91c1c';
+              const oGrad  = os >= 7.5
+                ? 'linear-gradient(135deg, rgba(21,128,61,0.15), rgba(21,128,61,0.05))'
+                : os >= 5.5
+                  ? 'linear-gradient(135deg, rgba(15,118,110,0.15), rgba(15,118,110,0.05))'
+                  : os >= 3.5
+                    ? 'linear-gradient(135deg, rgba(194,65,12,0.15), rgba(194,65,12,0.05))'
+                    : 'linear-gradient(135deg, rgba(185,28,28,0.15), rgba(185,28,28,0.05))';
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '12px', marginBottom: '16px' }} className="dco-grid">
+                  {/* Demand Score */}
+                  <div style={{ background: 'linear-gradient(135deg, rgba(30,64,175,0.15), rgba(30,64,175,0.05))', border: '1px solid rgba(30,64,175,0.25)', borderRadius: '14px', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #1e40af, transparent)' }} />
+                    <div style={{ fontSize: '11px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>📈 Demand Score</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '28px', fontWeight: '900', color: '#1e40af', letterSpacing: '-1px' }}>{ds.toFixed(1)}</span>
+                      <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>/10</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'var(--progress-track)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <div style={{ height: '100%', width: `${ds * 10}%`, background: 'linear-gradient(90deg, #1e40af, #3b82f6)', borderRadius: '2px', transition: 'width 0.8s cubic-bezier(.34,1.56,.64,1)' }} />
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--muted)', lineHeight: 1.4 }}>
+                      {data.demandSignals ? `${data.demandSignals.offices} offices · ${data.demandSignals.schools} schools · ${data.demandSignals.hospitals} hospitals` : 'Area demand signal'}
+                    </div>
+                  </div>
+
+                  {/* Competition Score */}
+                  <div style={{ background: 'linear-gradient(135deg, rgba(194,65,12,0.15), rgba(194,65,12,0.05))', border: '1px solid rgba(194,65,12,0.25)', borderRadius: '14px', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #c2410c, transparent)' }} />
+                    <div style={{ fontSize: '11px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>⚔️ Competition Score</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '28px', fontWeight: '900', color: '#c2410c', letterSpacing: '-1px' }}>{cs.toFixed(1)}</span>
+                      <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>/10</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'var(--progress-track)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <div style={{ height: '100%', width: `${cs * 10}%`, background: 'linear-gradient(90deg, #c2410c, #f97316)', borderRadius: '2px', transition: 'width 0.8s cubic-bezier(.34,1.56,.64,1)' }} />
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--muted)', lineHeight: 1.4 }}>
+                      {cs >= 7 ? 'Highly competitive market' : cs >= 4 ? 'Moderate competition' : 'Low competition'}
+                    </div>
+                  </div>
+
+                  {/* Opportunity Score */}
+                  <div style={{ background: oGrad, border: `1px solid ${oColor}30`, borderRadius: '14px', padding: '16px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, ${oColor}, transparent)` }} />
+                    <div style={{ fontSize: '11px', color: 'var(--muted-label)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>🎯 Opportunity</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '28px', fontWeight: '900', color: oColor, letterSpacing: '-1px' }}>{os.toFixed(1)}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: oColor, padding: '2px 8px', borderRadius: '100px', background: `${oColor}18`, border: `1px solid ${oColor}30` }}>{label}</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'var(--progress-track)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <div style={{ height: '100%', width: `${os * 10}%`, background: `linear-gradient(90deg, ${oColor}, ${oColor}80)`, borderRadius: '2px', transition: 'width 0.8s cubic-bezier(.34,1.56,.64,1)' }} />
+                    </div>
+                    {ctx && <div style={{ fontSize: '10.5px', color: 'var(--muted)', lineHeight: 1.4 }}>{ctx}</div>}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="stat-grid" style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
               {[
                 { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
@@ -400,6 +467,7 @@ export default function Dashboard() {
       <MarketChat data={{ ...data, viabilityScore }} />
 
       <style>{`
+        .dco-grid { grid-template-columns: repeat(3, 1fr) !important; }
         @media (max-width: 1100px) {
           .stat-grid  { grid-template-columns: repeat(3, 1fr) !important; }
           .stat-tier1 { flex-direction: column !important; }
@@ -412,6 +480,7 @@ export default function Dashboard() {
           .stat-grid  { grid-template-columns: repeat(2, 1fr) !important; }
           .stat-tier1 { flex-direction: column !important; }
           .cat-grid   { grid-template-columns: 1fr !important; }
+          .dco-grid   { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </Layout>

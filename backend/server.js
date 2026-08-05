@@ -716,23 +716,46 @@ try {
   }
 } catch (e) { console.log('Gemini init skipped:', e.message); }
 
-const getAISuggestions = async (location, categoryStats) => {
+const getAISuggestions = async (location, categoryStats, demandSignals = {}, cityTier = 5) => {
   const cityName = location.split(',')[0].trim();
-  const prompt = `You are a business consultant specializing in Indian markets. A user wants to start a business in ${cityName}.
+  const { offices = 0, schools = 0, hospitals = 0 } = demandSignals;
 
-Here is the current market data for ${cityName} (businesses found within 5km):
-${JSON.stringify(categoryStats, null, 2)}
+  const competitionSummary = categoryStats
+    .slice(0, 8)
+    .map(s => `${s.category}: ${s.count} businesses, risk=${s.riskLevel}`)
+    .join('; ');
 
-Based on this real data, suggest the 5 best businesses to start in ${cityName}. For each business provide:
-1. Business type
-2. Best area/locality in ${cityName} to open it (be specific — name a real neighbourhood, market, or street in ${cityName})
-3. Why that area is ideal
-4. Demand score (1-10)
-5. Saturation level (Low/Medium/High)
-6. Estimated monthly profit in INR
-7. One key action to stand out
+  const totalDemandSignals = offices + schools + hospitals;
+  const demandStrength = totalDemandSignals > 15 ? 'Very Strong' : totalDemandSignals > 8 ? 'Strong' : totalDemandSignals > 3 ? 'Moderate' : 'Low';
 
-Be specific to ${cityName} — mention real areas, markets, and local context (e.g. for Agra mention areas near Taj Mahal, Sadar Bazaar, Fatehabad Road etc.).`;
+  const prompt = `You are a market analyst for Indian cities.
+
+Location: ${cityName}
+City Tier: ${cityTier === 10 ? 'Tier 1 (Metro)' : cityTier === 7 ? 'Tier 2 (Large city)' : 'Tier 3 (Small city)'}
+Competition: ${competitionSummary}
+Demand Signals: Offices nearby: ${offices}, Schools nearby: ${schools}, Hospitals nearby: ${hospitals}
+Overall Demand Strength: ${demandStrength}
+
+Rules:
+- Do NOT say "high risk" only because competitors are many. Competition alone is not risk.
+- If demand signals are strong (totalSignals > 8), explicitly say "High competition but strong demand — viable for differentiated players".
+- Suggest businesses where Demand > Competition gap is highest.
+- Give exactly 5 recommendations.
+- For each recommendation provide:
+  1. Business Type (be specific, not generic)
+  2. Why this area — mention real neighbourhoods, markets, or streets in ${cityName}
+  3. Demand vs Competition: one line honest assessment
+  4. Opportunity Level: High / Medium / Low
+  5. One tip: one actionable differentiator specific to ${cityName}
+
+Format each recommendation as:
+**[Business Type]**
+Why: [reason]
+Demand vs Competition: [assessment]
+Opportunity: [High/Medium/Low]
+Tip: [specific tip]
+
+Be specific to ${cityName}. Avoid generic advice.`;
 
   // Try Gemini first (free)
   if (genAI && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
@@ -3221,9 +3244,24 @@ app.get('/api/analyze-stream', async (req, res) => {
       .map(([category, stats]) => ({ category, ...stats }))
       .sort((a, b) => b.competitorScore - a.competitorScore);
 
-    // Step 4: AI
+    // Step 4: AI — pass demand signals for better recommendations
+    const wsOfficeCount   = businesses.filter(b => ['Office', 'Education', 'Finance'].includes(b.category)).length;
+    const wsSchoolCount   = businesses.filter(b => b.category === 'Education').length;
+    const wsHospitalCount = businesses.filter(b => b.category === 'Hospital').length;
+    const wsResidential   = businesses.some(b => ['Grocery', 'Pharmacy', 'Laundry'].includes(b.category)) ? 1 : 0;
+    const wsCityLower = (displayName || '').toLowerCase();
+    const wsCityTierMap = { mumbai:10,delhi:10,bangalore:10,bengaluru:10,hyderabad:10,chennai:10,kolkata:10,pune:10,ahmedabad:10,surat:10,jaipur:7,lucknow:7,kanpur:7,nagpur:7,indore:7,bhopal:7,agra:7,nashik:7,varanasi:7,patna:7,allahabad:7,prayagraj:7,chandigarh:7,mysore:7,mysuru:7,meerut:7,guwahati:7,kota:7 };
+    const wsCityTier = Object.entries(wsCityTierMap).find(([c]) => wsCityLower.includes(c))?.[1] || 5;
+    const clampWs = (v, a, b) => Math.max(a, Math.min(b, v));
+    const wsDemandScore = parseFloat(clampWs((wsCityTier * 0.4) + ((wsOfficeCount + wsSchoolCount + wsHospitalCount) / Math.max(businesses.length,1)) * 10 * 0.4 + (wsResidential * 2), 1, 10).toFixed(1));
+    const wsAvgComp = sortedStats.length ? sortedStats.reduce((s,x) => s + x.riskScore, 0) / sortedStats.length / 10 : 5;
+    const wsCompetitionScore = parseFloat(clampWs(wsAvgComp, 1, 10).toFixed(1));
+    const wsOpportunityScore = parseFloat(clampWs((wsDemandScore * 0.6) - (wsCompetitionScore * 0.4) + 5, 1, 10).toFixed(1));
+    const wsOpportunityLabel = wsOpportunityScore >= 7.5 ? 'Strong Opportunity' : wsOpportunityScore >= 5.5 ? 'Moderate Opportunity' : wsOpportunityScore >= 3.5 ? 'Competitive Market' : 'High Risk';
+    const wsOpportunityContext = wsDemandScore >= 7 && wsCompetitionScore >= 7 ? 'High competition but strong demand — viable for differentiated businesses' : wsDemandScore >= 7 && wsCompetitionScore < 5 ? 'Low competition with strong demand — excellent entry window' : wsDemandScore < 5 && wsCompetitionScore >= 7 ? 'High risk — low demand with heavy competition' : `Demand from offices (${wsOfficeCount}), schools (${wsSchoolCount}), hospitals (${wsHospitalCount})`;
+
     send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
-    const aiSuggestions = await getAISuggestions(location, categoryStats);
+    const aiSuggestions = await getAISuggestions(location, categoryStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
 
     send('done', 'Analysis complete!', 'Preparing your market report', 100);
 
@@ -3233,6 +3271,13 @@ app.get('/api/analyze-stream', async (req, res) => {
       aiCorrectionNote: aiCorrectionNote || null,
       estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses, categoryStats: sortedStats, aiSuggestions,
+      demandScore: wsDemandScore,
+      competitionScore: wsCompetitionScore,
+      opportunityScore: wsOpportunityScore,
+      opportunityLabel: wsOpportunityLabel,
+      opportunityContext: wsOpportunityContext,
+      cityTier: wsCityTier,
+      demandSignals: { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount },
       userLat: latitude, userLng: longitude,
       dataQuality: buildDataQuality(businesses, aiSuggestions, rawSourceCounts),
     };
@@ -3347,6 +3392,68 @@ app.post('/api/analyze-location', async (req, res) => {
       .map(([category, stats]) => ({ category, ...stats }))
       .sort((a, b) => b.competitorScore - a.competitorScore);
 
+    // ── Demand Score & Opportunity Score ──────────────────────────────────────
+    // City tier based on known Indian cities (Tier 1 = 10, Tier 2 = 7, Tier 3 = 5)
+    const cityTierMap = {
+      // Tier 1
+      mumbai: 10, delhi: 10, bangalore: 10, bengaluru: 10, hyderabad: 10,
+      chennai: 10, kolkata: 10, pune: 10, ahmedabad: 10, surat: 10,
+      // Tier 2
+      jaipur: 7, lucknow: 7, kanpur: 7, nagpur: 7, indore: 7, bhopal: 7,
+      visakhapatnam: 7, patiala: 7, vadodara: 7, coimbatore: 7, ludhiana: 7,
+      agra: 7, nashik: 7, faridabad: 7, meerut: 7, rajkot: 7, varanasi: 7,
+      patna: 7, srinagar: 7, aurangabad: 7, dhanbad: 7, amritsar: 7,
+      allahabad: 7, prayagraj: 7, ranchi: 7, howrah: 7, jabalpur: 7,
+      gwalior: 7, vijayawada: 7, jodhpur: 7, madurai: 7, raipur: 7,
+      kota: 7, guwahati: 7, chandigarh: 7, solapur: 7, hubli: 7,
+      bareilly: 7, moradabad: 7, mysore: 7, mysuru: 7, tiruchirappalli: 7,
+      // Tier 3 — default for unrecognized
+    };
+    const cityLower = (displayName || '').toLowerCase();
+    const detectedTier = Object.entries(cityTierMap).find(([city]) => cityLower.includes(city))?.[1] || 5;
+
+    // Count demand signals from businesses
+    const officeCount  = businesses.filter(b => ['Office', 'Education', 'Finance'].includes(b.category)).length;
+    const schoolCount  = businesses.filter(b => b.category === 'Education').length;
+    const hospitalCount = businesses.filter(b => b.category === 'Hospital').length;
+    const residentialSignal = businesses.some(b =>
+      b.category === 'Grocery' || b.category === 'Pharmacy' || b.category === 'Laundry'
+    ) ? 1 : 0;
+
+    const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+    const overallDemandScore = parseFloat(clamp(
+      (detectedTier * 0.4) +
+      ((officeCount + schoolCount + hospitalCount) / Math.max(businesses.length, 1)) * 10 * 0.4 +
+      (residentialSignal * 2),
+      1, 10
+    ).toFixed(1));
+
+    // Normalize competition: avg competitor score across all categories (0-10 scale)
+    const avgCompetitorScore = sortedStats.length
+      ? sortedStats.reduce((sum, s) => sum + s.riskScore, 0) / sortedStats.length / 10
+      : 5;
+    const overallCompetitionScore = parseFloat(clamp(avgCompetitorScore, 1, 10).toFixed(1));
+
+    const overallOpportunityScore = parseFloat(clamp(
+      (overallDemandScore * 0.6) - (overallCompetitionScore * 0.4) + 5,
+      1, 10
+    ).toFixed(1));
+
+    const opportunityLabel =
+      overallOpportunityScore >= 7.5 ? 'Strong Opportunity' :
+      overallOpportunityScore >= 5.5 ? 'Moderate Opportunity' :
+      overallOpportunityScore >= 3.5 ? 'Competitive Market' : 'High Risk';
+
+    const opportunityContext =
+      overallDemandScore >= 7 && overallCompetitionScore >= 7
+        ? 'High competition but strong demand — viable for differentiated businesses'
+        : overallDemandScore >= 7 && overallCompetitionScore < 5
+          ? 'Low competition with strong demand — excellent entry window'
+          : overallDemandScore < 5 && overallCompetitionScore >= 7
+            ? 'High risk — low demand with heavy competition'
+            : `Demand from offices (${officeCount}), schools (${schoolCount}), hospitals (${hospitalCount})`;
+    // ──────────────────────────────────────────────────────────────────────────
+
     const usingEstimated = businesses.some(b => b.isMock);
     const result = {
       location: { displayName, latitude, longitude },
@@ -3354,6 +3461,13 @@ app.post('/api/analyze-location', async (req, res) => {
       estimatedData: usingEstimated ? '⚠️ Live data unavailable — showing estimated market structure. Retry in a few minutes for real data.' : null,
       businesses,
       categoryStats: sortedStats,
+      demandScore: overallDemandScore,
+      competitionScore: overallCompetitionScore,
+      opportunityScore: overallOpportunityScore,
+      opportunityLabel,
+      opportunityContext,
+      cityTier: detectedTier,
+      demandSignals: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount },
       aiSuggestions: 'Generating AI recommendations...',
       userLat: latitude,
       userLng: longitude,
@@ -3365,7 +3479,7 @@ app.post('/api/analyze-location', async (req, res) => {
     res.json(result);
 
     // Update cache with AI result after response sent
-    getAISuggestions(location, categoryStats).then(ai => {
+    getAISuggestions(location, categoryStats, { offices: officeCount, schools: schoolCount, hospitals: hospitalCount }, detectedTier).then(ai => {
       result.aiSuggestions = ai;
       result.dataQuality = buildDataQuality(result.businesses, ai, rawSourceCounts);
       setCache(cacheKey, result);
