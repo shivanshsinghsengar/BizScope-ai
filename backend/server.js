@@ -3283,6 +3283,58 @@ app.get('/api/analyze-stream', async (req, res) => {
     const wsOpportunityLabel = wsOpportunityScore >= 7.5 ? 'Strong Opportunity' : wsOpportunityScore >= 5.5 ? 'Moderate Opportunity' : wsOpportunityScore >= 3.5 ? 'Competitive Market' : 'High Risk';
     const wsOpportunityContext = wsDemandScore >= 7 && wsCompetitionScore >= 7 ? 'High competition but strong demand — viable for differentiated businesses' : wsDemandScore >= 7 && wsCompetitionScore < 5 ? 'Low competition with strong demand — excellent entry window' : wsDemandScore < 5 && wsCompetitionScore >= 7 ? 'High risk — low demand with heavy competition' : `Demand from offices (${wsOfficeCount}), schools (${wsSchoolCount}), hospitals (${wsHospitalCount})`;
 
+    // ── Per-category opportunity scores (demand - competition, both normalized 0-100) ──
+    // demandProxy: how many demand-generating businesses exist near this category
+    // e.g. schools near stationery, hospitals near pharmacy, offices near restaurants
+    const categoryDemandProxy = {
+      Restaurant: wsOfficeCount + wsSchoolCount + wsHospitalCount,
+      Cafe:       wsOfficeCount + wsSchoolCount,
+      Grocery:    wsSchoolCount + wsHospitalCount + (wsResidential * 20),
+      Pharmacy:   wsHospitalCount + (wsResidential * 15),
+      Bakery:     wsSchoolCount + wsOfficeCount,
+      Laundry:    wsOfficeCount + (wsResidential * 20),
+      Gym:        wsOfficeCount + wsResidential * 10,
+      Salon:      wsOfficeCount + wsResidential * 10,
+      Clothing:   wsOfficeCount + wsSchoolCount,
+      Electronics:wsOfficeCount + wsSchoolCount,
+      Education:  wsSchoolCount * 2 + wsResidential * 10,
+      Hospital:   wsResidential * 20 + wsHospitalCount,
+      Hardware:   wsResidential * 15,
+      Furniture:  wsResidential * 10,
+      Hotel:      wsCityTier * 5,
+      Finance:    wsOfficeCount * 2 + wsCityTier * 3,
+      Automotive: wsResidential * 10 + wsCityTier * 3,
+      Retail:     wsOfficeCount + wsSchoolCount + wsResidential * 8,
+      Wholesale:  wsOfficeCount + wsCityTier * 5,
+    };
+
+    // Normalize competitor risk scores to 0-100 and compute per-category opportunity
+    const maxDemandProxy = Math.max(...Object.values(categoryDemandProxy), 1);
+    const bestOpportunities = sortedStats.map(s => {
+      const demandProxyRaw = categoryDemandProxy[s.category] ?? (wsOfficeCount + wsResidential * 5);
+      const demandProxyNorm = Math.min(100, (demandProxyRaw / maxDemandProxy) * 100);
+      // cityTier boosts overall demand for all categories
+      const cityDemandBoost = wsCityTier * 3;
+      const totalDemand = Math.min(100, demandProxyNorm + cityDemandBoost);
+      const competition = s.riskScore; // already 0-100
+      const catOpportunity = Math.round((totalDemand * 0.6) - (competition * 0.4) + 40);
+      return {
+        category: s.category,
+        opportunityScore: Math.max(0, Math.min(100, catOpportunity)),
+        demandScore: Math.round(totalDemand),
+        competitionScore: competition,
+        count: s.count,
+        riskLevel: s.riskLevel,
+        demandSignalBreakdown: {
+          offices: wsOfficeCount,
+          schools: wsSchoolCount,
+          hospitals: wsHospitalCount,
+          residential: wsResidential,
+          cityTier: wsCityTier,
+        },
+      };
+    }).sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 5);
+
     send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
     const aiSuggestions = await getAISuggestions(location, sortedStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
 
@@ -3301,6 +3353,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       opportunityContext: wsOpportunityContext,
       cityTier: wsCityTier,
       demandSignals: { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount },
+      bestOpportunities,
       userLat: latitude, userLng: longitude,
       dataQuality: buildDataQuality(businesses, aiSuggestions, rawSourceCounts),
     };
@@ -3477,6 +3530,43 @@ app.post('/api/analyze-location', async (req, res) => {
             : `Demand from offices (${officeCount}), schools (${schoolCount}), hospitals (${hospitalCount})`;
     // ──────────────────────────────────────────────────────────────────────────
 
+    // ── Per-category opportunity scores for POST route ──
+    const postCategoryDemandProxy = {
+      Restaurant: officeCount + schoolCount + hospitalCount,
+      Cafe:       officeCount + schoolCount,
+      Grocery:    schoolCount + hospitalCount + (residentialSignal * 20),
+      Pharmacy:   hospitalCount + (residentialSignal * 15),
+      Bakery:     schoolCount + officeCount,
+      Laundry:    officeCount + (residentialSignal * 20),
+      Gym:        officeCount + residentialSignal * 10,
+      Salon:      officeCount + residentialSignal * 10,
+      Clothing:   officeCount + schoolCount,
+      Electronics:officeCount + schoolCount,
+      Education:  schoolCount * 2 + residentialSignal * 10,
+      Hospital:   residentialSignal * 20 + hospitalCount,
+      Hardware:   residentialSignal * 15,
+      Furniture:  residentialSignal * 10,
+      Hotel:      detectedTier * 5,
+      Finance:    officeCount * 2 + detectedTier * 3,
+      Automotive: residentialSignal * 10 + detectedTier * 3,
+      Retail:     officeCount + schoolCount + residentialSignal * 8,
+      Wholesale:  officeCount + detectedTier * 5,
+    };
+    const postMaxProxy = Math.max(...Object.values(postCategoryDemandProxy), 1);
+    const bestOpportunities = sortedStats.map(s => {
+      const proxyRaw = postCategoryDemandProxy[s.category] ?? (officeCount + residentialSignal * 5);
+      const proxyNorm = Math.min(100, (proxyRaw / postMaxProxy) * 100);
+      const totalDemand = Math.min(100, proxyNorm + detectedTier * 3);
+      const catOpp = Math.max(0, Math.min(100, Math.round((totalDemand * 0.6) - (s.riskScore * 0.4) + 40)));
+      return {
+        category: s.category, opportunityScore: catOpp,
+        demandScore: Math.round(totalDemand), competitionScore: s.riskScore,
+        count: s.count, riskLevel: s.riskLevel,
+        demandSignalBreakdown: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount, residential: residentialSignal, cityTier: detectedTier },
+      };
+    }).sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 5);
+    // ─────────────────────────────────────────────────────────────────────────
+
     const usingEstimated = businesses.some(b => b.isMock);
     const result = {
       location: { displayName, latitude, longitude },
@@ -3491,6 +3581,7 @@ app.post('/api/analyze-location', async (req, res) => {
       opportunityContext,
       cityTier: detectedTier,
       demandSignals: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount },
+      bestOpportunities,
       aiSuggestions: 'Generating AI recommendations...',
       userLat: latitude,
       userLng: longitude,

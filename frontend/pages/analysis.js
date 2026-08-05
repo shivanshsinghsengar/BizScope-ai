@@ -331,6 +331,104 @@ export default function Dashboard() {
               );
             })()}
 
+            {/* ── BEST OPPORTUNITY DEEP RESEARCH ── */}
+            {data.bestOpportunities?.length > 0 && (() => {
+              const top = data.bestOpportunities[0];
+              const signals = top.demandSignalBreakdown || {};
+              const tierLabel = signals.cityTier >= 10 ? 'Tier 1 Metro' : signals.cityTier >= 7 ? 'Tier 2 City' : 'Tier 3 City';
+              const catIcons = { Restaurant:'🍽️',Cafe:'☕',Grocery:'🛒',Gym:'💪',Salon:'✂️',Pharmacy:'💊',Bakery:'🥐',Laundry:'👕',Hospital:'🏥',Clothing:'👗',Electronics:'📱',Hardware:'🔧',Furniture:'🛋️',Education:'🎓',Jewellery:'💍',Automotive:'🚗',Finance:'🏦',Hotel:'🏨',Retail:'🛍️',Wholesale:'📦',Office:'🏢' };
+
+              return (
+                <div style={{ background: 'var(--card-bg)', border: '1px solid rgba(21,128,61,0.3)', borderRadius: '16px', padding: '20px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+                  {/* Top accent */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #15803d, #0f766e, transparent)' }} />
+
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(21,128,61,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔬</div>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text)' }}>Best Opportunity — Deep Research</div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Based on area demand signals + competition gap</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#15803d', padding: '3px 10px', borderRadius: '100px', background: 'rgba(21,128,61,0.12)', border: '1px solid rgba(21,128,61,0.25)' }}>
+                      {tierLabel}
+                    </span>
+                  </div>
+
+                  {/* Top 3 opportunities */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' }} className="opp-cards">
+                    {data.bestOpportunities.slice(0, 3).map((opp, i) => {
+                      const oppColor = i === 0 ? '#15803d' : i === 1 ? '#0f766e' : '#1e40af';
+                      const badge = i === 0 ? '🥇 Top Pick' : i === 1 ? '🥈 Runner Up' : '🥉 Good Bet';
+                      return (
+                        <div key={i}
+                          onClick={() => router.push(`/competitors?category=${encodeURIComponent(opp.category)}`)}
+                          style={{ background: `linear-gradient(135deg, ${oppColor}18, ${oppColor}08)`, border: `1px solid ${oppColor}30`, borderRadius: '12px', padding: '14px', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${oppColor}20`; }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, ${oppColor}, transparent)`, borderRadius: '12px 12px 0 0' }} />
+                          <div style={{ fontSize: '10px', fontWeight: '700', color: oppColor, marginBottom: '6px' }}>{badge}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '20px' }}>{catIcons[opp.category] || '🏪'}</span>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)' }}>{opp.category}</span>
+                          </div>
+                          {/* Opportunity score bar */}
+                          <div style={{ marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--muted)', marginBottom: '3px' }}>
+                              <span>Opportunity</span>
+                              <span style={{ fontWeight: '700', color: oppColor }}>{opp.opportunityScore}/100</span>
+                            </div>
+                            <div style={{ height: '4px', background: 'var(--progress-track)', borderRadius: '2px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${opp.opportunityScore}%`, background: `linear-gradient(90deg, ${oppColor}, ${oppColor}80)`, borderRadius: '2px' }} />
+                            </div>
+                          </div>
+                          {/* Demand vs competition */}
+                          <div style={{ display: 'flex', gap: '6px', fontSize: '10px' }}>
+                            <span style={{ color: '#1e40af', fontWeight: '600' }}>📈 D:{opp.demandScore}</span>
+                            <span style={{ color: '#c2410c', fontWeight: '600' }}>⚔️ C:{opp.competitionScore}</span>
+                            <span style={{ color: 'var(--muted)' }}>({opp.count} exist)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Demand signal breakdown for top pick */}
+                  <div style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '12px 14px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted-label)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                      📊 Why {top.category} has demand in this area
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {[
+                        { icon: '🏢', label: 'Offices/Finance', val: signals.offices, good: signals.offices > 5 },
+                        { icon: '🎓', label: 'Schools/Edu', val: signals.schools, good: signals.schools > 3 },
+                        { icon: '🏥', label: 'Hospitals', val: signals.hospitals, good: signals.hospitals > 2 },
+                        { icon: '🏘️', label: 'Residential', val: signals.residential ? 'Yes' : 'Low', good: signals.residential },
+                        { icon: '🏙️', label: 'City Tier', val: `T${signals.cityTier >= 10 ? '1' : signals.cityTier >= 7 ? '2' : '3'}`, good: signals.cityTier >= 7 },
+                      ].map((sig, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', background: sig.good ? 'rgba(21,128,61,0.1)' : 'rgba(100,116,139,0.1)', border: `1px solid ${sig.good ? 'rgba(21,128,61,0.2)' : 'rgba(100,116,139,0.15)'}` }}>
+                          <span style={{ fontSize: '13px' }}>{sig.icon}</span>
+                          <div>
+                            <div style={{ fontSize: '9px', color: 'var(--muted)', lineHeight: 1 }}>{sig.label}</div>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: sig.good ? '#15803d' : 'var(--muted)', lineHeight: 1.2 }}>{sig.val}</div>
+                          </div>
+                          <span style={{ fontSize: '10px' }}>{sig.good ? '✅' : '⚠️'}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--muted)', lineHeight: 1.6, padding: '8px 10px', background: 'rgba(30,64,175,0.06)', borderRadius: '8px', border: '1px solid rgba(30,64,175,0.12)' }}>
+                      💡 <strong style={{ color: 'var(--text)' }}>{top.category}</strong> scores highest because it has{' '}
+                      {top.demandScore >= 70 ? 'strong' : top.demandScore >= 40 ? 'moderate' : 'some'} demand ({top.demandScore}/100) with only{' '}
+                      {top.competitionScore <= 30 ? 'very low' : top.competitionScore <= 50 ? 'low' : 'moderate'} competition ({top.competitionScore}/100) — net opportunity gap of <strong style={{ color: '#15803d' }}>{top.opportunityScore}/100</strong>.
+                      {top.count <= 3 ? ` Only ${top.count} existing ${top.category.toLowerCase()} in this area.` : ''}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="stat-grid" style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
               {[
                 { icon: '🔴', label: 'Most Competitive', value: data.categoryStats?.[0]?.category || 'N/A', color: '#ef4444', href: `/competitors?category=${encodeURIComponent(data.categoryStats?.[0]?.category || '')}` },
@@ -468,12 +566,14 @@ export default function Dashboard() {
 
       <style>{`
         .dco-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        .opp-cards { grid-template-columns: repeat(3, 1fr) !important; }
         @media (max-width: 1100px) {
           .stat-grid  { grid-template-columns: repeat(3, 1fr) !important; }
           .stat-tier1 { flex-direction: column !important; }
           .chart-grid { grid-template-columns: 1fr !important; }
           .cat-grid   { grid-template-columns: repeat(2, 1fr) !important; }
           .right-panel { display: none !important; }
+          .opp-cards  { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 768px) {
           .analysis-body { flex-direction: column !important; }
@@ -481,6 +581,7 @@ export default function Dashboard() {
           .stat-tier1 { flex-direction: column !important; }
           .cat-grid   { grid-template-columns: 1fr !important; }
           .dco-grid   { grid-template-columns: 1fr !important; }
+          .opp-cards  { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </Layout>
