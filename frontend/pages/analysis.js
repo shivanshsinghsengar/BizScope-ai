@@ -185,6 +185,15 @@ function OpportunityCard({ opp, rank, onClick }) {
         fontSize: '12px', color: C.muted }}>
         {opp.count} existing · {opp.competitionScore <= 30 ? 'Few competitors' : opp.competitionScore <= 60 ? 'Some competitors' : 'Many competitors'}
       </div>
+      {opp.budget && (
+        <div style={{ marginTop: '8px', padding: '7px 10px', borderRadius: '8px',
+          background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#16A34A',
+            fontFamily: "'Space Grotesk', sans-serif" }}>💰 {opp.budget.min}</span>
+          <span style={{ fontSize: '10.5px', color: '#64748B',
+            fontFamily: "'Inter', sans-serif" }}> to start · {opp.budget.detail}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -870,6 +879,12 @@ export default function Dashboard() {
                                 lineHeight: '1.5', fontFamily: "'Inter', sans-serif" }}>
                                 {rec.reason}
                               </p>
+                              {rec.budget && (
+                                <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: '700',
+                                  color: '#16A34A', fontFamily: "'Space Grotesk', sans-serif" }}>
+                                  💰 {rec.budget.min} to start
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

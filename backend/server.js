@@ -1254,19 +1254,52 @@ const mergeSmarter = (tomtomList = [], osmList = []) => {
 
 const ANCHOR_CATEGORIES = {
   // Religious — highest footfall in pilgrimage cities
-  temple:       { label: 'Temple / Mandir',    icon: '🛕', footfall: 'Very High', keyword: ['temple','mandir','mosque','church','gurudwara','dargah','ashram','shrine','devsthana','devasthan'] },
-  // Transport
-  transit:      { label: 'Bus / Railway Hub',  icon: '🚌', footfall: 'High',      keyword: ['bus stand','bus station','railway','metro','auto stand','taxi stand','junction','terminus'] },
-  // Education
-  college:      { label: 'College / School',   icon: '🎓', footfall: 'High',      keyword: ['college','university','school','institute','academy','coaching','polytechnic','iit','nit'] },
-  // Markets
-  market:       { label: 'Market / Bazaar',    icon: '🛍️', footfall: 'Very High', keyword: ['market','bazaar','bazar','mandi','chowk','ganj','haat','mall','plaza','complex'] },
-  // Medical
-  hospital:     { label: 'Hospital / Clinic',  icon: '🏥', footfall: 'High',      keyword: ['hospital','clinic','medical','nursing','health','dispensary','maternity','diagnostic'] },
-  // Tourism
-  tourist:      { label: 'Tourist Spot',       icon: '🏛️', footfall: 'High',      keyword: ['museum','fort','palace','ghat','kund','kund','garden','park','monument','heritage'] },
-  // Hotels
-  hotel:        { label: 'Hotel / Dharamshala',icon: '🏨', footfall: 'Medium',    keyword: ['hotel','dharamshala','dharmshala','guest house','guesthouse','resort','lodge','inn','bhavan'] },
+  // IMPORTANT: match full standalone words to avoid "car parking near mandir" false positives
+  temple:  { label: 'Temple / Mandir',    icon: '🛕', footfall: 'Very High',
+    keyword: ['temple','mandir','mosque','church','gurudwara','dargah','ashram','shrine','devsthana','devasthan','math','mutt','kund'] },
+  transit: { label: 'Bus / Railway Hub',  icon: '🚌', footfall: 'High',
+    keyword: ['bus stand','bus station','railway station','metro station','auto stand','taxi stand','junction','terminus'] },
+  college: { label: 'College / School',   icon: '🎓', footfall: 'High',
+    keyword: ['college','university','school','institute','academy','coaching','polytechnic','iit','nit','vidyalaya','vidya mandir'] },
+  market:  { label: 'Market / Bazaar',    icon: '🛍️', footfall: 'Very High',
+    keyword: ['market','bazaar','bazar','mandi','chowk','ganj','haat','mall','plaza','commercial complex'] },
+  hospital:{ label: 'Hospital / Clinic',  icon: '🏥', footfall: 'High',
+    keyword: ['hospital','clinic','medical','nursing home','health centre','dispensary','maternity','diagnostic centre'] },
+  tourist: { label: 'Tourist Spot',       icon: '🏛️', footfall: 'High',
+    keyword: ['museum','fort','palace','ghat','kund','garden','park','monument','heritage','mahal'] },
+  hotel:   { label: 'Hotel / Dharamshala',icon: '🏨', footfall: 'Medium',
+    keyword: ['dharamshala','dharmshala','guest house','guesthouse','resort','lodge','inn','bhavan','sarai'] },
+};
+
+// Noise words — if anchor name contains any of these, skip it (not a real footfall anchor)
+const ANCHOR_NOISE_WORDS = [
+  'parking', 'car park', 'garage', 'atm', 'water tank', 'pump', 'transformer',
+  'substation', 'toilet', 'restroom', 'dustbin', 'waste', 'sewage',
+];
+
+// Starting budget estimates per category (Indian market, 2026)
+const CATEGORY_BUDGET = {
+  Restaurant:  { min: '₹3–8L',   detail: 'Kitchen setup, rent deposit, raw material' },
+  Cafe:        { min: '₹2–5L',   detail: 'Furniture, coffee machine, rent, branding' },
+  Grocery:     { min: '₹1–3L',   detail: 'Stock, shelving, POS system' },
+  Pharmacy:    { min: '₹2–5L',   detail: 'Drug licence, refrigerator, initial stock' },
+  Bakery:      { min: '₹1.5–4L', detail: 'Oven, raw materials, display counter' },
+  Clothing:    { min: '₹2–6L',   detail: 'Stock, display racks, trial room' },
+  Electronics: { min: '₹3–8L',   detail: 'Initial inventory, service tools, display' },
+  Salon:       { min: '₹1–3L',   detail: 'Chair, mirrors, styling tools, products' },
+  Gym:         { min: '₹5–15L',  detail: 'Equipment, flooring, mirrors, AC' },
+  Education:   { min: '₹50K–2L', detail: 'Furniture, boards, digital screen' },
+  Hospital:    { min: '₹10–30L', detail: 'Equipment, beds, registration, staff' },
+  Laundry:     { min: '₹1–3L',   detail: 'Washing machines, dryers, ironing setup' },
+  Finance:     { min: '₹50K–2L', detail: 'Licence, office setup, software' },
+  Hardware:    { min: '₹2–5L',   detail: 'Stock variety, shelving, delivery vehicle' },
+  Furniture:   { min: '₹3–8L',   detail: 'Showroom display, stock, workshop tools' },
+  Hotel:       { min: '₹10–50L', detail: 'Renovation, beds, amenities, licence' },
+  Retail:      { min: '₹1–4L',   detail: 'Display, stock, billing system' },
+  Automotive:  { min: '₹2–6L',   detail: 'Tools, spare parts, lift equipment' },
+  Wholesale:   { min: '₹5–15L',  detail: 'Bulk stock, warehouse space, transport' },
+  Office:      { min: '₹1–3L',   detail: 'Furniture, internet, workstations' },
+  Other:       { min: '₹1–3L',   detail: 'Varies by business type' },
 };
 
 // What to sell near each anchor type
@@ -1324,6 +1357,10 @@ const computeHotSpots = (businesses, locationType = 'general') => {
   businesses.forEach(b => {
     if (!b.name || !b.latitude || !b.longitude) return;
     const nameLower = b.name.toLowerCase();
+
+    // Skip noise entries — parking lots, ATMs, etc. are not footfall anchors
+    if (ANCHOR_NOISE_WORDS.some(noise => nameLower.includes(noise))) return;
+
     for (const [type, config] of Object.entries(ANCHOR_CATEGORIES)) {
       if (config.keyword.some(kw => nameLower.includes(kw))) {
         anchors.push({
@@ -1335,7 +1372,7 @@ const computeHotSpots = (businesses, locationType = 'general') => {
           lat: b.latitude,
           lng: b.longitude,
         });
-        break; // one anchor type per business
+        break;
       }
     }
   });
@@ -1405,7 +1442,10 @@ const computeHotSpots = (businesses, locationType = 'general') => {
       lat: a.lat,
       lng: a.lng,
       nearbyBusinessCount: a.nearbyCount,
-      recommendations: a.recommendations,
+      recommendations: a.recommendations.map(r => ({
+        ...r,
+        budget: CATEGORY_BUDGET[r.category] || CATEGORY_BUDGET.Other,
+      })),
       gapScore: parseFloat(a.gapScore.toFixed(1)),
       insight: `${a.recommendations[0]?.category || ''} near ${a.name.split(' ').slice(0,4).join(' ')} — ${a.recommendations[0]?.reason || ''}`,
     }));
@@ -3562,6 +3602,7 @@ app.get('/api/analyze-stream', async (req, res) => {
         locationType: locType,
         count: s.count,
         riskLevel: s.riskLevel,
+        budget: CATEGORY_BUDGET[s.category] || CATEGORY_BUDGET.Other,
         demandSignalBreakdown: {
           offices: wsOfficeCount,
           schools: wsSchoolCount,
@@ -3831,6 +3872,7 @@ app.post('/api/analyze-location', async (req, res) => {
         demandScore: Math.round(totalDemand), competitionScore: s.riskScore,
         viabilityScore: viab, locationType: postLocType,
         count: s.count, riskLevel: s.riskLevel,
+        budget: CATEGORY_BUDGET[s.category] || CATEGORY_BUDGET.Other,
         demandSignalBreakdown: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount, residential: residentialSignal, hotels: postHotelCount, cityTier: detectedTier, locationType: postLocType },
       };
     })
