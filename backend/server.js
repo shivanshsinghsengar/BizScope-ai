@@ -3283,46 +3283,118 @@ app.get('/api/analyze-stream', async (req, res) => {
     const wsOpportunityLabel = wsOpportunityScore >= 7.5 ? 'Strong Opportunity' : wsOpportunityScore >= 5.5 ? 'Moderate Opportunity' : wsOpportunityScore >= 3.5 ? 'Competitive Market' : 'High Risk';
     const wsOpportunityContext = wsDemandScore >= 7 && wsCompetitionScore >= 7 ? 'High competition but strong demand — viable for differentiated businesses' : wsDemandScore >= 7 && wsCompetitionScore < 5 ? 'Low competition with strong demand — excellent entry window' : wsDemandScore < 5 && wsCompetitionScore >= 7 ? 'High risk — low demand with heavy competition' : `Demand from offices (${wsOfficeCount}), schools (${wsSchoolCount}), hospitals (${wsHospitalCount})`;
 
-    // ── Per-category opportunity scores (demand - competition, both normalized 0-100) ──
-    // demandProxy: how many demand-generating businesses exist near this category
-    // e.g. schools near stationery, hospitals near pharmacy, offices near restaurants
+    // ── Location type detection ─────────────────────────────────────────────
+    // Detect what kind of area this is so demand proxies are relevant
+    const cityLowerWs = (displayName || '').toLowerCase();
+
+    // Pilgrimage / tourism cities — tourist footfall matters more than offices
+    const PILGRIMAGE_CITIES = ['vrindavan','mathura','varanasi','haridwar','rishikesh','tirupati',
+      'shirdi','ayodhya','puri','dwarka','amritsar','bodh gaya','nashik','ujjain','pushkar',
+      'kedarnath','badrinath','jammu','rameswaram','madurai','kanchipuram'];
+    const TOURIST_CITIES = ['agra','goa','shimla','manali','ooty','darjeeling','mysore','mysuru',
+      'jaipur','udaipur','jodhpur','jaisalmer','mussoorie','nainital','kodaikanal'];
+    const INDUSTRIAL_CITIES = ['surat','ludhiana','kanpur','coimbatore','rajkot','faridabad',
+      'gurgaon','gurugram','noida','pune','chennai','ahmedabad'];
+
+    const isPilgrimage = PILGRIMAGE_CITIES.some(c => cityLowerWs.includes(c));
+    const isTourist    = TOURIST_CITIES.some(c => cityLowerWs.includes(c));
+    const isIndustrial = INDUSTRIAL_CITIES.some(c => cityLowerWs.includes(c));
+    const locType = isPilgrimage ? 'pilgrimage' : isTourist ? 'tourist' : isIndustrial ? 'industrial' : 'general';
+
+    // Detect signal counts from actual business data
+    const wsHotelCount    = businesses.filter(b => ['Hotel','Hospitality'].includes(b.category)).length;
+    const wsTempleSignal  = isPilgrimage ? Math.min(50, wsHotelCount * 3) : 0; // proxy for pilgrim footfall
+    const wsTouristSignal = (isPilgrimage ? wsHotelCount * 4 : isTourist ? wsHotelCount * 3 : wsHotelCount) ;
+
+    // ── Industry failure rate adjustment ────────────────────────────────────
+    // High failure rate categories get a penalty — even if competition is low,
+    // if demand fundamentals don't support the category it shouldn't be top pick
+    const INDUSTRY_VIABILITY = {
+      // score 1-10: how viable is this category in this location type
+      // pilgrimage: temples, dharamshalas, pilgrims → food, prasad, clothing matter most
+      pilgrimage: {
+        Restaurant: 9, Grocery: 8, Clothing: 8, Bakery: 7, Hotel: 9,
+        Pharmacy: 7, Retail: 7, Wholesale: 6, Hardware: 5,
+        Cafe: 4,       // pilgrims don't typically go to cafes
+        Gym: 3,        // low relevance in pilgrimage towns
+        Finance: 5, Automotive: 5, Electronics: 5,
+        Education: 4, Laundry: 6, Salon: 5, Furniture: 3,
+      },
+      tourist: {
+        Restaurant: 9, Hotel: 9, Cafe: 7, Retail: 8, Clothing: 7,
+        Bakery: 6, Grocery: 7, Pharmacy: 6, Salon: 6,
+        Gym: 5, Finance: 5, Electronics: 6, Automotive: 5,
+        Education: 3, Laundry: 5, Hardware: 4, Furniture: 3,
+      },
+      industrial: {
+        Restaurant: 8, Grocery: 8, Pharmacy: 7, Laundry: 8, Gym: 7,
+        Salon: 7, Finance: 8, Hardware: 8, Automotive: 8,
+        Cafe: 6, Education: 7, Electronics: 7, Clothing: 6,
+        Hotel: 5, Retail: 6, Bakery: 5, Furniture: 6,
+      },
+      general: {
+        Restaurant: 8, Grocery: 8, Pharmacy: 7, Laundry: 7, Gym: 7,
+        Salon: 7, Finance: 7, Education: 7, Electronics: 7,
+        Cafe: 6, Clothing: 7, Hardware: 7, Bakery: 6,
+        Hotel: 6, Retail: 7, Automotive: 6, Furniture: 5,
+      },
+    };
+    const viabilityMap = INDUSTRY_VIABILITY[locType] || INDUSTRY_VIABILITY.general;
+
+    // ── Per-category demand proxy (location-aware) ───────────────────────────
     const categoryDemandProxy = {
-      Restaurant: wsOfficeCount + wsSchoolCount + wsHospitalCount,
-      Cafe:       wsOfficeCount + wsSchoolCount,
-      Grocery:    wsSchoolCount + wsHospitalCount + (wsResidential * 20),
-      Pharmacy:   wsHospitalCount + (wsResidential * 15),
-      Bakery:     wsSchoolCount + wsOfficeCount,
-      Laundry:    wsOfficeCount + (wsResidential * 20),
-      Gym:        wsOfficeCount + wsResidential * 10,
-      Salon:      wsOfficeCount + wsResidential * 10,
-      Clothing:   wsOfficeCount + wsSchoolCount,
-      Electronics:wsOfficeCount + wsSchoolCount,
-      Education:  wsSchoolCount * 2 + wsResidential * 10,
-      Hospital:   wsResidential * 20 + wsHospitalCount,
-      Hardware:   wsResidential * 15,
-      Furniture:  wsResidential * 10,
-      Hotel:      wsCityTier * 5,
-      Finance:    wsOfficeCount * 2 + wsCityTier * 3,
-      Automotive: wsResidential * 10 + wsCityTier * 3,
-      Retail:     wsOfficeCount + wsSchoolCount + wsResidential * 8,
-      Wholesale:  wsOfficeCount + wsCityTier * 5,
+      Restaurant: locType === 'pilgrimage'
+        ? wsTouristSignal * 4 + wsHospitalCount * 2 + wsOfficeCount
+        : wsOfficeCount * 2 + wsSchoolCount + wsHospitalCount + wsTouristSignal,
+      Cafe: locType === 'pilgrimage'
+        ? wsOfficeCount * 2 + wsSchoolCount               // low for pilgrimage
+        : locType === 'tourist'
+          ? wsTouristSignal * 2 + wsOfficeCount
+          : wsOfficeCount + wsSchoolCount,
+      Grocery:     wsSchoolCount + wsHospitalCount + wsResidential * 20 + wsTouristSignal,
+      Pharmacy:    wsHospitalCount * 3 + wsResidential * 15 + wsSchoolCount,
+      Bakery:      wsSchoolCount * 2 + wsOfficeCount + (locType !== 'pilgrimage' ? 5 : 2),
+      Laundry:     wsOfficeCount * 2 + wsResidential * 20 + wsHotelCount * 3,
+      Gym:         wsOfficeCount * 2 + wsResidential * 10 + (locType === 'pilgrimage' ? -10 : 0),
+      Salon:       wsOfficeCount + wsResidential * 10 + wsHotelCount * 2,
+      Clothing:    locType === 'pilgrimage'
+        ? wsTouristSignal * 2 + wsResidential * 8
+        : wsOfficeCount + wsSchoolCount + wsResidential * 5,
+      Electronics: wsOfficeCount * 2 + wsSchoolCount + (locType === 'industrial' ? 10 : 0),
+      Education:   wsSchoolCount * 3 + wsResidential * 10,
+      Hospital:    wsResidential * 20 + wsHospitalCount * 2,
+      Hardware:    wsResidential * 15 + (locType === 'industrial' ? 15 : 0),
+      Furniture:   wsResidential * 10,
+      Hotel:       wsTouristSignal * 4 + wsCityTier * 3,
+      Finance:     wsOfficeCount * 3 + wsCityTier * 3,
+      Automotive:  wsResidential * 10 + (locType === 'industrial' ? 15 : 0) + wsCityTier * 2,
+      Retail:      wsOfficeCount + wsSchoolCount + wsResidential * 8 + wsTouristSignal,
+      Wholesale:   wsOfficeCount + (locType === 'industrial' ? 15 : 0) + wsCityTier * 4,
     };
 
-    // Normalize competitor risk scores to 0-100 and compute per-category opportunity
+    // ── Compute per-category opportunity (demand - competition, with viability gate) ──
     const maxDemandProxy = Math.max(...Object.values(categoryDemandProxy), 1);
+
     const bestOpportunities = sortedStats.map(s => {
+      const viabilityScore = viabilityMap[s.category] ?? 5; // 1-10
       const demandProxyRaw = categoryDemandProxy[s.category] ?? (wsOfficeCount + wsResidential * 5);
       const demandProxyNorm = Math.min(100, (demandProxyRaw / maxDemandProxy) * 100);
-      // cityTier boosts overall demand for all categories
-      const cityDemandBoost = wsCityTier * 3;
+      const cityDemandBoost = wsCityTier * 2; // slightly reduced — city tier is less important than local signals
       const totalDemand = Math.min(100, demandProxyNorm + cityDemandBoost);
-      const competition = s.riskScore; // already 0-100
-      const catOpportunity = Math.round((totalDemand * 0.6) - (competition * 0.4) + 40);
+      const competition = s.riskScore; // 0-100
+
+      // Viability gate: if viability < 5 for this location type, suppress opportunity heavily
+      const viabilityMultiplier = viabilityScore / 10; // 0.1 to 1.0
+      const rawOpp = Math.round(((totalDemand * 0.6) - (competition * 0.4) + 40) * viabilityMultiplier);
+      const catOpportunity = Math.max(0, Math.min(100, rawOpp));
+
       return {
         category: s.category,
-        opportunityScore: Math.max(0, Math.min(100, catOpportunity)),
+        opportunityScore: catOpportunity,
         demandScore: Math.round(totalDemand),
         competitionScore: competition,
+        viabilityScore,
+        locationType: locType,
         count: s.count,
         riskLevel: s.riskLevel,
         demandSignalBreakdown: {
@@ -3330,10 +3402,16 @@ app.get('/api/analyze-stream', async (req, res) => {
           schools: wsSchoolCount,
           hospitals: wsHospitalCount,
           residential: wsResidential,
+          hotels: wsHotelCount,
           cityTier: wsCityTier,
+          locationType: locType,
         },
       };
-    }).sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 5);
+    })
+    // Filter: only suggest categories with viability >= 5 AND some demand
+    .filter(s => s.viabilityScore >= 5 && s.demandScore >= 20)
+    .sort((a, b) => b.opportunityScore - a.opportunityScore)
+    .slice(0, 5);
 
     send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
     const aiSuggestions = await getAISuggestions(location, sortedStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
@@ -3530,41 +3608,65 @@ app.post('/api/analyze-location', async (req, res) => {
             : `Demand from offices (${officeCount}), schools (${schoolCount}), hospitals (${hospitalCount})`;
     // ──────────────────────────────────────────────────────────────────────────
 
-    // ── Per-category opportunity scores for POST route ──
+    // ── Per-category opportunity scores for POST route (location-aware) ──
+    const postCityLower = (displayName || '').toLowerCase();
+    const POST_PILGRIMAGE = ['vrindavan','mathura','varanasi','haridwar','rishikesh','tirupati','shirdi','ayodhya','puri','dwarka','amritsar','bodh gaya','pushkar','kedarnath','badrinath','rameswaram','madurai'];
+    const POST_TOURIST    = ['agra','goa','shimla','manali','ooty','darjeeling','mysore','mysuru','jaipur','udaipur','jodhpur','jaisalmer','mussoorie','nainital'];
+    const POST_INDUSTRIAL = ['surat','ludhiana','kanpur','coimbatore','rajkot','faridabad','gurgaon','gurugram','noida','pune','chennai','ahmedabad'];
+    const postLocType = POST_PILGRIMAGE.some(c => postCityLower.includes(c)) ? 'pilgrimage'
+      : POST_TOURIST.some(c => postCityLower.includes(c)) ? 'tourist'
+      : POST_INDUSTRIAL.some(c => postCityLower.includes(c)) ? 'industrial' : 'general';
+
+    const postHotelCount   = businesses.filter(b => ['Hotel','Hospitality'].includes(b.category)).length;
+    const postTouristSignal = postLocType === 'pilgrimage' ? postHotelCount * 4 : postLocType === 'tourist' ? postHotelCount * 3 : postHotelCount;
+
+    const POST_VIABILITY = {
+      pilgrimage: { Restaurant:9,Grocery:8,Clothing:8,Bakery:7,Hotel:9,Pharmacy:7,Retail:7,Wholesale:6,Hardware:5,Cafe:4,Gym:3,Finance:5,Automotive:5,Electronics:5,Education:4,Laundry:6,Salon:5,Furniture:3 },
+      tourist:    { Restaurant:9,Hotel:9,Cafe:7,Retail:8,Clothing:7,Bakery:6,Grocery:7,Pharmacy:6,Salon:6,Gym:5,Finance:5,Electronics:6,Automotive:5,Education:3,Laundry:5,Hardware:4,Furniture:3 },
+      industrial: { Restaurant:8,Grocery:8,Pharmacy:7,Laundry:8,Gym:7,Salon:7,Finance:8,Hardware:8,Automotive:8,Cafe:6,Education:7,Electronics:7,Clothing:6,Hotel:5,Retail:6,Bakery:5,Furniture:6 },
+      general:    { Restaurant:8,Grocery:8,Pharmacy:7,Laundry:7,Gym:7,Salon:7,Finance:7,Education:7,Electronics:7,Cafe:6,Clothing:7,Hardware:7,Bakery:6,Hotel:6,Retail:7,Automotive:6,Furniture:5 },
+    };
+    const postViabilityMap = POST_VIABILITY[postLocType] || POST_VIABILITY.general;
+
     const postCategoryDemandProxy = {
-      Restaurant: officeCount + schoolCount + hospitalCount,
-      Cafe:       officeCount + schoolCount,
-      Grocery:    schoolCount + hospitalCount + (residentialSignal * 20),
-      Pharmacy:   hospitalCount + (residentialSignal * 15),
-      Bakery:     schoolCount + officeCount,
-      Laundry:    officeCount + (residentialSignal * 20),
-      Gym:        officeCount + residentialSignal * 10,
-      Salon:      officeCount + residentialSignal * 10,
-      Clothing:   officeCount + schoolCount,
-      Electronics:officeCount + schoolCount,
-      Education:  schoolCount * 2 + residentialSignal * 10,
-      Hospital:   residentialSignal * 20 + hospitalCount,
-      Hardware:   residentialSignal * 15,
+      Restaurant: postLocType === 'pilgrimage' ? postTouristSignal * 4 + hospitalCount * 2 + officeCount : officeCount * 2 + schoolCount + hospitalCount + postTouristSignal,
+      Cafe:       postLocType === 'pilgrimage' ? officeCount * 2 + schoolCount : postLocType === 'tourist' ? postTouristSignal * 2 + officeCount : officeCount + schoolCount,
+      Grocery:    schoolCount + hospitalCount + residentialSignal * 20 + postTouristSignal,
+      Pharmacy:   hospitalCount * 3 + residentialSignal * 15 + schoolCount,
+      Bakery:     schoolCount * 2 + officeCount,
+      Laundry:    officeCount * 2 + residentialSignal * 20 + postHotelCount * 3,
+      Gym:        officeCount * 2 + residentialSignal * 10 + (postLocType === 'pilgrimage' ? -10 : 0),
+      Salon:      officeCount + residentialSignal * 10 + postHotelCount * 2,
+      Clothing:   postLocType === 'pilgrimage' ? postTouristSignal * 2 + residentialSignal * 8 : officeCount + schoolCount + residentialSignal * 5,
+      Electronics:officeCount * 2 + schoolCount + (postLocType === 'industrial' ? 10 : 0),
+      Education:  schoolCount * 3 + residentialSignal * 10,
+      Hospital:   residentialSignal * 20 + hospitalCount * 2,
+      Hardware:   residentialSignal * 15 + (postLocType === 'industrial' ? 15 : 0),
       Furniture:  residentialSignal * 10,
-      Hotel:      detectedTier * 5,
-      Finance:    officeCount * 2 + detectedTier * 3,
-      Automotive: residentialSignal * 10 + detectedTier * 3,
-      Retail:     officeCount + schoolCount + residentialSignal * 8,
-      Wholesale:  officeCount + detectedTier * 5,
+      Hotel:      postTouristSignal * 4 + detectedTier * 3,
+      Finance:    officeCount * 3 + detectedTier * 3,
+      Automotive: residentialSignal * 10 + (postLocType === 'industrial' ? 15 : 0) + detectedTier * 2,
+      Retail:     officeCount + schoolCount + residentialSignal * 8 + postTouristSignal,
+      Wholesale:  officeCount + (postLocType === 'industrial' ? 15 : 0) + detectedTier * 4,
     };
     const postMaxProxy = Math.max(...Object.values(postCategoryDemandProxy), 1);
     const bestOpportunities = sortedStats.map(s => {
+      const viab = postViabilityMap[s.category] ?? 5;
       const proxyRaw = postCategoryDemandProxy[s.category] ?? (officeCount + residentialSignal * 5);
       const proxyNorm = Math.min(100, (proxyRaw / postMaxProxy) * 100);
-      const totalDemand = Math.min(100, proxyNorm + detectedTier * 3);
-      const catOpp = Math.max(0, Math.min(100, Math.round((totalDemand * 0.6) - (s.riskScore * 0.4) + 40)));
+      const totalDemand = Math.min(100, proxyNorm + detectedTier * 2);
+      const rawOpp = Math.round(((totalDemand * 0.6) - (s.riskScore * 0.4) + 40) * (viab / 10));
+      const catOpp = Math.max(0, Math.min(100, rawOpp));
       return {
         category: s.category, opportunityScore: catOpp,
         demandScore: Math.round(totalDemand), competitionScore: s.riskScore,
+        viabilityScore: viab, locationType: postLocType,
         count: s.count, riskLevel: s.riskLevel,
-        demandSignalBreakdown: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount, residential: residentialSignal, cityTier: detectedTier },
+        demandSignalBreakdown: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount, residential: residentialSignal, hotels: postHotelCount, cityTier: detectedTier, locationType: postLocType },
       };
-    }).sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 5);
+    })
+    .filter(s => s.viabilityScore >= 5 && s.demandScore >= 20)
+    .sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 5);
     // ─────────────────────────────────────────────────────────────────────────
 
     const usingEstimated = businesses.some(b => b.isMock);
