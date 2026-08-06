@@ -267,25 +267,33 @@ export default function Competitors() {
 
       {selected && <BusinessDialog b={selected} countryCode={countryCode} onClose={() => setSelected(null)} />}
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
-        <div style={{ marginBottom: '28px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text)', marginBottom: '8px' }}>🏪 Competitor Directory</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '15px' }}>{(data.businesses || []).filter(b => !b.isMock).length} businesses found within 5km of your location</p>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px 40px', boxSizing: 'border-box', width: '100%' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '26px', fontWeight: '800', color: '#1E293B', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '22px' }}>🏪</span> Competitor Directory
+          </h1>
+          <p style={{ color: '#64748B', fontSize: '14px' }}>{(data.businesses || []).filter(b => !b.isMock).length} businesses found within 5km of your location</p>
         </div>
 
         {(data.dataQuality?.usesMockData || data.dataQuality?.hasEstimatedMetrics) && (
-          <div style={{ background: '#f59e0b12', border: '1px solid #f59e0b40', borderRadius: '14px', padding: '10px 14px', marginBottom: '20px', fontSize: '12px', color: 'var(--muted)' }}>
+          <div style={{ background: '#FEF9EE', border: '1px solid #F59E0B40', borderRadius: '10px', padding: '10px 14px', marginBottom: '18px', fontSize: '12px', color: '#92400E' }}>
             ⚠️ Data quality: {data.dataQuality?.usesMockData ? 'fallback entries are included' : 'all entries are live'}; ratings/review counts can include estimates.
           </div>
         )}
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', marginBottom: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search by name..." className="input-field" style={{ flex: 1, minWidth: '200px' }} />
-          <select value={sort} onChange={e => setSort(e.target.value)} className="input-field" style={{ width: '160px' }}>
+        {/* Filters */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px', marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', boxShadow: '0 1px 4px rgba(15,23,42,0.05)' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search by name..."
+            style={{ flex: '1 1 180px', minWidth: '0', padding: '8px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', fontFamily: "'Inter', sans-serif", outline: 'none', color: '#1E293B', background: '#F8FAFC' }} />
+          <select value={sort} onChange={e => setSort(e.target.value)}
+            style={{ flex: '0 0 auto', padding: '8px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', fontFamily: "'Inter', sans-serif", color: '#1E293B', background: '#F8FAFC', cursor: 'pointer' }}>
             <option value="rating">Sort: Rating</option>
             <option value="reviews">Sort: Reviews</option>
           </select>
-          <select value={distKm} onChange={e => setDistKm(Number(e.target.value))} className="input-field" style={{ width: '140px' }}>
+          <select value={distKm} onChange={e => setDistKm(Number(e.target.value))}
+            style={{ flex: '0 0 auto', padding: '8px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', fontFamily: "'Inter', sans-serif", color: '#1E293B', background: '#F8FAFC', cursor: 'pointer' }}>
             <option value={1}>Within 1 km</option>
             <option value={2}>Within 2 km</option>
             <option value={3}>Within 3 km</option>
@@ -293,46 +301,61 @@ export default function Competitors() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        {/* Category pills */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '20px' }}>
           {categories.map(cat => (
             <button key={cat} onClick={() => {
               setFilter(cat);
               router.replace({ pathname: '/competitors', query: cat === 'All' ? {} : { category: cat } }, undefined, { shallow: true });
             }}
-              style={{ padding: '8px 18px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', background: filter === cat ? (categoryColors[cat] || '#6366f1') : 'var(--surface2)', color: filter === cat ? 'white' : 'var(--muted)', boxShadow: filter === cat ? `0 4px 15px ${(categoryColors[cat] || '#6366f1')}40` : 'none' }}>
+              style={{ padding: '6px 14px', borderRadius: '100px', border: `1px solid ${filter === cat ? (categoryColors[cat] || '#1F6FEB') : '#E2E8F0'}`, cursor: 'pointer', fontSize: '12px', fontWeight: '600', fontFamily: "'Inter', sans-serif", transition: 'all 0.15s', background: filter === cat ? (categoryColors[cat] || '#1F6FEB') : '#FFFFFF', color: filter === cat ? 'white' : '#64748B', whiteSpace: 'nowrap' }}>
               {cat === 'All' ? '🌐 All' : `${categoryIcons[cat] || '🏪'} ${cat}`}
             </button>
           ))}
         </div>
 
-        <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '16px' }}>{filtered.length} results</div>
+        <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '14px', fontFamily: "'Inter', sans-serif" }}>{filtered.length} results</div>
 
-        <div className="responsive-grid-3" style={{ display: 'grid', gap: '14px' }}>
-          {filtered.map((b, i) => (
-            <div key={i} onClick={() => setSelected(b)}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = (categoryColors[b.category] || '#6366f1') + '60'; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${(categoryColors[b.category] || '#6366f1')}15`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `${categoryColors[b.category] || '#6366f1'}20`, border: `1px solid ${categoryColors[b.category] || '#6366f1'}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
-                  {categoryIcons[b.category] || '🏪'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '14px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
-                  <div style={{ fontSize: '11px', color: categoryColors[b.category] || '#6366f1', fontWeight: '600', marginBottom: '8px' }}>{b.category}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {b.address}</div>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ color: '#f59e0b', fontSize: '13px' }}>⭐</span>
-                    <span style={{ color: 'var(--text)', fontWeight: '700', fontSize: '13px' }}>{b.rating}</span>
-                    <span style={{ color: 'var(--muted)', fontSize: '12px' }}>{b.reviewCount} reviews</span>
-                    {b.phone && <span style={{ color: 'var(--muted)', fontSize: '11px' }}>📞</span>}
+        {/* Business cards grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+          {filtered.map((b, i) => {
+            const color = categoryColors[b.category] || '#1F6FEB';
+            return (
+              <div key={i} onClick={() => setSelected(b)}
+                style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '18px', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 1px 4px rgba(15,23,42,0.05)', overflow: 'hidden', minWidth: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = color + '50'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${color}18`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(15,23,42,0.05)'; }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: color + '15', border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+                    {categoryIcons[b.category] || '🏪'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#1E293B', fontSize: '14px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                    <div style={{ fontSize: '11px', color, fontWeight: '600', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }}>{b.category}</div>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>📍 {b.address}</div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ color: '#F59E0B', fontSize: '12px' }}>⭐</span>
+                      <span style={{ color: '#1E293B', fontWeight: '700', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}>{b.rating}</span>
+                      <span style={{ color: '#94A3B8', fontSize: '11px', fontFamily: "'Inter', sans-serif" }}>{b.reviewCount} reviews</span>
+                      {b.phone && <span style={{ color: '#94A3B8', fontSize: '11px' }}>📞</span>}
+                    </div>
                   </div>
                 </div>
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9', fontSize: '11px', color, fontWeight: '600', fontFamily: "'Inter', sans-serif" }}>
+                  View details →
+                </div>
               </div>
-              <div style={{ marginTop: '12px', fontSize: '11px', color: categoryColors[b.category] || '#6366f1', fontWeight: '600' }}>Click for details →</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔍</div>
+            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px', color: '#64748B' }}>No results found</div>
+            <div style={{ fontSize: '13px' }}>Try a different search term or category</div>
+          </div>
+        )}
       </div>
     </Layout>
   );
