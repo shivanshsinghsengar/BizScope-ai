@@ -249,7 +249,7 @@ export default function Insights() {
                         Demand: {Math.min(10, parseFloat(s.demandScore || 5)).toFixed(1)}/10
                       </span>
                       <span style={{ padding: '3px 10px', borderRadius: '100px', background: s.riskLevel === 'Low' ? '#3b82f620' : s.riskLevel === 'Medium' ? '#f59e0b20' : '#ef444420', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
-                        {s.riskLevel} Competition
+                        {s.riskLevel === 'Low' ? 'Few Competitors' : s.riskLevel === 'Medium' ? 'Some Competitors' : 'Many Competitors'}
                       </span>
                     </div>
                   </div>
@@ -292,9 +292,9 @@ export default function Insights() {
             riskScore = normalize( count×0.4 + avgRating×0.3 + √totalReviews×0.3 ) → 0 to 100
           </div>
           <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px' }}>
-            <span style={{ color: '#34d399' }}>🟢 0–34 = Low Risk (good opportunity)</span>
-            <span style={{ color: '#fbbf24' }}>🟡 35–69 = Medium Risk</span>
-            <span style={{ color: '#f87171' }}>🔴 70–100 = High Risk (saturated)</span>
+            <span style={{ color: '#34d399' }}>🟢 0–34 = Few Competitors (good opportunity)</span>
+            <span style={{ color: '#fbbf24' }}>🟡 35–69 = Some Competitors</span>
+            <span style={{ color: '#f87171' }}>🔴 70–100 = Many Competitors (saturated)</span>
           </div>
         </div>
 
@@ -317,7 +317,7 @@ export default function Insights() {
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Only {s.count} competitors nearby</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#3b82f620', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>Low Risk</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#3b82f620', color: '#34d399', fontSize: '11px', fontWeight: '700' }}>Few Competitors</span>
                   <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Score: {s.competitorScore?.toFixed(1)}</div>
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function Insights() {
                   <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{s.count} competitors • ⭐ {s.avgRating}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#ef444420', color: '#f87171', fontSize: '11px', fontWeight: '700' }}>High Risk</span>
+                  <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#ef444420', color: '#f87171', fontSize: '11px', fontWeight: '700' }}>Many Competitors</span>
                   <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Score: {s.competitorScore?.toFixed(1)}</div>
                 </div>
               </div>
@@ -362,7 +362,7 @@ export default function Insights() {
               <div style={{ fontSize: '28px', fontWeight: '800', color: categoryColors[s.category] || '#3b82f6', marginBottom: '4px' }}>{s.count}</div>
               <div style={{ fontSize: '11px', color: 'var(--muted)' }}>competitors</div>
               <div style={{ marginTop: '8px', padding: '6px', borderRadius: '8px', background: s.riskLevel === 'Low' ? '#3b82f615' : s.riskLevel === 'Medium' ? '#f59e0b15' : '#ef444415', color: s.riskLevel === 'Low' ? '#34d399' : s.riskLevel === 'Medium' ? '#fbbf24' : '#f87171', fontSize: '11px', fontWeight: '700' }}>
-                {s.riskLevel === 'Low' ? '🟢 Low Risk' : s.riskLevel === 'Medium' ? '🟡 Medium Risk' : '🔴 High Risk'}
+                {s.riskLevel === 'Low' ? '🟢 Few Competitors' : s.riskLevel === 'Medium' ? '🟡 Some Competitors' : '🔴 Many Competitors'}
               </div>
               <div style={{ fontSize: '10px', color: '#60a5fa', marginTop: '6px', fontWeight: '600' }}>📦 View suppliers</div>
             </div>

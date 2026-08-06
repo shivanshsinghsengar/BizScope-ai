@@ -3153,7 +3153,7 @@ app.get('/api/analyze-stream', async (req, res) => {
     send('geocode', `Found: ${confirmedLabel}`, aiCorrectionNote ? `✏️ ${aiCorrectionNote}` : 'Location confirmed', 20);
 
     // Step 2: Fetch businesses — TomTom + OSM + Foursquare + Google Places + Mappls + Manual all in parallel
-    send('fetch', 'Scanning businesses nearby...', 'Fetching from TomTom + OSM + Google + Foursquare + Mappls', 30);
+    send('fetch', 'Scanning businesses nearby...', 'Collecting data from multiple map sources', 30);
     const [tomtomBusinesses, osmBusinesses, foursquareBusinesses, googleBusinesses, mapplsBusinesses, manualBusinesses] = await Promise.all([
       fetchTomTomBusinesses(latitude, longitude, 8000).catch(() => []),
       fetchRealBusinesses(latitude, longitude, 8000).catch(() => []),

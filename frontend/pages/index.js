@@ -165,7 +165,7 @@ function AnalysisLoader({ city, step, message, sub, progress }) {
           {isWakingUp ? (
             <span>💡 <span style={{ color: '#94a3b8' }}>Tip:</span> This only happens after 2+ days of no activity. Once awake, the server stays fast.</span>
           ) : (
-            <span>💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope fuses <strong style={{ color: '#3b82f6' }}>TomTom</strong> + <strong style={{ color: '#3b82f6' }}>OpenStreetMap</strong> data for the most complete business coverage in India.</span>
+            <span>💡 <span style={{ color: '#94a3b8' }}>Did you know?</span> BizScope analyzes <strong style={{ color: '#3b82f6' }}>multiple live data sources</strong> to give you the most accurate market picture.</span>
           )}
         </div>
       </div>
@@ -670,7 +670,7 @@ export default function Home() {
 
             {/* Trust pills */}
             <div className="anim-fade-up delay-2" style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '44px' }}>
-              {['TomTom + OSM data', 'Gemini AI', 'Under 10 sec', 'No signup', 'PDF export'].map(s => (
+              {['Live Market Data', 'AI Analysis', 'Under 10 sec', 'No signup', 'PDF export'].map(s => (
                 <div key={s} style={{ padding: '5px 14px', borderRadius: '100px', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--muted)', fontWeight: '500' }}>{s}</div>
               ))}
             </div>

@@ -183,7 +183,7 @@ function OpportunityCard({ opp, rank, onClick }) {
       </div>
       <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${C.border}`,
         fontSize: '12px', color: C.muted }}>
-        {opp.count} existing · {opp.riskLevel} risk
+        {opp.count} existing · {opp.competitionScore <= 30 ? 'Few competitors' : opp.competitionScore <= 60 ? 'Some competitors' : 'Many competitors'}
       </div>
     </div>
   );
@@ -223,7 +223,7 @@ function CategoryRow({ s, total, onClick }) {
         </div>
       </div>
       <span style={tag(s.riskScore >= 70 ? C.danger : s.riskScore >= 35 ? C.warning : C.success)}>
-        {s.riskLevel}
+        {s.riskScore >= 70 ? 'Many Competitors' : s.riskScore >= 35 ? 'Some Competitors' : 'Few Competitors'}
       </span>
     </div>
   );
@@ -757,7 +757,7 @@ export default function Dashboard() {
                         <h4 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '15px', fontWeight: '700',
                           color: C.text, margin: 0 }}>{opp.category}</h4>
                         <p style={{ fontSize: '12px', color: C.muted, margin: 0 }}>
-                          {opp.count} existing businesses · {opp.riskLevel} risk</p>
+                          {opp.count} existing businesses · {opp.competitionScore <= 30 ? 'Few competitors' : opp.competitionScore <= 60 ? 'Some competitors' : 'Many competitors'}</p>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
