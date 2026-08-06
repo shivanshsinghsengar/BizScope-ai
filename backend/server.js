@@ -1246,6 +1246,171 @@ const mergeSmarter = (tomtomList = [], osmList = []) => {
   return final;
 };
 
+// ── Hyperlocal Hot Spot Analysis ──────────────────────────────────────────────
+// Uses the already-fetched businesses array to identify high-footfall anchor points
+// (temples, markets, bus stands, hospitals, colleges) and finds gaps near them.
+// Returns top 5 "hot spots" with: anchor name, type, footfall level,
+// nearby competitor count, recommended business type, and reason.
+
+const ANCHOR_CATEGORIES = {
+  // Religious — highest footfall in pilgrimage cities
+  temple:       { label: 'Temple / Mandir',    icon: '🛕', footfall: 'Very High', keyword: ['temple','mandir','mosque','church','gurudwara','dargah','ashram','shrine','devsthana','devasthan'] },
+  // Transport
+  transit:      { label: 'Bus / Railway Hub',  icon: '🚌', footfall: 'High',      keyword: ['bus stand','bus station','railway','metro','auto stand','taxi stand','junction','terminus'] },
+  // Education
+  college:      { label: 'College / School',   icon: '🎓', footfall: 'High',      keyword: ['college','university','school','institute','academy','coaching','polytechnic','iit','nit'] },
+  // Markets
+  market:       { label: 'Market / Bazaar',    icon: '🛍️', footfall: 'Very High', keyword: ['market','bazaar','bazar','mandi','chowk','ganj','haat','mall','plaza','complex'] },
+  // Medical
+  hospital:     { label: 'Hospital / Clinic',  icon: '🏥', footfall: 'High',      keyword: ['hospital','clinic','medical','nursing','health','dispensary','maternity','diagnostic'] },
+  // Tourism
+  tourist:      { label: 'Tourist Spot',       icon: '🏛️', footfall: 'High',      keyword: ['museum','fort','palace','ghat','kund','kund','garden','park','monument','heritage'] },
+  // Hotels
+  hotel:        { label: 'Hotel / Dharamshala',icon: '🏨', footfall: 'Medium',    keyword: ['hotel','dharamshala','dharmshala','guest house','guesthouse','resort','lodge','inn','bhavan'] },
+};
+
+// What to sell near each anchor type
+const ANCHOR_RECOMMENDATIONS = {
+  temple:   [
+    { category: 'Grocery',    reason: 'Pilgrims buy puja items, flowers, offerings daily' },
+    { category: 'Restaurant', reason: 'Devotees need sattvic meals before/after darshan' },
+    { category: 'Retail',     reason: 'Religious items, malas, idols — high tourist purchase rate' },
+    { category: 'Clothing',   reason: 'Pilgrims buy traditional attire for rituals' },
+  ],
+  transit:  [
+    { category: 'Restaurant', reason: 'Travelers need quick meals while waiting' },
+    { category: 'Grocery',    reason: 'Snacks and essentials for journey' },
+    { category: 'Retail',     reason: 'Luggage, accessories, essentials sell well' },
+    { category: 'Pharmacy',   reason: 'Travelers often need medicines urgently' },
+  ],
+  college:  [
+    { category: 'Cafe',       reason: 'Students spend hours studying in cafes' },
+    { category: 'Grocery',    reason: 'Hostel students need daily essentials' },
+    { category: 'Education',  reason: 'Coaching and tutoring always in demand' },
+    { category: 'Restaurant', reason: 'Affordable canteen-style food always needed' },
+    { category: 'Laundry',    reason: 'Hostel students outsource laundry' },
+  ],
+  market:   [
+    { category: 'Finance',    reason: 'Traders and shoppers need banking/ATM access' },
+    { category: 'Wholesale',  reason: 'Bulk buying anchors attract wholesale demand' },
+    { category: 'Restaurant', reason: 'Shoppers and traders need nearby food' },
+    { category: 'Retail',     reason: 'Add-on retail thrives in busy market zones' },
+  ],
+  hospital: [
+    { category: 'Pharmacy',   reason: 'Patients and visitors buy medicines immediately' },
+    { category: 'Grocery',    reason: 'Families staying for patient care need daily items' },
+    { category: 'Restaurant', reason: 'Attendants of patients need affordable food' },
+    { category: 'Laundry',    reason: 'Long-stay families need laundry services' },
+  ],
+  tourist:  [
+    { category: 'Restaurant', reason: 'Tourists explore local cuisine near attractions' },
+    { category: 'Retail',     reason: 'Souvenirs and local crafts sell well near tourist spots' },
+    { category: 'Hotel',      reason: 'Accommodation demand near popular tourist spots' },
+    { category: 'Cafe',       reason: 'Photo stops and resting points near sightseeing areas' },
+  ],
+  hotel:    [
+    { category: 'Restaurant', reason: 'Hotel guests want dining options nearby' },
+    { category: 'Pharmacy',   reason: 'Travelers frequently need medicines' },
+    { category: 'Grocery',    reason: 'Guests buy snacks and daily items' },
+    { category: 'Laundry',    reason: 'Long-stay guests need laundry' },
+  ],
+};
+
+const computeHotSpots = (businesses, locationType = 'general') => {
+  if (!businesses || businesses.length === 0) return [];
+
+  // Step 1: Identify anchor businesses from the fetched data
+  const anchors = [];
+  businesses.forEach(b => {
+    if (!b.name || !b.latitude || !b.longitude) return;
+    const nameLower = b.name.toLowerCase();
+    for (const [type, config] of Object.entries(ANCHOR_CATEGORIES)) {
+      if (config.keyword.some(kw => nameLower.includes(kw))) {
+        anchors.push({
+          name: b.name,
+          type,
+          label: config.label,
+          icon: config.icon,
+          footfall: config.footfall,
+          lat: b.latitude,
+          lng: b.longitude,
+        });
+        break; // one anchor type per business
+      }
+    }
+  });
+
+  if (anchors.length === 0) return [];
+
+  // Step 2: For each anchor, count how many commercial businesses are within 300m
+  const haversineKm = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  };
+
+  const RADIUS_KM = 0.3; // 300m gap analysis
+
+  const scoredAnchors = anchors.map(anchor => {
+    const nearby = businesses.filter(b =>
+      b.latitude && b.longitude &&
+      haversineKm(anchor.lat, anchor.lng, b.latitude, b.longitude) <= RADIUS_KM
+    );
+    const nearbyCats = nearby.reduce((acc, b) => {
+      acc[b.category] = (acc[b.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Get recommendations for this anchor type, filtered by what's MISSING nearby
+    const recs = (ANCHOR_RECOMMENDATIONS[anchor.type] || ANCHOR_RECOMMENDATIONS.temple);
+    const gapRecs = recs
+      .map(r => ({ ...r, existingCount: nearbyCats[r.category] || 0 }))
+      .filter(r => r.existingCount <= 2) // gap = 2 or fewer nearby
+      .sort((a, b) => a.existingCount - b.existingCount) // least saturated first
+      .slice(0, 2);
+
+    const gapScore = gapRecs.length > 0 ? (10 - nearby.length * 0.1) : 0;
+    const footfallScore = anchor.footfall === 'Very High' ? 3 : anchor.footfall === 'High' ? 2 : 1;
+
+    return {
+      ...anchor,
+      nearbyCount: nearby.length,
+      gapScore: Math.max(0, gapScore + footfallScore),
+      recommendations: gapRecs,
+      nearbyCats,
+    };
+  });
+
+  // Step 3: Deduplicate by proximity (merge anchors within 100m of each other — same cluster)
+  const seen = [];
+  const deduped = scoredAnchors.filter(a => {
+    const tooClose = seen.some(s => haversineKm(a.lat, a.lng, s.lat, s.lng) < 0.1 && s.type === a.type);
+    if (!tooClose) seen.push(a);
+    return !tooClose;
+  });
+
+  // Step 4: Return top 5 by gap score, only if there are actual recommendations
+  return deduped
+    .filter(a => a.recommendations.length > 0)
+    .sort((a, b) => b.gapScore - a.gapScore)
+    .slice(0, 5)
+    .map(a => ({
+      anchorName: a.name,
+      anchorType: a.type,
+      anchorLabel: a.label,
+      icon: a.icon,
+      footfall: a.footfall,
+      lat: a.lat,
+      lng: a.lng,
+      nearbyBusinessCount: a.nearbyCount,
+      recommendations: a.recommendations,
+      gapScore: parseFloat(a.gapScore.toFixed(1)),
+      insight: `${a.recommendations[0]?.category || ''} near ${a.name.split(' ').slice(0,4).join(' ')} — ${a.recommendations[0]?.reason || ''}`,
+    }));
+};
+
 const fetchRealBusinesses = async (lat, lng, radiusMeters = 8000, timeoutMs = 12000) => {
   try {
     // Query node + way — Indian businesses are often mapped as ways (buildings)
@@ -3416,6 +3581,9 @@ app.get('/api/analyze-stream', async (req, res) => {
     send('ai', 'Asking AI for recommendations...', 'Generating personalized insights', 80);
     const aiSuggestions = await getAISuggestions(location, sortedStats, { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount }, wsCityTier);
 
+    // ── Hyperlocal hot spots ──
+    const hotSpots = computeHotSpots(businesses, locType);
+
     send('done', 'Analysis complete!', 'Preparing your market report', 100);
 
     const result = {
@@ -3432,6 +3600,7 @@ app.get('/api/analyze-stream', async (req, res) => {
       cityTier: wsCityTier,
       demandSignals: { offices: wsOfficeCount, schools: wsSchoolCount, hospitals: wsHospitalCount },
       bestOpportunities,
+      hotSpots,
       userLat: latitude, userLng: longitude,
       dataQuality: buildDataQuality(businesses, aiSuggestions, rawSourceCounts),
     };
@@ -3684,6 +3853,7 @@ app.post('/api/analyze-location', async (req, res) => {
       cityTier: detectedTier,
       demandSignals: { offices: officeCount, schools: schoolCount, hospitals: hospitalCount },
       bestOpportunities,
+      hotSpots: computeHotSpots(businesses, postLocType),
       aiSuggestions: 'Generating AI recommendations...',
       userLat: latitude,
       userLng: longitude,

@@ -72,74 +72,52 @@ export default function Layout({ children }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--layout-bg)',
-      color: 'var(--text)',
-      display: 'flex',
-      flexDirection: 'column',
-      transition: 'background 0.3s, color 0.3s',
+      background: '#F8FAFC',
+      color: '#1E293B',
     }}>
-      {/* Ambient blobs */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{
-          position: 'absolute', top: '-10%', right: '-5%',
-          width: '500px', height: '500px', borderRadius: '50%',
-          background: dark
-            ? 'radial-gradient(circle, rgba(79,142,247,0.05) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(194,65,12,0.06) 0%, transparent 70%)',
-          animation: 'blobFloat 16s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-10%', left: '-5%',
-          width: '400px', height: '400px', borderRadius: '50%',
-          background: dark
-            ? 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(180,83,9,0.05) 0%, transparent 70%)',
-          animation: 'blobFloat2 20s ease-in-out infinite',
-        }} />
-      </div>
 
       {/* Command Palette (global) */}
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
 
-      {/* ── TOP HEADER ── */}
-      <Header
-        onMenuToggle={() => setSidebarOpen(o => !o)}
-        cmdOpen={cmdOpen}
-        setCmdOpen={setCmdOpen}
-        marketName={marketName}
-      />
+      {/* ── TOP HEADER — fixed so it never scrolls away ── */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}>
+        <Header
+          onMenuToggle={() => setSidebarOpen(o => !o)}
+          cmdOpen={cmdOpen}
+          setCmdOpen={setCmdOpen}
+          marketName={marketName}
+        />
+      </div>
 
-      {/* ── BODY ── */}
-      <div style={{ display: 'flex', flex: 1, position: 'relative', zIndex: 1 }}>
+      {/* ── PAGE BODY — padded top to clear the fixed header (56px) ── */}
+      <div style={{ paddingTop: '56px', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
-        {/* Sidebar — dashboard pages only */}
-        {isDashboard && (
-          <Sidebar
-            open={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
-        )}
+        {/* ── BODY ROW ── */}
+        <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
 
-        {/* Main area */}
-        <div
-          className={isDashboard ? 'main-shell' : ''}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {/* Command Center bar — dashboard only */}
+          {/* Sidebar — dashboard pages only */}
           {isDashboard && (
-            <CommandCenter onSearchClick={() => setCmdOpen(true)} />
+            <Sidebar
+              open={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+            />
           )}
 
-          <main style={{ flex: 1 }}>
-            {children}
-          </main>
+          {/* Main area */}
+          <div
+            className={isDashboard ? 'main-shell' : ''}
+            style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}
+          >
+            {/* Command Center bar — dashboard only */}
+            {isDashboard && (
+              <CommandCenter onSearchClick={() => setCmdOpen(true)} />
+            )}
+
+            <main style={{ flex: 1 }}>
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
 
       <SuggestBusiness />
 
@@ -156,16 +134,16 @@ export default function Layout({ children }) {
           zIndex: 200,
           width: '36px', height: '36px',
           borderRadius: '50%',
-          background: 'var(--theme-btn-bg)',
-          border: '1px solid var(--theme-btn-border)',
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
           fontSize: '15px',
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: dark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.1)',
+          boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
           transition: 'all 0.2s',
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--theme-btn-border)'}
+        onMouseEnter={e => e.currentTarget.style.borderColor = '#1F6FEB'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = '#E2E8F0'}
       >
         {dark ? '☀️' : '🌙'}
       </button>
@@ -175,10 +153,9 @@ export default function Layout({ children }) {
         className={isDashboard ? 'footer-shell' : ''}
         style={{
           position: 'relative', zIndex: 1,
-          borderTop: '1px solid var(--footer-border)',
-          background: 'var(--footer-bg)',
+          borderTop: '1px solid #E2E8F0',
+          background: '#FFFFFF',
           padding: '32px 24px',
-          transition: 'background 0.3s, border-color 0.3s',
         }}
       >
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -190,7 +167,7 @@ export default function Layout({ children }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <Logo size={24} textSize={13} />
               </div>
-              <p style={{ fontSize: '11.5px', color: 'var(--footer-text)', lineHeight: '1.7', margin: 0 }}>
+              <p style={{ fontSize: '11.5px', color: '#94A3B8', lineHeight: '1.7', margin: 0 }}>
                 Free market intelligence for Indian entrepreneurs. Know your market before you invest.
               </p>
             </div>
@@ -200,17 +177,14 @@ export default function Layout({ children }) {
                 { heading: 'Company', links: [['About', '/about'], ['Feedback', '/feedback'], ['Privacy', '/privacy'], ['Terms', '/terms']] },
               ].map(col => (
                 <div key={col.heading}>
-                  <div style={{ fontSize: '9.5px', fontWeight: '700', color: 'var(--footer-text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '9.5px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>
                     {col.heading}
                   </div>
                   {col.links.map(([label, href]) => (
-                    <div
-                      key={label}
-                      onClick={() => router.push(href)}
-                      style={{ fontSize: '11.5px', color: 'var(--footer-text)', cursor: 'pointer', marginBottom: '7px', transition: 'color 0.14s' }}
-                      onMouseEnter={e => e.target.style.color = 'var(--text)'}
-                      onMouseLeave={e => e.target.style.color = 'var(--footer-text)'}
-                    >
+                    <div key={label} onClick={() => router.push(href)}
+                      style={{ fontSize: '11.5px', color: '#94A3B8', cursor: 'pointer', marginBottom: '7px', transition: 'color 0.14s', fontFamily: "'Inter', sans-serif" }}
+                      onMouseEnter={e => e.target.style.color = '#1E293B'}
+                      onMouseLeave={e => e.target.style.color = '#94A3B8'}>
                       {label}
                     </div>
                   ))}
@@ -249,6 +223,7 @@ export default function Layout({ children }) {
           .theme-btn-dashboard { left: 20px !important; }
         }
       `}</style>
-    </div>
+      </div>
+      </div>
   );
 }

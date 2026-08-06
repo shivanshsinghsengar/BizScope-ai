@@ -793,6 +793,115 @@ export default function Dashboard() {
           {/* ── AI RECOMMENDATIONS ── */}
           <AIRecommendations aiSuggestions={data.aiSuggestions} city={city} />
 
+          {/* ── HYPERLOCAL HOT SPOTS ── */}
+          {data.hotSpots?.length > 0 && (
+            <div style={{ marginBottom: '32px' }}>
+              <SectionDivider
+                title="📍 Best Spots to Open Near"
+                subtitle={`Specific locations in ${city} where foot traffic is high and competition is low`}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {data.hotSpots.map((spot, i) => (
+                  <div key={i} style={{ ...card({ padding: '20px 24px' }) }}>
+                    <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      {/* Left icon */}
+                      <div style={{ width: '44px', height: '44px', borderRadius: '12px',
+                        background: '#EFF6FF', border: '1px solid #DBEAFE',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '22px', flexShrink: 0 }}>
+                        {spot.icon}
+                      </div>
+
+                      {/* Main content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px',
+                          flexWrap: 'wrap', marginBottom: '4px' }}>
+                          <h4 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '14px',
+                            fontWeight: '700', color: '#1E293B', margin: 0 }}>
+                            Near {spot.anchorName}
+                          </h4>
+                          <span style={{ fontSize: '11px', fontWeight: '600', color: '#1F6FEB',
+                            background: '#EFF6FF', border: '1px solid #DBEAFE',
+                            borderRadius: '100px', padding: '2px 8px' }}>
+                            {spot.anchorLabel}
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: '600',
+                            color: spot.footfall === 'Very High' ? '#16A34A' : '#2E8B57',
+                            background: spot.footfall === 'Very High' ? '#F0FDF4' : '#F0FDF4',
+                            border: '1px solid #BBF7D0', borderRadius: '100px', padding: '2px 8px' }}>
+                            {spot.footfall} Footfall
+                          </span>
+                        </div>
+
+                        <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 12px',
+                          fontFamily: "'Inter', sans-serif" }}>
+                          {spot.nearbyBusinessCount} businesses within 300m •{' '}
+                          Gap score: <strong style={{ color: '#1F6FEB' }}>{spot.gapScore}/10</strong>
+                        </p>
+
+                        {/* Recommendations */}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {spot.recommendations.map((rec, j) => (
+                            <div key={j} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0',
+                              borderRadius: '10px', padding: '10px 14px', flex: '1 1 220px',
+                              minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px',
+                                marginBottom: '4px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '700',
+                                  color: '#1F6FEB', background: '#EFF6FF',
+                                  borderRadius: '100px', padding: '2px 8px',
+                                  fontFamily: "'Inter', sans-serif" }}>
+                                  ✓ {rec.category}
+                                </span>
+                                {rec.existingCount === 0 && (
+                                  <span style={{ fontSize: '10px', fontWeight: '600',
+                                    color: '#16A34A', background: '#F0FDF4',
+                                    borderRadius: '100px', padding: '2px 6px' }}>
+                                    No competition
+                                  </span>
+                                )}
+                                {rec.existingCount > 0 && (
+                                  <span style={{ fontSize: '10px', color: '#64748B' }}>
+                                    {rec.existingCount} nearby
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: '11.5px', color: '#64748B', margin: 0,
+                                lineHeight: '1.5', fontFamily: "'Inter', sans-serif" }}>
+                                {rec.reason}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Map link */}
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`}
+                          target="_blank" rel="noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            marginTop: '10px', fontSize: '12px', fontWeight: '600',
+                            color: '#1F6FEB', textDecoration: 'none',
+                            fontFamily: "'Inter', sans-serif" }}>
+                          📍 View on Google Maps →
+                        </a>
+                      </div>
+
+                      {/* Right rank badge */}
+                      <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                        <div style={{ fontFamily: "'Space Grotesk', sans-serif",
+                          fontSize: '28px', fontWeight: '700',
+                          color: i === 0 ? '#16A34A' : '#1F6FEB' }}>
+                          #{i + 1}
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#94A3B8',
+                          fontFamily: "'Inter', sans-serif" }}>Best Spot</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── ACTION PLAN ── */}
           <ActionPlan />
 
