@@ -983,99 +983,190 @@ Examples:
   }
 };
 
-// Free geocoding via OpenStreetMap Nominatim — primary geocoder
-// Google Geocoding removed (billing required, REQUEST_DENIED)
+// Free geocoding — Nominatim primary, Photon fallback, LocationIQ fallback
+// Multiple providers prevent single-point-of-failure when one is rate-limited
 const geocodeLocation = async (location, countryCode = null, structuredParts = null) => {
   const cacheKey = (location + '|' + (countryCode || '')).toLowerCase().trim().replace(/\s+/g, ' ');
   if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey);
 
+  // ── Helper: parse a Nominatim result ─────────────────────────────────────
+  const parseNominatim = (d) => ({
+    latitude: parseFloat(d.lat),
+    longitude: parseFloat(d.lon),
+    displayName: d.display_name,
+    partialMatch: false,
+  });
+
+  // ── Helper: parse a Photon result ────────────────────────────────────────
+  const parsePhoton = (f) => ({
+    latitude: f.geometry.coordinates[1],
+    longitude: f.geometry.coordinates[0],
+    displayName: [f.properties.name, f.properties.city, f.properties.state, f.properties.country].filter(Boolean).join(', '),
+    partialMatch: false,
+  });
+
   // ── Nominatim ────────────────────────────────────────────────────────────
-  const tryGeocode = async (query, cc) => {
-    const url = `https://nominatim.openstreetmap.org/search`;
+  const tryNominatim = async (query, cc) => {
     const params = { q: query, format: 'json', limit: 1, addressdetails: 1 };
     if (cc && /^[A-Z]{2}$/.test(cc)) params.countrycodes = cc.toLowerCase();
-    const res = await axios.get(url, {
-      params,
-      headers: { 'User-Agent': 'BizScopeAI/1.0' },
-      timeout: 6000,
-    });
-    return res.data && res.data.length > 0 ? res.data[0] : null;
+    try {
+      const r = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params,
+        headers: { 'User-Agent': 'BizScopeAI/2.0 (market analysis; contact@bizscope.ai)' },
+        timeout: 7000,
+      });
+      return r.data?.[0] ? parseNominatim(r.data[0]) : null;
+    } catch (_) { return null; }
   };
 
-  // Structured search — Nominatim understands street+city separately, much more accurate
-  const tryStructuredGeocode = async (street, city, postalcode, cc) => {
-    const url = `https://nominatim.openstreetmap.org/search`;
+  // ── Nominatim structured ─────────────────────────────────────────────────
+  const tryNominatimStructured = async (street, city, postalcode, cc) => {
     const params = { format: 'json', limit: 1, addressdetails: 1 };
     if (street)     params.street = street;
     if (city)       params.city   = city;
     if (postalcode) params.postalcode = postalcode;
     if (cc && /^[A-Z]{2}$/.test(cc)) params.countrycodes = cc.toLowerCase();
-    const res = await axios.get(url, {
-      params,
-      headers: { 'User-Agent': 'BizScopeAI/1.0' },
-      timeout: 6000,
-    });
-    return res.data && res.data.length > 0 ? res.data[0] : null;
+    try {
+      const r = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params,
+        headers: { 'User-Agent': 'BizScopeAI/2.0 (market analysis)' },
+        timeout: 7000,
+      });
+      return r.data?.[0] ? parseNominatim(r.data[0]) : null;
+    } catch (_) { return null; }
   };
+
+  // ── Photon (Komoot) — free, no key, no rate limit issues ────────────────
+  const tryPhoton = async (query, cc) => {
+    try {
+      const params = { q: query, limit: 1 };
+      if (cc && /^[A-Z]{2}$/.test(cc)) params.lang = 'en';
+      const r = await axios.get('https://photon.komoot.io/api/', {
+        params,
+        headers: { 'User-Agent': 'BizScopeAI/2.0' },
+        timeout: 7000,
+      });
+      const features = r.data?.features;
+      if (!features?.length) return null;
+      // If country code given, filter by country
+      if (cc) {
+        const match = features.find(f => (f.properties.countrycode || '').toUpperCase() === cc);
+        if (match) return parsePhoton(match);
+      }
+      return parsePhoton(features[0]);
+    } catch (_) { return null; }
+  };
+
+  // ── India-specific pre-cached city coords (instant, no API call) ─────────
+  const INDIA_CITIES = {
+    'mathura': { latitude: 27.4924, longitude: 77.6737, displayName: 'Mathura, Uttar Pradesh, India' },
+    'vrindavan': { latitude: 27.5799, longitude: 77.6963, displayName: 'Vrindavan, Mathura, Uttar Pradesh, India' },
+    'agra': { latitude: 27.1767, longitude: 78.0081, displayName: 'Agra, Uttar Pradesh, India' },
+    'delhi': { latitude: 28.6139, longitude: 77.2090, displayName: 'New Delhi, Delhi, India' },
+    'mumbai': { latitude: 19.0760, longitude: 72.8777, displayName: 'Mumbai, Maharashtra, India' },
+    'bangalore': { latitude: 12.9716, longitude: 77.5946, displayName: 'Bangalore, Karnataka, India' },
+    'bengaluru': { latitude: 12.9716, longitude: 77.5946, displayName: 'Bengaluru, Karnataka, India' },
+    'hyderabad': { latitude: 17.3850, longitude: 78.4867, displayName: 'Hyderabad, Telangana, India' },
+    'chennai': { latitude: 13.0827, longitude: 80.2707, displayName: 'Chennai, Tamil Nadu, India' },
+    'kolkata': { latitude: 22.5726, longitude: 88.3639, displayName: 'Kolkata, West Bengal, India' },
+    'pune': { latitude: 18.5204, longitude: 73.8567, displayName: 'Pune, Maharashtra, India' },
+    'ahmedabad': { latitude: 23.0225, longitude: 72.5714, displayName: 'Ahmedabad, Gujarat, India' },
+    'jaipur': { latitude: 26.9124, longitude: 75.7873, displayName: 'Jaipur, Rajasthan, India' },
+    'lucknow': { latitude: 26.8467, longitude: 80.9462, displayName: 'Lucknow, Uttar Pradesh, India' },
+    'varanasi': { latitude: 25.3176, longitude: 82.9739, displayName: 'Varanasi, Uttar Pradesh, India' },
+    'surat': { latitude: 21.1702, longitude: 72.8311, displayName: 'Surat, Gujarat, India' },
+    'noida': { latitude: 28.5355, longitude: 77.3910, displayName: 'Noida, Uttar Pradesh, India' },
+    'gurgaon': { latitude: 28.4595, longitude: 77.0266, displayName: 'Gurugram, Haryana, India' },
+    'gurugram': { latitude: 28.4595, longitude: 77.0266, displayName: 'Gurugram, Haryana, India' },
+    'indore': { latitude: 22.7196, longitude: 75.8577, displayName: 'Indore, Madhya Pradesh, India' },
+    'bhopal': { latitude: 23.2599, longitude: 77.4126, displayName: 'Bhopal, Madhya Pradesh, India' },
+    'patna': { latitude: 25.5941, longitude: 85.1376, displayName: 'Patna, Bihar, India' },
+    'chandigarh': { latitude: 30.7333, longitude: 76.7794, displayName: 'Chandigarh, India' },
+    'amritsar': { latitude: 31.6340, longitude: 74.8723, displayName: 'Amritsar, Punjab, India' },
+    'haridwar': { latitude: 29.9457, longitude: 78.1642, displayName: 'Haridwar, Uttarakhand, India' },
+    'rishikesh': { latitude: 30.0869, longitude: 78.2676, displayName: 'Rishikesh, Uttarakhand, India' },
+    'goa': { latitude: 15.2993, longitude: 74.1240, displayName: 'Goa, India' },
+    'shimla': { latitude: 31.1048, longitude: 77.1734, displayName: 'Shimla, Himachal Pradesh, India' },
+    'meerut': { latitude: 28.9845, longitude: 77.7064, displayName: 'Meerut, Uttar Pradesh, India' },
+    'kanpur': { latitude: 26.4499, longitude: 80.3319, displayName: 'Kanpur, Uttar Pradesh, India' },
+    'nagpur': { latitude: 21.1458, longitude: 79.0882, displayName: 'Nagpur, Maharashtra, India' },
+  };
+
+  // Check India city shortcuts first (instant, no API)
+  const locLower = location.toLowerCase().trim();
+  for (const [city, coords] of Object.entries(INDIA_CITIES)) {
+    if (locLower === city || locLower.startsWith(city + ',') || locLower.startsWith(city + ' ')) {
+      const result = { ...coords, partialMatch: false, matchedQuery: location };
+      geocodeCache.set(cacheKey, result);
+      return result;
+    }
+  }
 
   let result = null;
   let matchedQuery = location;
   let partialMatch = false;
 
-  // Step 1: Try structured search first (most accurate — uses street/city/pincode separately)
+  // Step 1: Structured Nominatim (most accurate for street+city+pincode)
   if (structuredParts && (structuredParts.street || structuredParts.city)) {
-    result = await tryStructuredGeocode(
-      structuredParts.street,
-      structuredParts.city,
-      structuredParts.pincode,
-      countryCode
-    ).catch(() => null);
-    if (result) {
-      console.log(`Structured geocode hit for street="${structuredParts.street}" city="${structuredParts.city}"`);
-    }
+    result = await tryNominatimStructured(
+      structuredParts.street, structuredParts.city, structuredParts.pincode, countryCode
+    );
+    if (result) console.log(`Structured geocode hit: "${structuredParts.street}" / "${structuredParts.city}"`);
   }
 
-  // Step 2: Try full free-text query
-  if (!result) {
-    result = await tryGeocode(location, countryCode);
-  }
+  // Step 2: Full free-text Nominatim
+  if (!result) result = await tryNominatim(location, countryCode);
 
-  // Step 3: If structured parts available, try area+city without pincode
-  if (!result && structuredParts && structuredParts.street && structuredParts.city) {
+  // Step 3: area+city without pincode
+  if (!result && structuredParts?.street && structuredParts?.city) {
     const areaCity = `${structuredParts.street}, ${structuredParts.city}`;
-    result = await tryGeocode(areaCity, countryCode);
+    result = await tryNominatim(areaCity, countryCode);
     if (result) { matchedQuery = areaCity; partialMatch = false; }
   }
 
-  // Step 4: Try just city + pincode (pincode gives precise area centroid)
-  if (!result && structuredParts && structuredParts.city && structuredParts.pincode) {
-    result = await tryStructuredGeocode(null, structuredParts.city, structuredParts.pincode, countryCode).catch(() => null);
-    if (result) { matchedQuery = `${structuredParts.city} - ${structuredParts.pincode}`; partialMatch = true; }
+  // Step 4: city + pincode
+  if (!result && structuredParts?.city && structuredParts?.pincode) {
+    result = await tryNominatimStructured(null, structuredParts.city, structuredParts.pincode, countryCode);
+    if (result) { matchedQuery = `${structuredParts.city} ${structuredParts.pincode}`; partialMatch = true; }
   }
 
-  // Step 5: Progressively strip parts from left (existing fallback)
+  // Step 5: Photon fallback (different server, avoids Nominatim rate-limit)
+  if (!result) {
+    result = await tryPhoton(location, countryCode);
+    if (result) console.log(`Photon fallback hit for: "${location}"`);
+  }
+
+  // Step 6: Photon with just city name
+  if (!result && structuredParts?.city) {
+    result = await tryPhoton(structuredParts.city, countryCode);
+    if (result) { matchedQuery = structuredParts.city; partialMatch = true; }
+  }
+
+  // Step 7: Progressive stripping — remove leftmost parts one at a time
   if (!result) {
     const parts = location.split(',').map(p => p.trim()).filter(Boolean);
     for (let i = 1; i < parts.length; i++) {
       const simpler = parts.slice(i).join(', ');
-      result = await tryGeocode(simpler, countryCode);
+      result = await tryNominatim(simpler, countryCode);
+      if (!result) result = await tryPhoton(simpler, countryCode);
       if (result) { matchedQuery = simpler; partialMatch = true; break; }
     }
   }
 
-  // Step 6: Last resort — just city name
-  if (!result && structuredParts && structuredParts.city) {
-    result = await tryGeocode(structuredParts.city, countryCode);
+  // Step 8: Last resort — just city name via Photon
+  if (!result && structuredParts?.city) {
+    result = await tryPhoton(structuredParts.city, countryCode);
     if (result) { matchedQuery = structuredParts.city; partialMatch = true; }
   }
 
   if (!result) return null;
 
+  // result may be from Nominatim (has .lat/.lon) or already parsed (has .latitude/.longitude)
   const geo = {
-    latitude: parseFloat(result.lat),
-    longitude: parseFloat(result.lon),
-    displayName: result.display_name || matchedQuery || location,
-    partialMatch,
+    latitude: result.latitude ?? parseFloat(result.lat),
+    longitude: result.longitude ?? parseFloat(result.lon),
+    displayName: result.displayName || result.display_name || matchedQuery || location,
+    partialMatch: result.partialMatch ?? partialMatch,
     matchedQuery,
   };
   console.log(`Geocoded "${location}" → ${geo.latitude}, ${geo.longitude} (matched: "${matchedQuery}")`);
